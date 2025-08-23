@@ -1,7 +1,7 @@
 /* Login Page Styles */
 .login-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -12,7 +12,7 @@
 .login-container {
   background: white;
   border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 60px rgba(59, 130, 246, 0.1);
   overflow: hidden;
   width: 100%;
   max-width: 1200px;
@@ -25,7 +25,7 @@
   position: absolute;
   top: 2rem;
   left: 2rem;
-  color: #2563eb;
+  color: #1e40af;
   text-decoration: none;
   font-weight: 600;
   display: flex;
@@ -36,7 +36,7 @@
 }
 
 .back-link:hover {
-  color: #1d4ed8;
+  color: #3b82f6;
 }
 
 /* Login Form Container */
@@ -56,13 +56,13 @@
 
 .login-header h1 {
   font-size: 3rem;
-  color: #1e293b;
+  color: #1e40af;
   margin-bottom: 0.5rem;
   font-weight: 700;
 }
 
 .login-header p {
-  color: #64748b;
+  color: #6b7280;
   font-size: 1.1rem;
 }
 
@@ -97,8 +97,8 @@
 
 .form-group input:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .form-group input.error {
@@ -150,7 +150,7 @@
 }
 
 .forgot-password {
-  color: #2563eb;
+  color: #1e40af;
   text-decoration: none;
   font-size: 0.9rem;
   font-weight: 600;
@@ -158,13 +158,13 @@
 }
 
 .forgot-password:hover {
-  color: #1d4ed8;
+  color: #3b82f6;
 }
 
 /* Login Button */
 .login-button {
   width: 100%;
-  background: #2563eb;
+  background: #3b82f6;
   color: white;
   border: none;
   padding: 1.3rem;
@@ -177,9 +177,9 @@
 }
 
 .login-button:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: #1e40af;
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
 }
 
 .login-button:disabled {
@@ -215,25 +215,25 @@
 }
 
 .login-footer p {
-  color: #64748b;
+  color: #6b7280;
   font-size: 0.9rem;
 }
 
 .register-link {
-  color: #2563eb;
+  color: #1e40af;
   text-decoration: none;
   font-weight: 600;
   transition: color 0.3s ease;
 }
 
 .register-link:hover {
-  color: #1d4ed8;
+  color: #3b82f6;
 }
 
 /* Decorative Side */
 .login-decoration {
   flex: 1;
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
   color: white;
   display: flex;
   align-items: center;
