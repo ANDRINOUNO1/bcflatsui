@@ -16,18 +16,6 @@ const AppRoutes = () => {
         path="/dashboard" 
         element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} 
       />
-      <Route 
-        path="/rooms" 
-        element={isAuthenticated ? <Rooms /> : <Navigate to="/login" />} 
-      />
-      <Route 
-        path="/students" 
-        element={isAuthenticated ? <Students /> : <Navigate to="/login" />} 
-      />
-      <Route 
-        path="/profile" 
-        element={isAuthenticated ? <Profile /> : <Navigate to="/login" />} 
-      />
       
       {/* Fallback Route */}
       <Route path="*" element={<Navigate to="/" />} />
