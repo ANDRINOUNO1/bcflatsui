@@ -25,12 +25,17 @@ const RoomPage = () => {
     const fetchRooms = async () => {
         try {
             setLoading(true);
-            console.log('🏠 RoomPage: Fetching rooms...');
+            console.log(' RoomPage: Fetching rooms...');
             const roomsData = await roomService.getAllRooms();
-            console.log('🏠 RoomPage: Rooms fetched successfully:', roomsData.length);
+            console.log(' RoomPage: Rooms fetched successfully:', roomsData.length);
             setRooms(roomsData);
         } catch (error) {
             console.error('❌ RoomPage: Error fetching rooms:', error);
+            // Don't redirect on auth errors, just show empty state
+            if (error.response?.status === 401) {
+                console.log(' RoomPage: Authentication error, showing empty state');
+                setRooms([]);
+            }
         } finally {
             setLoading(false);
         }

@@ -68,7 +68,8 @@ export const authService = {
       return response.data.user;
     } catch (error) {
       console.error('Token validation failed:', error);
-      throw new Error('Token validation failed');
+      // Don't throw error, just return null to indicate invalid token
+      return null;
     }
   },
 

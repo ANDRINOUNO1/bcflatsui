@@ -27,12 +27,17 @@ const TenantPage = () => {
     const fetchTenants = async () => {
         try {
             setLoading(true);
-            console.log(' TenantPage: Fetching tenants...');
+            console.log('👥 TenantPage: Fetching tenants...');
             const tenantsData = await tenantService.getAllTenants();
-            console.log(' TenantPage: Tenants fetched successfully:', tenantsData.length);
+            console.log('👥 TenantPage: Tenants fetched successfully:', tenantsData.length);
             setTenants(tenantsData);
         } catch (error) {
-            console.error(' TenantPage: Error fetching tenants:', error);
+            console.error('❌ TenantPage: Error fetching tenants:', error);
+            // Don't redirect on auth errors, just show empty state
+            if (error.response?.status === 401) {
+                console.log('👥 TenantPage: Authentication error, showing empty state');
+                setTenants([]);
+            }
         } finally {
             setLoading(false);
         }

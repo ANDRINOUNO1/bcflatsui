@@ -42,11 +42,8 @@ apiService.interceptors.response.use(
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             
-            // Only redirect if we're not already on the login page
-            if (window.location.pathname !== '/login') {
-                console.log(' Redirecting to login page');
-                window.location.href = '/login';
-            }
+            // Don't redirect automatically - let components handle it
+            console.log(' Token cleared, but not redirecting');
         }
         return Promise.reject(error);
     }

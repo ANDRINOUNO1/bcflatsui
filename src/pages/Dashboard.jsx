@@ -24,19 +24,14 @@ const Dashboard = () => {
         console.log('🔐 Dashboard: Authentication status:', isAuthenticated)
         console.log('🔐 Dashboard: Token in localStorage:', !!localStorage.getItem('token'))
         
-        // Ensure authentication is valid before making API calls
+        // Only fetch data if we're authenticated
         if (!isAuthenticated) {
-          console.log('🔄 Dashboard: Refreshing authentication...')
-          const authValid = await refreshAuth()
-          if (!authValid) {
-            console.error('❌ Dashboard: Authentication failed')
-            return
-          }
-          console.log('✅ Dashboard: Authentication refreshed successfully')
+          console.log(' Dashboard: Not authenticated, skipping data fetch')
+          setLoading(false)
+          return
         }
         
-        console.log('📊 Dashboard: Fetching statistics...')
-        // Fetch room and tenant statistics
+        console.log(' Dashboard: Fetching statistics...')
         const [roomStats, tenantStats] = await Promise.all([
           roomService.getRoomStats(),
           tenantService.getTenantStats()
@@ -53,18 +48,22 @@ const Dashboard = () => {
         })
       } catch (error) {
         console.error('❌ Dashboard: Failed to fetch stats:', error)
-        // If it's an auth error, try to refresh
+        // If it's an auth error, don't redirect - just show empty stats
         if (error.response?.status === 401) {
-          console.log('🔄 Dashboard: Auth error, refreshing...')
-          await refreshAuth()
+          console.log(' Dashboard: Auth error, showing empty stats')
         }
       } finally {
         setLoading(false)
       }
     }
 
-    fetchDashboardData()
-  }, [isAuthenticated, refreshAuth])
+    // Only fetch data when we're authenticated and not loading
+    if (isAuthenticated && !loading) {
+      fetchDashboardData()
+    } else if (!loading) {
+      setLoading(false)
+    }
+  }, [isAuthenticated, loading])
 
   const handleLogout = () => {
     logout()

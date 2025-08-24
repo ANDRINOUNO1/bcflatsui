@@ -22,8 +22,14 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       authService.validateToken(token)
         .then(userData => {
-          setUser(userData)
-          setIsAuthenticated(true)
+          if (userData) {
+            setUser(userData)
+            setIsAuthenticated(true)
+          } else {
+            localStorage.removeItem('token')
+            setUser(null)
+            setIsAuthenticated(false)
+          }
         })
         .catch((error) => {
           console.error('Token validation failed:', error)
@@ -93,9 +99,17 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       try {
         const userData = await authService.validateToken(token)
-        setUser(userData)
-        setIsAuthenticated(true)
-        return true
+        if (userData) {
+          setUser(userData)
+          setIsAuthenticated(true)
+          return true
+        } else {
+          // Token is invalid
+          localStorage.removeItem('token')
+          setUser(null)
+          setIsAuthenticated(false)
+          return false
+        }
       } catch (error) {
         console.error('Token refresh failed:', error)
         localStorage.removeItem('token')
