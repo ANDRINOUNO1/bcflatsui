@@ -16,6 +16,7 @@ apiService.interceptors.request.use(
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
             console.log(' Adding token to request:', config.url);
+            console.log(' Token:', token.substring(0, 20) + '...');
         } else {
             console.log(' No token found for request:', config.url);
         }

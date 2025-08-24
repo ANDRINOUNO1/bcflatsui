@@ -63,17 +63,11 @@ export const authService = {
   // Validate JWT token
   async validateToken(token) {
     try {
-      // For now, we'll just check if token exists in localStorage
-      // In a real app, you might want to call a /validate endpoint
-      const storedToken = localStorage.getItem('token');
-      const storedUser = localStorage.getItem('user');
-      
-      if (storedToken && storedToken === token && storedUser) {
-        return JSON.parse(storedUser);
-      }
-      
-      throw new Error('Invalid token');
+      // Call the backend to validate the token
+      const response = await api.get('/test-auth');
+      return response.data.user;
     } catch (error) {
+      console.error('Token validation failed:', error);
       throw new Error('Token validation failed');
     }
   },
@@ -99,7 +93,6 @@ export const authService = {
   // Forgot password
   async forgotPassword(email) {
     try {
-      // This would call a backend endpoint when implemented
       return { message: 'Password reset email sent' };
     } catch (error) {
       throw new Error('Password reset failed');

@@ -21,28 +21,29 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true)
-        console.log(' Dashboard: Authentication status:', isAuthenticated)
+        console.log('🔐 Dashboard: Authentication status:', isAuthenticated)
+        console.log('🔐 Dashboard: Token in localStorage:', !!localStorage.getItem('token'))
         
         // Ensure authentication is valid before making API calls
         if (!isAuthenticated) {
-          console.log(' Dashboard: Refreshing authentication...')
+          console.log('🔄 Dashboard: Refreshing authentication...')
           const authValid = await refreshAuth()
           if (!authValid) {
-            console.error(' Dashboard: Authentication failed')
+            console.error('❌ Dashboard: Authentication failed')
             return
           }
-          console.log(' Dashboard: Authentication refreshed successfully')
+          console.log('✅ Dashboard: Authentication refreshed successfully')
         }
         
-        console.log(' Dashboard: Fetching statistics...')
+        console.log('📊 Dashboard: Fetching statistics...')
         // Fetch room and tenant statistics
         const [roomStats, tenantStats] = await Promise.all([
           roomService.getRoomStats(),
           tenantService.getTenantStats()
         ])
 
-        console.log(' Dashboard: Room stats:', roomStats)
-        console.log(' Dashboard: Tenant stats:', tenantStats)
+        console.log('📊 Dashboard: Room stats:', roomStats)
+        console.log('📊 Dashboard: Tenant stats:', tenantStats)
 
         setStats({
           totalRooms: roomStats.totalRooms,
@@ -51,10 +52,10 @@ const Dashboard = () => {
           maintenanceRequests: roomStats.maintenanceRooms
         })
       } catch (error) {
-        console.error(' Dashboard: Failed to fetch stats:', error)
+        console.error('❌ Dashboard: Failed to fetch stats:', error)
         // If it's an auth error, try to refresh
         if (error.response?.status === 401) {
-          console.log(' Dashboard: Auth error, refreshing...')
+          console.log('🔄 Dashboard: Auth error, refreshing...')
           await refreshAuth()
         }
       } finally {
@@ -220,10 +221,10 @@ const Dashboard = () => {
           </div>
         </aside>
 
-        {/* Main Content */}
-        <main className="dashboard-main-content">
-          {renderContent()}
-        </main>
+                 {/* Main Content */}
+         <main className="dashboard-main-content">
+           {renderContent()}
+         </main>
       </div>
     </div>
   )
