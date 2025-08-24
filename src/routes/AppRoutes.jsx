@@ -5,7 +5,12 @@ import Dashboard from '../pages/Dashboard'
 import { useAuth } from '../context/AuthContext'
 
 const AppRoutes = () => {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, loading } = useAuth()
+
+
+  if (loading) {
+    return <div className="loading">Loading...</div>
+  }
 
   return (
     <Routes>
@@ -14,11 +19,11 @@ const AppRoutes = () => {
       
       <Route 
         path="/dashboard" 
-        element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} 
+        element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" replace />} 
       />
       
       {/* Fallback Route */}
-      <Route path="*" element={<Navigate to="/" />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

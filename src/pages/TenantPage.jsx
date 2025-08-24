@@ -27,10 +27,12 @@ const TenantPage = () => {
     const fetchTenants = async () => {
         try {
             setLoading(true);
+            console.log(' TenantPage: Fetching tenants...');
             const tenantsData = await tenantService.getAllTenants();
+            console.log(' TenantPage: Tenants fetched successfully:', tenantsData.length);
             setTenants(tenantsData);
         } catch (error) {
-            console.error('Error fetching tenants:', error);
+            console.error(' TenantPage: Error fetching tenants:', error);
         } finally {
             setLoading(false);
         }

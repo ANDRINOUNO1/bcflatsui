@@ -25,10 +25,12 @@ const RoomPage = () => {
     const fetchRooms = async () => {
         try {
             setLoading(true);
+            console.log('🏠 RoomPage: Fetching rooms...');
             const roomsData = await roomService.getAllRooms();
+            console.log('🏠 RoomPage: Rooms fetched successfully:', roomsData.length);
             setRooms(roomsData);
         } catch (error) {
-            console.error('Error fetching rooms:', error);
+            console.error('❌ RoomPage: Error fetching rooms:', error);
         } finally {
             setLoading(false);
         }

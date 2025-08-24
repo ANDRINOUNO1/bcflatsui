@@ -15,6 +15,9 @@ apiService.interceptors.request.use(
         const token = localStorage.getItem('token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
+            console.log(' Adding token to request:', config.url);
+        } else {
+            console.log(' No token found for request:', config.url);
         }
         return config;
     },
@@ -26,14 +29,23 @@ apiService.interceptors.request.use(
 // Response interceptor to handle auth errors
 apiService.interceptors.response.use(
     (response) => {
+        console.log(' API Response:', response.config.url, response.status);
         return response;
     },
     (error) => {
+        console.log(' API Error:', error.config?.url, error.response?.status, error.response?.data);
+        
         if (error.response?.status === 401) {
-            // Token expired or invalid, redirect to login
+            console.log(' Authentication failed, clearing token');
+            // Token expired or invalid, clear local storage
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            window.location.href = '/login';
+            
+            // Only redirect if we're not already on the login page
+            if (window.location.pathname !== '/login') {
+                console.log(' Redirecting to login page');
+                window.location.href = '/login';
+            }
         }
         return Promise.reject(error);
     }

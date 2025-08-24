@@ -7,7 +7,7 @@ import TenantPage from './TenantPage'
 import '../components/Dashboard.css'
 
 const Dashboard = () => {
-  const { user, logout } = useAuth()
+  const { user, logout, isAuthenticated, refreshAuth } = useAuth()
   const [stats, setStats] = useState({
     totalRooms: 0,
     occupiedRooms: 0,
@@ -21,12 +21,28 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true)
+        console.log(' Dashboard: Authentication status:', isAuthenticated)
         
+        // Ensure authentication is valid before making API calls
+        if (!isAuthenticated) {
+          console.log(' Dashboard: Refreshing authentication...')
+          const authValid = await refreshAuth()
+          if (!authValid) {
+            console.error(' Dashboard: Authentication failed')
+            return
+          }
+          console.log(' Dashboard: Authentication refreshed successfully')
+        }
+        
+        console.log(' Dashboard: Fetching statistics...')
         // Fetch room and tenant statistics
         const [roomStats, tenantStats] = await Promise.all([
           roomService.getRoomStats(),
           tenantService.getTenantStats()
         ])
+
+        console.log(' Dashboard: Room stats:', roomStats)
+        console.log(' Dashboard: Tenant stats:', tenantStats)
 
         setStats({
           totalRooms: roomStats.totalRooms,
@@ -35,14 +51,19 @@ const Dashboard = () => {
           maintenanceRequests: roomStats.maintenanceRooms
         })
       } catch (error) {
-        console.error('Failed to fetch dashboard stats:', error)
+        console.error(' Dashboard: Failed to fetch stats:', error)
+        // If it's an auth error, try to refresh
+        if (error.response?.status === 401) {
+          console.log(' Dashboard: Auth error, refreshing...')
+          await refreshAuth()
+        }
       } finally {
         setLoading(false)
       }
     }
 
     fetchDashboardData()
-  }, [])
+  }, [isAuthenticated, refreshAuth])
 
   const handleLogout = () => {
     logout()
@@ -131,6 +152,15 @@ const Dashboard = () => {
     return (
       <div className="dashboard">
         <div className="loading">Loading dashboard...</div>
+      </div>
+    )
+  }
+
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="dashboard">
+        <div className="loading">Redirecting to login...</div>
       </div>
     )
   }
