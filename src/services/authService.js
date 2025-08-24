@@ -1,106 +1,137 @@
-// Mock Authentication Service with seeded admin account
-// This simulates authentication without requiring a backend
+import axios from 'axios';
 
-// TODO: Uncomment this section when connecting to your backend
-// const API_BASE_URL = 'http://localhost:3001/api' // Update with your backend URL
+// Backend API configuration
+const API_BASE_URL = 'http://localhost:3000/api';
 
 // Create axios instance with default config
-// const api = axios.create({
-//   baseURL: API_BASE_URL,
-//   headers: {
-//     'Content-Type': 'application/json',
-//   },
-// })
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 // Add token to requests if available
-// api.interceptors.request.use((config) => {
-//   const token = localStorage.getItem('token')
-//   if (token) {
-//     config.headers.Authorization = `Bearer ${token}`
-//   }
-//   return config
-// })
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 // Handle token expiration
-// api.interceptors.response.use(
-//   (response) => response,
-//   (error) => {
-//     if (error.response?.status === 401) {
-//       localStorage.removeItem('token')
-//       window.location.href = '/login'
-//     }
-//     return Promise.reject(error)
-//   }
-// )
-
-// Seeded admin user
-const ADMIN_USER = {
-  id: 1,
-  name: 'Admin User',
-  email: 'admin@example.com',
-  role: 'admin',
-  avatar: '👨‍💼'
-}
-
-// Simulate API delay
-const simulateApiCall = (delay = 500) => {
-  return new Promise(resolve => setTimeout(resolve, delay))
-}
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const authService = {
   // Login user
   async login(email, password) {
-    await simulateApiCall()
-    
-    // Check against seeded admin account
-    if (email === 'admin@example.com' && password === 'admin123') {
-      const token = 'mock-jwt-token-' + Date.now()
-      return {
-        token,
-        user: ADMIN_USER
-      }
+    try {
+      const response = await api.post('/accounts/authenticate', { email, password });
+      const { token, ...user } = response.data;
+      
+      // Store token and user data
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      return { token, user };
+    } catch (error) {
+      throw new Error(error.response?.data || 'Login failed');
     }
-    
-    throw new Error('Invalid email or password')
   },
 
-  // Register new user (mock implementation)
+  // Register new user
   async register(userData) {
-    await simulateApiCall()
-    // For demo purposes, just return success
-    return { message: 'User registered successfully' }
-  },
-
-  // Validate JWT token (mock implementation)
-  async validateToken(token) {
-    await simulateApiCall(200)
-    
-    // Check if token exists in localStorage
-    const storedToken = localStorage.getItem('token')
-    if (storedToken && storedToken === token) {
-      return ADMIN_USER
+    try {
+      const response = await api.post('/accounts/register', userData);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data || 'Registration failed');
     }
-    
-    throw new Error('Invalid token')
   },
 
-  // Update user profile (mock implementation)
+  // Validate JWT token
+  async validateToken(token) {
+    try {
+      // For now, we'll just check if token exists in localStorage
+      // In a real app, you might want to call a /validate endpoint
+      const storedToken = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('user');
+      
+      if (storedToken && storedToken === token && storedUser) {
+        return JSON.parse(storedUser);
+      }
+      
+      throw new Error('Invalid token');
+    } catch (error) {
+      throw new Error('Token validation failed');
+    }
+  },
+
+  // Update user profile
   async updateProfile(profileData) {
-    await simulateApiCall()
-    const updatedUser = { ...ADMIN_USER, ...profileData }
-    return updatedUser
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user) throw new Error('User not authenticated');
+      
+      const response = await api.put(`/accounts/${user.id}`, profileData);
+      
+      // Update stored user data
+      const updatedUser = { ...user, ...profileData };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      return updatedUser;
+    } catch (error) {
+      throw new Error(error.response?.data || 'Profile update failed');
+    }
   },
 
-  // Forgot password (mock implementation)
+  // Forgot password
   async forgotPassword(email) {
-    await simulateApiCall()
-    return { message: 'Password reset email sent' }
+    try {
+      // This would call a backend endpoint when implemented
+      return { message: 'Password reset email sent' };
+    } catch (error) {
+      throw new Error('Password reset failed');
+    }
   },
 
-  // Reset password (mock implementation)
+  // Reset password
   async resetPassword(token, newPassword) {
-    await simulateApiCall()
-    return { message: 'Password reset successfully' }
+    try {
+      // This would call a backend endpoint when implemented
+      return { message: 'Password reset successfully' };
+    } catch (error) {
+      throw new Error('Password reset failed');
+    }
+  },
+
+  // Logout user
+  logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+  },
+
+  // Get current user
+  getCurrentUser() {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+  },
+
+  // Check if user is authenticated
+  isAuthenticated() {
+    return !!localStorage.getItem('token');
   }
-}
+};
 
