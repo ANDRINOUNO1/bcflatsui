@@ -50,20 +50,20 @@ const Dashboard = () => {
         console.error('❌ Dashboard: Failed to fetch stats:', error)
         // If it's an auth error, don't redirect - just show empty stats
         if (error.response?.status === 401) {
-          console.log(' Dashboard: Auth error, showing empty stats')
+          console.log('🔄 Dashboard: Auth error, showing empty stats')
         }
       } finally {
         setLoading(false)
       }
     }
 
-    // Only fetch data when we're authenticated and not loading
-    if (isAuthenticated && !loading) {
+    // Fetch data when authentication status changes
+    if (isAuthenticated) {
       fetchDashboardData()
-    } else if (!loading) {
+    } else {
       setLoading(false)
     }
-  }, [isAuthenticated, loading])
+  }, [isAuthenticated])
 
   const handleLogout = () => {
     logout()
