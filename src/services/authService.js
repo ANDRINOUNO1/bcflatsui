@@ -38,13 +38,16 @@ export const authService = {
   async login(email, password) {
     try {
       const response = await api.post('/accounts/authenticate', { email, password });
-      const { token, ...user } = response.data;
-      
+      const { jwtToken, refreshToken, ...user } = response.data;
+
       // Store token and user data
-      localStorage.setItem('token', token);
+      localStorage.setItem('token', jwtToken);
       localStorage.setItem('user', JSON.stringify(user));
-      
-      return { token, user };
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken);
+      }
+
+      return { token: jwtToken, user };
     } catch (error) {
       throw new Error(error.response?.data || 'Login failed');
     }
@@ -63,18 +66,13 @@ export const authService = {
   // Validate JWT token
   async validateToken(token) {
     try {
-      // For now, we'll just check if token exists in localStorage
-      // In a real app, you might want to call a /validate endpoint
-      const storedToken = localStorage.getItem('token');
-      const storedUser = localStorage.getItem('user');
-      
-      if (storedToken && storedToken === token && storedUser) {
-        return JSON.parse(storedUser);
-      }
-      
-      throw new Error('Invalid token');
+      // Call the backend to validate the token
+      const response = await api.get('/test-auth');
+      return response.data.user;
     } catch (error) {
-      throw new Error('Token validation failed');
+      console.error('Token validation failed:', error);
+      // Don't throw error, just return null to indicate invalid token
+      return null;
     }
   },
 
@@ -99,7 +97,6 @@ export const authService = {
   // Forgot password
   async forgotPassword(email) {
     try {
-      // This would call a backend endpoint when implemented
       return { message: 'Password reset email sent' };
     } catch (error) {
       throw new Error('Password reset failed');
@@ -119,6 +116,7 @@ export const authService = {
   // Logout user
   logout() {
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     window.location.href = '/login';
   },

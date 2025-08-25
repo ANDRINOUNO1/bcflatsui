@@ -26,9 +26,10 @@ export const roomService = {
     },
 
     // Get all rooms (requires authentication)
-    getAllRooms: async () => {
+    getAllRooms: async (floor) => {
         try {
-            const response = await apiService.get(`${API_BASE_URL}/rooms`);
+            const params = floor && floor !== 'all' ? `?floor=${encodeURIComponent(floor)}` : '';
+            const response = await apiService.get(`${API_BASE_URL}/rooms${params}`);
             return response.data;
         } catch (error) {
             console.error('Error fetching all rooms:', error);

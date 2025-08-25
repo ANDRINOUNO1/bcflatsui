@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { tenantService } from '../services/tenantService';
+import { roomService } from '../services/roomService';
 import '../components/Tenants.css';
 
 const TenantPage = () => {
     const [tenants, setTenants] = useState([]);
+    const [floorFilter, setFloorFilter] = useState('all');
     const [loading, setLoading] = useState(true);
     const [selectedTenant, setSelectedTenant] = useState(null);
     const [showAddTenant, setShowAddTenant] = useState(false);
     const [stats, setStats] = useState(null);
+    const [availableRooms, setAvailableRooms] = useState([]);
+    const [availableBeds, setAvailableBeds] = useState([1, 2, 3, 4]);
+    const [floorsList, setFloorsList] = useState([]);
     const [newTenant, setNewTenant] = useState({
         accountId: '',
         roomId: '',
@@ -22,17 +27,46 @@ const TenantPage = () => {
     useEffect(() => {
         fetchTenants();
         fetchStats();
+        loadFloors();
     }, []);
 
-    const fetchTenants = async () => {
+    const fetchTenants = async (floorArg) => {
         try {
             setLoading(true);
-            const tenantsData = await tenantService.getAllTenants();
+            console.log('👥 TenantPage: Fetching tenants...');
+            const effectiveFloor = floorArg !== undefined ? floorArg : floorFilter;
+            const tenantsData = await tenantService.getAllTenants(effectiveFloor === 'all' ? undefined : effectiveFloor);
+            console.log('👥 TenantPage: Tenants fetched successfully:', tenantsData.length);
             setTenants(tenantsData);
         } catch (error) {
-            console.error('Error fetching tenants:', error);
+            console.error('❌ TenantPage: Error fetching tenants:', error);
+            // Don't redirect on auth errors, just show empty state
+            if (error.response?.status === 401) {
+                console.log('👥 TenantPage: Authentication error, showing empty state');
+                setTenants([]);
+            }
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Floors come from rooms to keep dropdown stable even if tenant list is empty
+    const floors = floorsList;
+    const filteredTenants = tenants; // server-side filtering when floor selected
+
+    const loadFloors = async () => {
+        try {
+            const rooms = await roomService.getAllRooms('all');
+            const uniqueFloors = Array.from(new Set(rooms.map(r => r.floor)))
+                .filter(f => f !== undefined && f !== null)
+                .sort((a, b) => a - b);
+            setFloorsList(uniqueFloors);
+            // If current selection is no longer valid, reset to 'all'
+            if (floorFilter !== 'all' && !uniqueFloors.includes(parseInt(floorFilter))) {
+                setFloorFilter('all');
+            }
+        } catch (error) {
+            console.error('Error loading floors:', error);
         }
     };
 
@@ -47,6 +81,36 @@ const TenantPage = () => {
 
     const handleTenantClick = (tenant) => {
         setSelectedTenant(tenant);
+    };
+
+    const openAddTenantModal = async () => {
+        try {
+            setShowAddTenant(true);
+            const rooms = await roomService.getAvailableRooms();
+            setAvailableRooms(rooms);
+            if (rooms.length > 0) {
+                const firstRoomId = rooms[0].id;
+                setNewTenant((prev) => ({ ...prev, roomId: firstRoomId }));
+                await loadAvailableBeds(firstRoomId);
+            } else {
+                setAvailableBeds([]);
+            }
+        } catch (error) {
+            console.error('Error loading available rooms:', error);
+        }
+    };
+
+    const loadAvailableBeds = async (roomId) => {
+        try {
+            const bedStatus = await roomService.getRoomBedStatus(roomId);
+            const freeBeds = bedStatus.bedStatus
+                .filter(b => b.status === 'Available')
+                .map(b => b.bedNumber);
+            setAvailableBeds(freeBeds);
+        } catch (error) {
+            console.error('Error loading bed options:', error);
+            setAvailableBeds([1, 2, 3, 4]);
+        }
     };
 
     const handleAddTenant = async () => {
@@ -137,6 +201,19 @@ const TenantPage = () => {
             <div className="tenants-header">
                 <h2>👥 Tenant Management</h2>
                 <p>Manage student tenants and their room assignments</p>
+                <div className="tenants-filters">
+                    <label htmlFor="tenantFloorFilter">Floor:</label>
+                    <select
+                        id="tenantFloorFilter"
+                        value={floorFilter}
+                        onChange={async (e) => { const val = e.target.value; setFloorFilter(val); await fetchTenants(val); }}
+                    >
+                        <option value="all">All Floors</option>
+                        {floors.map(f => (
+                            <option key={f} value={f}>Floor {f}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             {stats && (
@@ -176,66 +253,82 @@ const TenantPage = () => {
                 <div className="tenants-list">
                     <div className="list-header">
                         <h3>All Tenants</h3>
-                        <button className="add-tenant-btn" onClick={() => setShowAddTenant(true)}>
+                        <button className="add-tenant-btn" onClick={openAddTenantModal}>
                             + Add Tenant
                         </button>
                     </div>
-                    <div className="tenants-grid">
-                        {tenants.map((tenant) => (
-                            <div
-                                key={tenant.id}
-                                className={`tenant-card ${selectedTenant?.id === tenant.id ? 'selected' : ''}`}
-                                onClick={() => handleTenantClick(tenant)}
-                                style={{ borderColor: getStatusColor(tenant.status) }}
-                            >
-                                <div className="tenant-header">
-                                    <h4>{tenant.account.firstName} {tenant.account.lastName}</h4>
-                                    <span className={`status-badge ${tenant.status.toLowerCase().replace(' ', '-')}`}>
-                                        {tenant.status}
-                                    </span>
-                                </div>
-                                <div className="tenant-info">
-                                    <p><strong>Email:</strong> {tenant.account.email}</p>
-                                    <p><strong>Room:</strong> {tenant.room.roomNumber}</p>
-                                    <p><strong>Bed:</strong> {tenant.bedNumber}</p>
-                                    <p><strong>Rent:</strong> ${tenant.monthlyRent}</p>
-                                    <p><strong>Check-in:</strong> {new Date(tenant.checkInDate).toLocaleDateString()}</p>
-                                </div>
-                                <div className="tenant-actions">
-                                    {tenant.status === 'Pending' && (
-                                        <button
-                                            className="action-btn checkin-btn"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleCheckIn(tenant.id);
-                                            }}
-                                        >
-                                            Check In
-                                        </button>
-                                    )}
-                                    {tenant.status === 'Active' && (
-                                        <button
-                                            className="action-btn checkout-btn"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleCheckOut(tenant.id);
-                                            }}
-                                        >
-                                            Check Out
-                                        </button>
-                                    )}
-                                    <button
-                                        className="action-btn delete-btn"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteTenant(tenant.id);
-                                        }}
-                                    >
-                                        Delete
-                                    </button>
-                                </div>
+                    <div className="tenants-table-wrapper">
+                        {filteredTenants.length === 0 ? (
+                            <div className="tenants-empty">
+                                <p>No tenants found for the selected filter.</p>
                             </div>
-                        ))}
+                        ) : (
+                        <table className="tenants-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Room</th>
+                                    <th>Bed</th>
+                                    <th>Floor</th>
+                                    <th>Status</th>
+                                    <th>Check-in</th>
+                                    <th>Check-out</th>
+                                    <th>Monthly Rent</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredTenants.map((tenant) => (
+                                    <tr
+                                        key={tenant.id}
+                                        className={selectedTenant?.id === tenant.id ? 'selected' : ''}
+                                        onClick={() => handleTenantClick(tenant)}
+                                    >
+                                        <td>{tenant.account.firstName} {tenant.account.lastName}</td>
+                                        <td>{tenant.account.email}</td>
+                                        <td>{tenant.room.roomNumber}</td>
+                                        <td>{tenant.bedNumber}</td>
+                                        <td>{tenant.room.floor}</td>
+                                        <td>
+                                            <span className={`status-badge ${tenant.status.toLowerCase().replace(' ', '-')}`}>
+                                                {tenant.status}
+                                            </span>
+                                        </td>
+                                        <td>{new Date(tenant.checkInDate).toLocaleDateString()}</td>
+                                        <td>{tenant.checkOutDate ? new Date(tenant.checkOutDate).toLocaleDateString() : '-'}</td>
+                                        <td>${tenant.monthlyRent}</td>
+                                        <td>
+                                            <div className="tenant-actions">
+                                                {tenant.status === 'Pending' && (
+                                                    <button
+                                                        className="action-btn checkin-btn"
+                                                        onClick={(e) => { e.stopPropagation(); handleCheckIn(tenant.id); }}
+                                                    >
+                                                        Check In
+                                                    </button>
+                                                )}
+                                                {tenant.status === 'Active' && (
+                                                    <button
+                                                        className="action-btn checkout-btn"
+                                                        onClick={(e) => { e.stopPropagation(); handleCheckOut(tenant.id); }}
+                                                    >
+                                                        Check Out
+                                                    </button>
+                                                )}
+                                                <button
+                                                    className="action-btn delete-btn"
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteTenant(tenant.id); }}
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        )}
                     </div>
                 </div>
 
@@ -376,13 +469,21 @@ const TenantPage = () => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Room ID:</label>
-                                <input
-                                    type="number"
+                                <label>Room:</label>
+                                <select
                                     value={newTenant.roomId}
-                                    onChange={(e) => setNewTenant({...newTenant, roomId: e.target.value})}
-                                    placeholder="Enter room ID"
-                                />
+                                    onChange={async (e) => {
+                                        const roomId = parseInt(e.target.value);
+                                        setNewTenant({ ...newTenant, roomId });
+                                        await loadAvailableBeds(roomId);
+                                    }}
+                                >
+                                    {availableRooms.map((room) => (
+                                        <option key={room.id} value={room.id}>
+                                            Room {room.roomNumber} — Floor {room.floor}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                             <div className="form-group">
                                 <label>Bed Number:</label>
@@ -390,7 +491,10 @@ const TenantPage = () => {
                                     value={newTenant.bedNumber}
                                     onChange={(e) => setNewTenant({...newTenant, bedNumber: parseInt(e.target.value)})}
                                 >
-                                    {[1, 2, 3, 4].map(num => (
+                                    {availableBeds.length === 0 && (
+                                        <option value="">No beds available</option>
+                                    )}
+                                    {availableBeds.map(num => (
                                         <option key={num} value={num}>Bed {num}</option>
                                     ))}
                                 </select>

@@ -15,9 +15,10 @@ export const tenantService = {
     },
 
     // Get all tenants 
-    getAllTenants: async () => {
+    getAllTenants: async (floor) => {
         try {
-            const response = await apiService.get(`${API_BASE_URL}/tenants`);
+            const params = floor && floor !== 'all' ? `?floor=${encodeURIComponent(floor)}` : '';
+            const response = await apiService.get(`${API_BASE_URL}/tenants${params}`);
             return response.data;
         } catch (error) {
             console.error('Error fetching all tenants:', error);

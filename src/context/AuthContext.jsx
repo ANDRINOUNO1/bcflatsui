@@ -22,11 +22,20 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       authService.validateToken(token)
         .then(userData => {
-          setUser(userData)
-          setIsAuthenticated(true)
+          if (userData) {
+            setUser(userData)
+            setIsAuthenticated(true)
+          } else {
+            localStorage.removeItem('token')
+            setUser(null)
+            setIsAuthenticated(false)
+          }
         })
-        .catch(() => {
+        .catch((error) => {
+          console.error('Token validation failed:', error)
           localStorage.removeItem('token')
+          setUser(null)
+          setIsAuthenticated(false)
         })
         .finally(() => {
           setLoading(false)
@@ -85,6 +94,33 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const refreshAuth = async () => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      try {
+        const userData = await authService.validateToken(token)
+        if (userData) {
+          setUser(userData)
+          setIsAuthenticated(true)
+          return true
+        } else {
+          // Token is invalid
+          localStorage.removeItem('token')
+          setUser(null)
+          setIsAuthenticated(false)
+          return false
+        }
+      } catch (error) {
+        console.error('Token refresh failed:', error)
+        localStorage.removeItem('token')
+        setUser(null)
+        setIsAuthenticated(false)
+        return false
+      }
+    }
+    return false
+  }
+
   const value = {
     user,
     isAuthenticated,
@@ -92,7 +128,8 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     register,
-    updateProfile
+    updateProfile,
+    refreshAuth
   }
 
   return (

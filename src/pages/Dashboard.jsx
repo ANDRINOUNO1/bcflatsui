@@ -7,7 +7,7 @@ import TenantPage from './TenantPage'
 import '../components/Dashboard.css'
 
 const Dashboard = () => {
-  const { user, logout } = useAuth()
+  const { user, logout, isAuthenticated } = useAuth()
   const [stats, setStats] = useState({
     totalRooms: 0,
     occupiedRooms: 0,
@@ -16,17 +16,30 @@ const Dashboard = () => {
   })
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('dashboard')
+  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true)
+        console.log('🔐 Dashboard: Authentication status:', isAuthenticated)
+        console.log('🔐 Dashboard: Token in localStorage:', !!localStorage.getItem('token'))
         
-        // Fetch room and tenant statistics
+
+        if (!isAuthenticated) {
+          console.log(' Dashboard: Not authenticated, skipping data fetch')
+          setLoading(false)
+          return
+        }
+        
+        console.log(' Dashboard: Fetching statistics...')
         const [roomStats, tenantStats] = await Promise.all([
           roomService.getRoomStats(),
           tenantService.getTenantStats()
         ])
+
+        console.log('📊 Dashboard: Room stats:', roomStats)
+        console.log('📊 Dashboard: Tenant stats:', tenantStats)
 
         setStats({
           totalRooms: roomStats.totalRooms,
@@ -35,14 +48,23 @@ const Dashboard = () => {
           maintenanceRequests: roomStats.maintenanceRooms
         })
       } catch (error) {
-        console.error('Failed to fetch dashboard stats:', error)
+        console.error('❌ Dashboard: Failed to fetch stats:', error)
+        // If it's an auth error, don't redirect - just show empty stats
+        if (error.response?.status === 401) {
+          console.log('🔄 Dashboard: Auth error, showing empty stats')
+        }
       } finally {
         setLoading(false)
       }
     }
 
-    fetchDashboardData()
-  }, [])
+    // Fetch data when authentication status changes
+    if (isAuthenticated) {
+      fetchDashboardData()
+    } else {
+      setLoading(false)
+    }
+  }, [isAuthenticated])
 
   const handleLogout = () => {
     logout()
@@ -135,12 +157,28 @@ const Dashboard = () => {
     )
   }
 
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="dashboard">
+        <div className="loading">Redirecting to login...</div>
+      </div>
+    )
+  }
+
   return (
-    <div className="dashboard">
+    <div className={`dashboard ${sidebarOpen ? '' : 'sidebar-collapsed'}`}>
       {/* Header */}
       <header className="dashboard-header">
         <div className="header-content">
           <div className="header-left">
+            <button
+              className="sidebar-toggle"
+              onClick={() => setSidebarOpen((v) => !v)}
+              aria-label="Toggle navigation"
+            >
+              ☰
+            </button>
             <div className="logo">
               <span className="logo-icon">🏢</span>
               <span className="logo-text">BCFlats Management</span>
@@ -157,7 +195,7 @@ const Dashboard = () => {
 
       <div className="dashboard-content">
         {/* Sidebar */}
-        <aside className="dashboard-sidebar">
+        <aside className={`dashboard-sidebar ${sidebarOpen ? 'open' : 'collapsed'}`}>
           <nav className="sidebar-nav">
             {navigationItems.map((item) => (
               <button
@@ -190,14 +228,20 @@ const Dashboard = () => {
           </div>
         </aside>
 
-        {/* Main Content */}
-        <main className="dashboard-main-content">
-          {renderContent()}
-        </main>
+        {/* Mobile overlay */}
+        {sidebarOpen && (
+          <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>
+        )}
+
+                 {/* Main Content */}
+         <main className="dashboard-main-content">
+           {renderContent()}
+         </main>
       </div>
     </div>
   )
 }
 
 export default Dashboard
+
 
