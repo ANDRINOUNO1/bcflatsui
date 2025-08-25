@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { tenantService } from '../services/tenantService';
+import { roomService } from '../services/roomService';
 import '../components/Tenants.css';
 
 const TenantPage = () => {
@@ -9,6 +10,8 @@ const TenantPage = () => {
     const [selectedTenant, setSelectedTenant] = useState(null);
     const [showAddTenant, setShowAddTenant] = useState(false);
     const [stats, setStats] = useState(null);
+    const [availableRooms, setAvailableRooms] = useState([]);
+    const [availableBeds, setAvailableBeds] = useState([1, 2, 3, 4]);
     const [newTenant, setNewTenant] = useState({
         accountId: '',
         roomId: '',
@@ -25,11 +28,12 @@ const TenantPage = () => {
         fetchStats();
     }, []);
 
-    const fetchTenants = async () => {
+    const fetchTenants = async (floorArg) => {
         try {
             setLoading(true);
             console.log('👥 TenantPage: Fetching tenants...');
-            const tenantsData = await tenantService.getAllTenants(floorFilter === 'all' ? undefined : floorFilter);
+            const effectiveFloor = floorArg !== undefined ? floorArg : floorFilter;
+            const tenantsData = await tenantService.getAllTenants(effectiveFloor === 'all' ? undefined : effectiveFloor);
             console.log('👥 TenantPage: Tenants fetched successfully:', tenantsData.length);
             setTenants(tenantsData);
         } catch (error) {
@@ -58,6 +62,36 @@ const TenantPage = () => {
 
     const handleTenantClick = (tenant) => {
         setSelectedTenant(tenant);
+    };
+
+    const openAddTenantModal = async () => {
+        try {
+            setShowAddTenant(true);
+            const rooms = await roomService.getAvailableRooms();
+            setAvailableRooms(rooms);
+            if (rooms.length > 0) {
+                const firstRoomId = rooms[0].id;
+                setNewTenant((prev) => ({ ...prev, roomId: firstRoomId }));
+                await loadAvailableBeds(firstRoomId);
+            } else {
+                setAvailableBeds([]);
+            }
+        } catch (error) {
+            console.error('Error loading available rooms:', error);
+        }
+    };
+
+    const loadAvailableBeds = async (roomId) => {
+        try {
+            const bedStatus = await roomService.getRoomBedStatus(roomId);
+            const freeBeds = bedStatus.bedStatus
+                .filter(b => b.status === 'Available')
+                .map(b => b.bedNumber);
+            setAvailableBeds(freeBeds);
+        } catch (error) {
+            console.error('Error loading bed options:', error);
+            setAvailableBeds([1, 2, 3, 4]);
+        }
     };
 
     const handleAddTenant = async () => {
@@ -153,7 +187,7 @@ const TenantPage = () => {
                     <select
                         id="tenantFloorFilter"
                         value={floorFilter}
-                        onChange={async (e) => { setFloorFilter(e.target.value); await fetchTenants(); }}
+                        onChange={async (e) => { const val = e.target.value; setFloorFilter(val); await fetchTenants(val); }}
                     >
                         <option value="all">All Floors</option>
                         {floors.map(f => (
@@ -200,7 +234,7 @@ const TenantPage = () => {
                 <div className="tenants-list">
                     <div className="list-header">
                         <h3>All Tenants</h3>
-                        <button className="add-tenant-btn" onClick={() => setShowAddTenant(true)}>
+                        <button className="add-tenant-btn" onClick={openAddTenantModal}>
                             + Add Tenant
                         </button>
                     </div>
@@ -410,13 +444,21 @@ const TenantPage = () => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Room ID:</label>
-                                <input
-                                    type="number"
+                                <label>Room:</label>
+                                <select
                                     value={newTenant.roomId}
-                                    onChange={(e) => setNewTenant({...newTenant, roomId: e.target.value})}
-                                    placeholder="Enter room ID"
-                                />
+                                    onChange={async (e) => {
+                                        const roomId = parseInt(e.target.value);
+                                        setNewTenant({ ...newTenant, roomId });
+                                        await loadAvailableBeds(roomId);
+                                    }}
+                                >
+                                    {availableRooms.map((room) => (
+                                        <option key={room.id} value={room.id}>
+                                            Room {room.roomNumber} — Floor {room.floor}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                             <div className="form-group">
                                 <label>Bed Number:</label>
@@ -424,7 +466,10 @@ const TenantPage = () => {
                                     value={newTenant.bedNumber}
                                     onChange={(e) => setNewTenant({...newTenant, bedNumber: parseInt(e.target.value)})}
                                 >
-                                    {[1, 2, 3, 4].map(num => (
+                                    {availableBeds.length === 0 && (
+                                        <option value="">No beds available</option>
+                                    )}
+                                    {availableBeds.map(num => (
                                         <option key={num} value={num}>Bed {num}</option>
                                     ))}
                                 </select>
