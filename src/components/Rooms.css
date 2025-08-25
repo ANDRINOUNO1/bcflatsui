@@ -206,7 +206,7 @@
 
 .room-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 15px;
     margin-bottom: 25px;
 }
@@ -242,7 +242,7 @@
 
 .beds-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 15px;
 }
 
@@ -320,6 +320,11 @@
     max-width: 500px;
     max-height: 90vh;
     overflow-y: auto;
+}
+
+.modal-large {
+    max-width: 1200px;
+    width: 96%;
 }
 
 .modal-header {

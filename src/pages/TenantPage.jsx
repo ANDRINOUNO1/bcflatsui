@@ -12,6 +12,7 @@ const TenantPage = () => {
     const [stats, setStats] = useState(null);
     const [availableRooms, setAvailableRooms] = useState([]);
     const [availableBeds, setAvailableBeds] = useState([1, 2, 3, 4]);
+    const [floorsList, setFloorsList] = useState([]);
     const [newTenant, setNewTenant] = useState({
         accountId: '',
         roomId: '',
@@ -26,6 +27,7 @@ const TenantPage = () => {
     useEffect(() => {
         fetchTenants();
         fetchStats();
+        loadFloors();
     }, []);
 
     const fetchTenants = async (floorArg) => {
@@ -48,8 +50,25 @@ const TenantPage = () => {
         }
     };
 
-    const floors = Array.from(new Set(tenants.map(t => t.room?.floor))).filter(f => f !== undefined).sort((a, b) => a - b);
+    // Floors come from rooms to keep dropdown stable even if tenant list is empty
+    const floors = floorsList;
     const filteredTenants = tenants; // server-side filtering when floor selected
+
+    const loadFloors = async () => {
+        try {
+            const rooms = await roomService.getAllRooms('all');
+            const uniqueFloors = Array.from(new Set(rooms.map(r => r.floor)))
+                .filter(f => f !== undefined && f !== null)
+                .sort((a, b) => a - b);
+            setFloorsList(uniqueFloors);
+            // If current selection is no longer valid, reset to 'all'
+            if (floorFilter !== 'all' && !uniqueFloors.includes(parseInt(floorFilter))) {
+                setFloorFilter('all');
+            }
+        } catch (error) {
+            console.error('Error loading floors:', error);
+        }
+    };
 
     const fetchStats = async () => {
         try {
@@ -239,6 +258,11 @@ const TenantPage = () => {
                         </button>
                     </div>
                     <div className="tenants-table-wrapper">
+                        {filteredTenants.length === 0 ? (
+                            <div className="tenants-empty">
+                                <p>No tenants found for the selected filter.</p>
+                            </div>
+                        ) : (
                         <table className="tenants-table">
                             <thead>
                                 <tr>
@@ -304,6 +328,7 @@ const TenantPage = () => {
                                 ))}
                             </tbody>
                         </table>
+                        )}
                     </div>
                 </div>
 

@@ -7,7 +7,7 @@ import TenantPage from './TenantPage'
 import '../components/Dashboard.css'
 
 const Dashboard = () => {
-  const { user, logout, isAuthenticated, refreshAuth } = useAuth()
+  const { user, logout, isAuthenticated } = useAuth()
   const [stats, setStats] = useState({
     totalRooms: 0,
     occupiedRooms: 0,
@@ -16,6 +16,7 @@ const Dashboard = () => {
   })
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('dashboard')
+  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -24,7 +25,7 @@ const Dashboard = () => {
         console.log('🔐 Dashboard: Authentication status:', isAuthenticated)
         console.log('🔐 Dashboard: Token in localStorage:', !!localStorage.getItem('token'))
         
-        // Only fetch data if we're authenticated
+
         if (!isAuthenticated) {
           console.log(' Dashboard: Not authenticated, skipping data fetch')
           setLoading(false)
@@ -166,11 +167,18 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="dashboard">
+    <div className={`dashboard ${sidebarOpen ? '' : 'sidebar-collapsed'}`}>
       {/* Header */}
       <header className="dashboard-header">
         <div className="header-content">
           <div className="header-left">
+            <button
+              className="sidebar-toggle"
+              onClick={() => setSidebarOpen((v) => !v)}
+              aria-label="Toggle navigation"
+            >
+              ☰
+            </button>
             <div className="logo">
               <span className="logo-icon">🏢</span>
               <span className="logo-text">BCFlats Management</span>
@@ -187,7 +195,7 @@ const Dashboard = () => {
 
       <div className="dashboard-content">
         {/* Sidebar */}
-        <aside className="dashboard-sidebar">
+        <aside className={`dashboard-sidebar ${sidebarOpen ? 'open' : 'collapsed'}`}>
           <nav className="sidebar-nav">
             {navigationItems.map((item) => (
               <button
@@ -220,6 +228,11 @@ const Dashboard = () => {
           </div>
         </aside>
 
+        {/* Mobile overlay */}
+        {sidebarOpen && (
+          <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>
+        )}
+
                  {/* Main Content */}
          <main className="dashboard-main-content">
            {renderContent()}
@@ -230,4 +243,5 @@ const Dashboard = () => {
 }
 
 export default Dashboard
+
 

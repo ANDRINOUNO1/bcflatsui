@@ -143,6 +143,12 @@
     overflow-x: auto;
 }
 
+.tenants-empty {
+    padding: 24px;
+    text-align: center;
+    color: #666;
+}
+
 .tenants-table {
     width: 100%;
     border-collapse: collapse;

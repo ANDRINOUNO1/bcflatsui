@@ -8,6 +8,7 @@ const RoomPage = () => {
     const [floorFilter, setFloorFilter] = useState('all');
     const [loading, setLoading] = useState(true);
     const [selectedRoom, setSelectedRoom] = useState(null);
+    const [showRoomDetails, setShowRoomDetails] = useState(false);
     const [showAddTenant, setShowAddTenant] = useState(false);
     const [newTenant, setNewTenant] = useState({
         accountId: '',
@@ -53,6 +54,7 @@ const RoomPage = () => {
         try {
             const bedStatus = await roomService.getRoomBedStatus(room.id);
             setSelectedRoom(bedStatus);
+            setShowRoomDetails(true);
         } catch (error) {
             console.error('Error fetching room details:', error);
         }
@@ -174,67 +176,74 @@ const RoomPage = () => {
                     ))}
                 </div>
 
-                {selectedRoom && (
-                    <div className="room-details">
-                        <div className="details-header">
-                            <h3>Room {selectedRoom.room.roomNumber} Details</h3>
-                            <button
-                                className="add-tenant-btn"
-                                onClick={() => setShowAddTenant(true)}
-                                disabled={selectedRoom.room.availableBeds === 0}
-                            >
-                                + Add Tenant
-                            </button>
-                        </div>
-
-                        <div className="room-stats">
-                            <div className="stat-item">
-                                <span className="stat-label">Status:</span>
-                                <span className="stat-value">{selectedRoom.room.status}</span>
+                {selectedRoom && showRoomDetails && (
+                    <div className="modal-overlay">
+                        <div className="modal modal-large">
+                            <div className="modal-header">
+                                <h3>Room {selectedRoom.room.roomNumber} Details</h3>
+                                <button className="close-btn" onClick={() => setShowRoomDetails(false)}>×</button>
                             </div>
-                            <div className="stat-item">
-                                <span className="stat-label">Total Beds:</span>
-                                <span className="stat-value">{selectedRoom.room.totalBeds}</span>
-                            </div>
-                            <div className="stat-item">
-                                <span className="stat-label">Occupied:</span>
-                                <span className="stat-value">{selectedRoom.room.occupiedBeds}</span>
-                            </div>
-                            <div className="stat-item">
-                                <span className="stat-label">Available:</span>
-                                <span className="stat-value">{selectedRoom.room.availableBeds}</span>
-                            </div>
-                            <div className="stat-item">
-                                <span className="stat-label">Occupancy Rate:</span>
-                                <span className="stat-value">{selectedRoom.room.occupancyRate}%</span>
-                            </div>
-                        </div>
-
-                        <div className="bed-status">
-                            <h4>Bed Status</h4>
-                            <div className="beds-grid">
-                                {selectedRoom.bedStatus.map((bed) => (
-                                    <div key={bed.bedNumber} className={`bed-status-card ${bed.status.toLowerCase()}`}>
-                                        <div className="bed-number">Bed {bed.bedNumber}</div>
-                                        <div className="bed-status">{bed.status}</div>
-                                        {bed.tenant ? (
-                                            <div className="tenant-info">
-                                                <p><strong>Name:</strong> {bed.tenant.firstName} {bed.tenant.lastName}</p>
-                                                <p><strong>Email:</strong> {bed.tenant.email}</p>
-                                                <button
-                                                    className="remove-tenant-btn"
-                                                    onClick={() => handleRemoveTenant(bed.tenant.id)}
-                                                >
-                                                    Remove
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="tenant-info">
-                                                <p><strong>Available</strong></p>
-                                            </div>
-                                        )}
+                            <div className="modal-body">
+                                <div className="room-stats">
+                                    <div className="stat-item">
+                                        <span className="stat-label">Status:</span>
+                                        <span className="stat-value">{selectedRoom.room.status}</span>
                                     </div>
-                                ))}
+                                    <div className="stat-item">
+                                        <span className="stat-label">Total Beds:</span>
+                                        <span className="stat-value">{selectedRoom.room.totalBeds}</span>
+                                    </div>
+                                    <div className="stat-item">
+                                        <span className="stat-label">Occupied:</span>
+                                        <span className="stat-value">{selectedRoom.room.occupiedBeds}</span>
+                                    </div>
+                                    <div className="stat-item">
+                                        <span className="stat-label">Available:</span>
+                                        <span className="stat-value">{selectedRoom.room.availableBeds}</span>
+                                    </div>
+                                    <div className="stat-item">
+                                        <span className="stat-label">Occupancy Rate:</span>
+                                        <span className="stat-value">{selectedRoom.room.occupancyRate}%</span>
+                                    </div>
+                                </div>
+
+                                <div className="bed-status">
+                                    <h4>Bed Status</h4>
+                                    <div className="beds-grid">
+                                        {selectedRoom.bedStatus.map((bed) => (
+                                            <div key={bed.bedNumber} className={`bed-status-card ${bed.status.toLowerCase()}`}>
+                                                <div className="bed-number">Bed {bed.bedNumber}</div>
+                                                <div className="bed-status">{bed.status}</div>
+                                                {bed.tenant ? (
+                                                    <div className="tenant-info">
+                                                        <p><strong>Name:</strong> {bed.tenant.firstName} {bed.tenant.lastName}</p>
+                                                        <p><strong>Email:</strong> {bed.tenant.email}</p>
+                                                        <button
+                                                            className="remove-tenant-btn"
+                                                            onClick={() => handleRemoveTenant(bed.tenant.id)}
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="tenant-info">
+                                                        <p><strong>Available</strong></p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button className="btn-secondary" onClick={() => setShowRoomDetails(false)}>Close</button>
+                                <button
+                                    className="btn-primary"
+                                    onClick={() => { setShowAddTenant(true); }}
+                                    disabled={selectedRoom.room.availableBeds === 0}
+                                >
+                                    + Add Tenant
+                                </button>
                             </div>
                         </div>
                     </div>
