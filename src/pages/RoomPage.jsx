@@ -5,6 +5,7 @@ import '../components/Rooms.css';
 
 const RoomPage = () => {
     const [rooms, setRooms] = useState([]);
+    const [floorFilter, setFloorFilter] = useState('all');
     const [loading, setLoading] = useState(true);
     const [selectedRoom, setSelectedRoom] = useState(null);
     const [showAddTenant, setShowAddTenant] = useState(false);
@@ -26,9 +27,13 @@ const RoomPage = () => {
         try {
             setLoading(true);
             console.log(' RoomPage: Fetching rooms...');
-            const roomsData = await roomService.getAllRooms();
+            const roomsData = await roomService.getAllRooms(floorFilter === 'all' ? undefined : floorFilter);
             console.log(' RoomPage: Rooms fetched successfully:', roomsData.length);
             setRooms(roomsData);
+            if (selectedRoom) {
+                const stillExists = roomsData.some(r => r.id === selectedRoom?.room?.id || r.id === selectedRoom?.id);
+                if (!stillExists) setSelectedRoom(null);
+            }
         } catch (error) {
             console.error('❌ RoomPage: Error fetching rooms:', error);
             // Don't redirect on auth errors, just show empty state
@@ -40,6 +45,9 @@ const RoomPage = () => {
             setLoading(false);
         }
     };
+
+    const floors = Array.from(new Set(rooms.map(r => r.floor))).sort((a, b) => a - b);
+    const filteredRooms = floorFilter === 'all' ? rooms : rooms.filter(r => String(r.floor) === String(floorFilter));
 
     const handleRoomClick = async (room) => {
         try {
@@ -108,11 +116,24 @@ const RoomPage = () => {
             <div className="rooms-header">
                 <h2>🏠 Room Management</h2>
                 <p>Manage rooms and tenant assignments</p>
+                <div className="rooms-filters">
+                    <label htmlFor="floorFilter">Floor:</label>
+                    <select
+                        id="floorFilter"
+                        value={floorFilter}
+                        onChange={async (e) => { setFloorFilter(e.target.value); await fetchRooms(); }}
+                    >
+                        <option value="all">All Floors</option>
+                        {floors.map(f => (
+                            <option key={f} value={f}>Floor {f}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             <div className="rooms-content">
                 <div className="rooms-grid">
-                    {rooms.map((room) => (
+                    {filteredRooms.map((room) => (
                         <div
                             key={room.id}
                             className={`room-card ${selectedRoom?.room.id === room.id ? 'selected' : ''}`}
@@ -196,18 +217,20 @@ const RoomPage = () => {
                                     <div key={bed.bedNumber} className={`bed-status-card ${bed.status.toLowerCase()}`}>
                                         <div className="bed-number">Bed {bed.bedNumber}</div>
                                         <div className="bed-status">{bed.status}</div>
-                                        {bed.tenant && (
+                                        {bed.tenant ? (
                                             <div className="tenant-info">
                                                 <p><strong>Name:</strong> {bed.tenant.firstName} {bed.tenant.lastName}</p>
                                                 <p><strong>Email:</strong> {bed.tenant.email}</p>
-                                                <p><strong>Rent:</strong> ${bed.tenant.monthlyRent}</p>
-                                                <p><strong>Check-in:</strong> {new Date(bed.tenant.checkInDate).toLocaleDateString()}</p>
                                                 <button
                                                     className="remove-tenant-btn"
                                                     onClick={() => handleRemoveTenant(bed.tenant.id)}
                                                 >
                                                     Remove
                                                 </button>
+                                            </div>
+                                        ) : (
+                                            <div className="tenant-info">
+                                                <p><strong>Available</strong></p>
                                             </div>
                                         )}
                                     </div>

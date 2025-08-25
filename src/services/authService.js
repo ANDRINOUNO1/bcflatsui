@@ -38,13 +38,16 @@ export const authService = {
   async login(email, password) {
     try {
       const response = await api.post('/accounts/authenticate', { email, password });
-      const { token, ...user } = response.data;
-      
+      const { jwtToken, refreshToken, ...user } = response.data;
+
       // Store token and user data
-      localStorage.setItem('token', token);
+      localStorage.setItem('token', jwtToken);
       localStorage.setItem('user', JSON.stringify(user));
-      
-      return { token, user };
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken);
+      }
+
+      return { token: jwtToken, user };
     } catch (error) {
       throw new Error(error.response?.data || 'Login failed');
     }
@@ -113,6 +116,7 @@ export const authService = {
   // Logout user
   logout() {
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     window.location.href = '/login';
   },

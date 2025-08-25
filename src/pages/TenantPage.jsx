@@ -4,6 +4,7 @@ import '../components/Tenants.css';
 
 const TenantPage = () => {
     const [tenants, setTenants] = useState([]);
+    const [floorFilter, setFloorFilter] = useState('all');
     const [loading, setLoading] = useState(true);
     const [selectedTenant, setSelectedTenant] = useState(null);
     const [showAddTenant, setShowAddTenant] = useState(false);
@@ -28,7 +29,7 @@ const TenantPage = () => {
         try {
             setLoading(true);
             console.log('👥 TenantPage: Fetching tenants...');
-            const tenantsData = await tenantService.getAllTenants();
+            const tenantsData = await tenantService.getAllTenants(floorFilter === 'all' ? undefined : floorFilter);
             console.log('👥 TenantPage: Tenants fetched successfully:', tenantsData.length);
             setTenants(tenantsData);
         } catch (error) {
@@ -42,6 +43,9 @@ const TenantPage = () => {
             setLoading(false);
         }
     };
+
+    const floors = Array.from(new Set(tenants.map(t => t.room?.floor))).filter(f => f !== undefined).sort((a, b) => a - b);
+    const filteredTenants = tenants; // server-side filtering when floor selected
 
     const fetchStats = async () => {
         try {
@@ -144,6 +148,19 @@ const TenantPage = () => {
             <div className="tenants-header">
                 <h2>👥 Tenant Management</h2>
                 <p>Manage student tenants and their room assignments</p>
+                <div className="tenants-filters">
+                    <label htmlFor="tenantFloorFilter">Floor:</label>
+                    <select
+                        id="tenantFloorFilter"
+                        value={floorFilter}
+                        onChange={async (e) => { setFloorFilter(e.target.value); await fetchTenants(); }}
+                    >
+                        <option value="all">All Floors</option>
+                        {floors.map(f => (
+                            <option key={f} value={f}>Floor {f}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             {stats && (
@@ -187,62 +204,72 @@ const TenantPage = () => {
                             + Add Tenant
                         </button>
                     </div>
-                    <div className="tenants-grid">
-                        {tenants.map((tenant) => (
-                            <div
-                                key={tenant.id}
-                                className={`tenant-card ${selectedTenant?.id === tenant.id ? 'selected' : ''}`}
-                                onClick={() => handleTenantClick(tenant)}
-                                style={{ borderColor: getStatusColor(tenant.status) }}
-                            >
-                                <div className="tenant-header">
-                                    <h4>{tenant.account.firstName} {tenant.account.lastName}</h4>
-                                    <span className={`status-badge ${tenant.status.toLowerCase().replace(' ', '-')}`}>
-                                        {tenant.status}
-                                    </span>
-                                </div>
-                                <div className="tenant-info">
-                                    <p><strong>Email:</strong> {tenant.account.email}</p>
-                                    <p><strong>Room:</strong> {tenant.room.roomNumber}</p>
-                                    <p><strong>Bed:</strong> {tenant.bedNumber}</p>
-                                    <p><strong>Rent:</strong> ${tenant.monthlyRent}</p>
-                                    <p><strong>Check-in:</strong> {new Date(tenant.checkInDate).toLocaleDateString()}</p>
-                                </div>
-                                <div className="tenant-actions">
-                                    {tenant.status === 'Pending' && (
-                                        <button
-                                            className="action-btn checkin-btn"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleCheckIn(tenant.id);
-                                            }}
-                                        >
-                                            Check In
-                                        </button>
-                                    )}
-                                    {tenant.status === 'Active' && (
-                                        <button
-                                            className="action-btn checkout-btn"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleCheckOut(tenant.id);
-                                            }}
-                                        >
-                                            Check Out
-                                        </button>
-                                    )}
-                                    <button
-                                        className="action-btn delete-btn"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteTenant(tenant.id);
-                                        }}
+                    <div className="tenants-table-wrapper">
+                        <table className="tenants-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Room</th>
+                                    <th>Bed</th>
+                                    <th>Floor</th>
+                                    <th>Status</th>
+                                    <th>Check-in</th>
+                                    <th>Check-out</th>
+                                    <th>Monthly Rent</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredTenants.map((tenant) => (
+                                    <tr
+                                        key={tenant.id}
+                                        className={selectedTenant?.id === tenant.id ? 'selected' : ''}
+                                        onClick={() => handleTenantClick(tenant)}
                                     >
-                                        Delete
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                                        <td>{tenant.account.firstName} {tenant.account.lastName}</td>
+                                        <td>{tenant.account.email}</td>
+                                        <td>{tenant.room.roomNumber}</td>
+                                        <td>{tenant.bedNumber}</td>
+                                        <td>{tenant.room.floor}</td>
+                                        <td>
+                                            <span className={`status-badge ${tenant.status.toLowerCase().replace(' ', '-')}`}>
+                                                {tenant.status}
+                                            </span>
+                                        </td>
+                                        <td>{new Date(tenant.checkInDate).toLocaleDateString()}</td>
+                                        <td>{tenant.checkOutDate ? new Date(tenant.checkOutDate).toLocaleDateString() : '-'}</td>
+                                        <td>${tenant.monthlyRent}</td>
+                                        <td>
+                                            <div className="tenant-actions">
+                                                {tenant.status === 'Pending' && (
+                                                    <button
+                                                        className="action-btn checkin-btn"
+                                                        onClick={(e) => { e.stopPropagation(); handleCheckIn(tenant.id); }}
+                                                    >
+                                                        Check In
+                                                    </button>
+                                                )}
+                                                {tenant.status === 'Active' && (
+                                                    <button
+                                                        className="action-btn checkout-btn"
+                                                        onClick={(e) => { e.stopPropagation(); handleCheckOut(tenant.id); }}
+                                                    >
+                                                        Check Out
+                                                    </button>
+                                                )}
+                                                <button
+                                                    className="action-btn delete-btn"
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteTenant(tenant.id); }}
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
