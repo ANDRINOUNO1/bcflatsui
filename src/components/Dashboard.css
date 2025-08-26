@@ -89,15 +89,32 @@
   background: #c82333;
 }
 
-/* Dashboard Content Layout */
+/* Revert desktop layout padding and sidebar positioning */
 .dashboard-content {
   display: flex;
   width: 100%;
-  margin: 0 auto;
-  padding: 2rem;
-  gap: 2rem;
+  margin: 0;
+  padding: 1.5rem;
+  gap: 1.5rem;
   box-sizing: border-box;
+  min-height: calc(100vh - 80px);
 }
+
+.dashboard-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 1rem;
+  align-self: flex-start;
+  height: calc(100vh - 120px);
+  transition: transform 0.25s ease, width 0.25s ease;
+}
+
+/* Remove brand block styles (no longer used) */
+.sidebar-brand, .brand-logo, .brand-text { display: none; }
+
+/* Keep existing sidebar-nav scroll */
+.sidebar-nav { max-height: none; overflow-y: visible; }
 
 /* Sidebar */
 .dashboard-sidebar {
@@ -234,6 +251,10 @@
 .dashboard-main-content {
   flex: 1;
   min-height: 600px;
+  width: 100%;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
 }
 
 .dashboard-main {
@@ -241,6 +262,8 @@
   border-radius: 12px;
   padding: 2rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  flex: 1;
 }
 
 /* Loading */
@@ -470,41 +493,32 @@
 }
 
 /* Responsive Design */
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
   .dashboard-content {
     padding: 1rem;
+    gap: 1rem;
   }
+  
+  .dashboard-sidebar {
+    width: 240px;
+  }
+}
 
-  /* Mobile off-canvas */
+/* Mobile: keep off-canvas override */
+@media (max-width: 1024px) {
+  .dashboard-content { padding: 0; flex-direction: row; }
   .dashboard-sidebar {
     position: fixed;
     top: 64px;
     left: 0;
     height: calc(100vh - 64px);
-    z-index: 1001;
     transform: translateX(-100%);
     width: 280px;
+    padding: 1rem;
+    background: transparent;
+    z-index: 1001;
   }
-
-  .dashboard .dashboard-sidebar.open {
-    transform: translateX(0);
-  }
-
-  .sidebar-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.35);
-    z-index: 1000;
-    display: none;
-  }
-
-  .dashboard .dashboard-sidebar.open + .sidebar-overlay {
-    display: block;
-  }
-
-  .recent-activity-sidebar {
-    display: none;
-  }
+  .dashboard .dashboard-sidebar.open { transform: translateX(0); }
 }
 
 @media (max-width: 768px) {

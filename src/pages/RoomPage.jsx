@@ -4,6 +4,7 @@ import { tenantService } from '../services/tenantService';
 import '../components/Rooms.css';
 
 const RoomPage = () => {
+    const [allRooms, setAllRooms] = useState([]);
     const [rooms, setRooms] = useState([]);
     const [floorFilter, setFloorFilter] = useState('all');
     const [loading, setLoading] = useState(true);
@@ -24,22 +25,33 @@ const RoomPage = () => {
         fetchRooms();
     }, []);
 
+    // Recompute visible rooms whenever filter or allRooms changes
+    useEffect(() => {
+        if (floorFilter === 'all') {
+            setRooms(allRooms);
+        } else {
+            setRooms(allRooms.filter(r => String(r.floor) === String(floorFilter)));
+        }
+    }, [floorFilter, allRooms]);
+
     const fetchRooms = async () => {
         try {
             setLoading(true);
             console.log(' RoomPage: Fetching rooms...');
-            const roomsData = await roomService.getAllRooms(floorFilter === 'all' ? undefined : floorFilter);
+            // Always fetch all rooms; filtering is client-side to avoid clearing
+            const roomsData = await roomService.getAllRooms();
             console.log(' RoomPage: Rooms fetched successfully:', roomsData.length);
-            setRooms(roomsData);
+            setAllRooms(roomsData);
+            // Keep selection if it still exists
             if (selectedRoom) {
                 const stillExists = roomsData.some(r => r.id === selectedRoom?.room?.id || r.id === selectedRoom?.id);
                 if (!stillExists) setSelectedRoom(null);
             }
         } catch (error) {
             console.error('❌ RoomPage: Error fetching rooms:', error);
-            // Don't redirect on auth errors, just show empty state
             if (error.response?.status === 401) {
                 console.log(' RoomPage: Authentication error, showing empty state');
+                setAllRooms([]);
                 setRooms([]);
             }
         } finally {
@@ -47,8 +59,8 @@ const RoomPage = () => {
         }
     };
 
-    const floors = Array.from(new Set(rooms.map(r => r.floor))).sort((a, b) => a - b);
-    const filteredRooms = floorFilter === 'all' ? rooms : rooms.filter(r => String(r.floor) === String(floorFilter));
+    const floors = Array.from(new Set(allRooms.map(r => r.floor))).sort((a, b) => a - b);
+    const filteredRooms = floorFilter === 'all' ? rooms : rooms; // rooms already filtered via effect
 
     const handleRoomClick = async (room) => {
         try {
@@ -78,8 +90,9 @@ const RoomPage = () => {
                 emergencyContact: { name: '', phone: '', relationship: '' },
                 specialRequirements: ''
             });
-            fetchRooms();
-            handleRoomClick(rooms.find(r => r.id === selectedRoom.room.id));
+            await fetchRooms();
+            const refreshed = (allRooms.find(r => r.id === selectedRoom.room.id));
+            if (refreshed) handleRoomClick(refreshed);
         } catch (error) {
             console.error('Error adding tenant:', error);
             alert('Error adding tenant: ' + error.message);
@@ -91,8 +104,9 @@ const RoomPage = () => {
 
         try {
             await roomService.removeTenantFromRoom(selectedRoom.room.id, tenantId);
-            fetchRooms();
-            handleRoomClick(rooms.find(r => r.id === selectedRoom.room.id));
+            await fetchRooms();
+            const refreshed = (allRooms.find(r => r.id === selectedRoom.room.id));
+            if (refreshed) handleRoomClick(refreshed);
         } catch (error) {
             console.error('Error removing tenant:', error);
             alert('Error removing tenant: ' + error.message);
@@ -123,7 +137,7 @@ const RoomPage = () => {
                     <select
                         id="floorFilter"
                         value={floorFilter}
-                        onChange={async (e) => { setFloorFilter(e.target.value); await fetchRooms(); }}
+                        onChange={(e) => setFloorFilter(e.target.value)}
                     >
                         <option value="all">All Floors</option>
                         {floors.map(f => (
