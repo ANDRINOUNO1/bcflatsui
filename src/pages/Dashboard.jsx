@@ -49,7 +49,6 @@ const Dashboard = () => {
         })
       } catch (error) {
         console.error('❌ Dashboard: Failed to fetch stats:', error)
-        // If it's an auth error, don't redirect - just show empty stats
         if (error.response?.status === 401) {
           console.log('🔄 Dashboard: Auth error, showing empty stats')
         }
@@ -58,7 +57,6 @@ const Dashboard = () => {
       }
     }
 
-    // Fetch data when authentication status changes
     if (isAuthenticated) {
       fetchDashboardData()
     } else {
@@ -157,7 +155,6 @@ const Dashboard = () => {
     )
   }
 
-  // Redirect to login if not authenticated
   if (!isAuthenticated) {
     return (
       <div className="dashboard">
@@ -184,7 +181,7 @@ const Dashboard = () => {
               <span className="logo-text">BCFlats Management</span>
             </div>
           </div>
-          <div className="user-info">
+          <div className="user-info header-user-info">
             <span className="user-email">{user?.email}</span>
             <button onClick={handleLogout} className="logout-btn">
               Logout
@@ -196,8 +193,16 @@ const Dashboard = () => {
       <div className="dashboard-content">
         {/* Sidebar */}
         <aside className={`dashboard-sidebar ${sidebarOpen ? 'open' : 'collapsed'}`}>
+          <div className="sidebar-profile">
+            <div className="avatar">👤</div>
+            <div className="profile-meta">
+              <div className="name">{user?.email?.split('@')[0] || 'User'}</div>
+              <div className="email">{user?.email}</div>
+            </div>
+            <button className="logout-btn small" onClick={handleLogout}>Logout</button>
+          </div>
           <nav className="sidebar-nav">
-            {navigationItems.map((item) => (
+            {navigationItems.filter(i => i.id !== 'help').map((item) => (
               <button
                 key={item.id}
                 className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
@@ -207,28 +212,21 @@ const Dashboard = () => {
                 <span className="nav-label">{item.label}</span>
               </button>
             ))}
-          </nav>
-          
-          <div className="recent-activity-sidebar">
-            <h3>System Status</h3>
-            <div className="status-indicators">
-              <div className="status-item">
-                <span className="status-dot online"></span>
-                <span>Backend Connected</span>
-              </div>
-              <div className="status-item">
-                <span className="status-dot online"></span>
-                <span>Database Active</span>
-              </div>
-              <div className="status-item">
-                <span className="status-dot online"></span>
-                <span>Authentication Ready</span>
-              </div>
+            <div className="sidebar-footer">
+              {navigationItems.filter(i => i.id === 'help').map((item) => (
+                <button
+                  key={item.id}
+                  className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
+                  onClick={() => setActiveTab(item.id)}
+                >
+                  <span className="nav-icon">{item.icon}</span>
+                  <span className="nav-label">{item.label}</span>
+                </button>
+              ))}
             </div>
-          </div>
+          </nav>
         </aside>
 
-        {/* Mobile overlay */}
         {sidebarOpen && (
           <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>
         )}
