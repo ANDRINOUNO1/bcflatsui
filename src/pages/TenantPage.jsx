@@ -15,6 +15,8 @@ const TenantPage = () => {
     const [floorsList, setFloorsList] = useState([]);
     const [newTenant, setNewTenant] = useState({
         accountId: '',
+        email: '',
+        password: '',
         roomId: '',
         bedNumber: 1,
         monthlyRent: '',
@@ -114,16 +116,30 @@ const TenantPage = () => {
     };
 
     const handleAddTenant = async () => {
-        if (!newTenant.accountId || !newTenant.roomId || !newTenant.monthlyRent) {
-            alert('Please fill in all required fields');
+        const hasAccountId = !!newTenant.accountId;
+        const hasCreds = newTenant.email && newTenant.password && newTenant.password.length >= 6;
+        if ((!hasAccountId && !hasCreds) || !newTenant.roomId || !newTenant.monthlyRent) {
+            alert('Please provide Account ID or Email + Password (6+ chars), Room and Monthly Rent');
             return;
         }
 
         try {
-            await tenantService.createTenant(newTenant);
+            const payload = {
+                ...newTenant,
+                accountId: newTenant.accountId ? parseInt(newTenant.accountId) : undefined,
+                roomId: newTenant.roomId ? parseInt(newTenant.roomId) : undefined,
+                bedNumber: newTenant.bedNumber ? parseInt(newTenant.bedNumber) : 1,
+            };
+            // If creating via email/password, ensure accountId is not sent
+            if (hasCreds) {
+                delete payload.accountId;
+            }
+            await tenantService.createTenant(payload);
             setShowAddTenant(false);
             setNewTenant({
                 accountId: '',
+                email: '',
+                password: '',
                 roomId: '',
                 bedNumber: 1,
                 monthlyRent: '',
@@ -136,7 +152,8 @@ const TenantPage = () => {
             fetchStats();
         } catch (error) {
             console.error('Error adding tenant:', error);
-            alert('Error adding tenant: ' + error.message);
+            const msg = error.response?.data?.message || error.message || 'Unknown error';
+            alert('Error adding tenant: ' + msg);
         }
     };
 
@@ -166,19 +183,33 @@ const TenantPage = () => {
         }
     };
 
-    const handleDeleteTenant = async (tenantId) => {
-        if (!confirm('Are you sure you want to delete this tenant?')) return;
+    const handleDeleteTenant = async (tenant) => {
+        // If tenant is active, offer to check out first (backend blocks deletion otherwise)
+        if (tenant.status === 'Active') {
+            const proceed = confirm('This tenant is currently Active. Do you want to check them out and delete?');
+            if (!proceed) return;
+            try {
+                await tenantService.checkOutTenant(tenant.id);
+            } catch (error) {
+                const msg = error.response?.data?.message || error.message || 'Unknown error';
+                alert('Error checking out tenant before delete: ' + msg);
+                return;
+            }
+        } else {
+            if (!confirm('Are you sure you want to delete this tenant?')) return;
+        }
 
         try {
-            await tenantService.deleteTenant(tenantId);
+            await tenantService.deleteTenant(tenant.id);
             fetchTenants();
             fetchStats();
-            if (selectedTenant && selectedTenant.id === tenantId) {
+            if (selectedTenant && selectedTenant.id === tenant.id) {
                 setSelectedTenant(null);
             }
         } catch (error) {
             console.error('Error deleting tenant:', error);
-            alert('Error deleting tenant: ' + error.message);
+            const msg = error.response?.data?.message || error.message || 'Unknown error';
+            alert('Error deleting tenant: ' + msg);
         }
     };
 
@@ -318,7 +349,7 @@ const TenantPage = () => {
                                                 )}
                                                 <button
                                                     className="action-btn delete-btn"
-                                                    onClick={(e) => { e.stopPropagation(); handleDeleteTenant(tenant.id); }}
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteTenant(tenant); }}
                                                 >
                                                     Delete
                                                 </button>
@@ -333,11 +364,14 @@ const TenantPage = () => {
                 </div>
 
                 {selectedTenant && (
-                    <div className="tenant-details">
-                        <div className="details-header">
-                            <h3>Tenant Details</h3>
-                        </div>
-                        <div className="tenant-profile">
+                    <div className="modal-overlay" onClick={() => setSelectedTenant(null)}>
+                        <div className="modal modal-large" onClick={(e) => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h3>Tenant Details</h3>
+                                <button className="close-btn" onClick={() => setSelectedTenant(null)}>×</button>
+                            </div>
+                            <div className="modal-body">
+                                <div className="tenant-profile">
                             <div className="profile-section">
                                 <h4>Personal Information</h4>
                                 <div className="info-grid">
@@ -445,6 +479,11 @@ const TenantPage = () => {
                                         </div>
                                     )}
                                 </div>
+                                </div>
+                            </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button className="btn-secondary" onClick={() => setSelectedTenant(null)}>Close</button>
                             </div>
                         </div>
                     </div>
@@ -460,12 +499,30 @@ const TenantPage = () => {
                         </div>
                         <div className="modal-body">
                             <div className="form-group">
-                                <label>Account ID:</label>
+                                <label>Account ID (optional):</label>
                                 <input
                                     type="number"
                                     value={newTenant.accountId}
                                     onChange={(e) => setNewTenant({...newTenant, accountId: e.target.value})}
                                     placeholder="Enter account ID"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Account Email:</label>
+                                <input
+                                    type="email"
+                                    value={newTenant.email || ''}
+                                    onChange={(e) => setNewTenant({ ...newTenant, email: e.target.value })}
+                                    placeholder="Enter tenant email"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Account Password:</label>
+                                <input
+                                    type="password"
+                                    value={newTenant.password || ''}
+                                    onChange={(e) => setNewTenant({ ...newTenant, password: e.target.value })}
+                                    placeholder="Set tenant password"
                                 />
                             </div>
                             <div className="form-group">

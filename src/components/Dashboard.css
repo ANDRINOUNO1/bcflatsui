@@ -932,7 +932,7 @@
 .dashboard-sidebar {
   overflow-y: hidden;
   overflow-x: hidden;
-  scrollbar-width: none; /* Firefox */
+  scrollbar-width: none; 
 }
 .dashboard-sidebar::-webkit-scrollbar { width: 0; height: 0; display: none; }
 

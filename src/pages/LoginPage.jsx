@@ -60,8 +60,13 @@ const LoginPage = () => {
       const result = await login(formData.email, formData.password)
       
       if (result.success) {
-        // Navigate to dashboard on successful login
-        navigate('/dashboard')
+        // Navigate based on role
+        const user = JSON.parse(localStorage.getItem('user'))
+        if (user?.role === 'Tenant') {
+          navigate('/tenant')
+        } else {
+          navigate('/dashboard')
+        }
       } else {
         setErrors({ general: result.error })
       }
