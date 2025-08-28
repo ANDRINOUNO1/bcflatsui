@@ -13,6 +13,8 @@ const RoomPage = () => {
     const [showAddTenant, setShowAddTenant] = useState(false);
     const [newTenant, setNewTenant] = useState({
         accountId: '',
+        email: '',
+        password: '',
         bedNumber: 1,
         monthlyRent: '',
         utilities: '',
@@ -72,17 +74,51 @@ const RoomPage = () => {
         }
     };
 
+    const loadAvailableBeds = async (roomId) => {
+        try {
+            const bedStatus = await roomService.getRoomBedStatus(roomId);
+            const freeBeds = bedStatus.bedStatus
+                .filter(b => b.status === 'Available')
+                .map(b => b.bedNumber);
+            return freeBeds;
+        } catch (error) {
+            console.error('Error loading bed options:', error);
+            return [1, 2, 3, 4];
+        }
+    };
+
     const handleAddTenant = async () => {
-        if (!selectedRoom || !newTenant.accountId || !newTenant.monthlyRent) {
-            alert('Please fill in all required fields');
+        const hasAccountId = !!newTenant.accountId;
+        const hasCreds = newTenant.email && newTenant.password && newTenant.password.length >= 6;
+        if ((!hasAccountId && !hasCreds) || !newTenant.monthlyRent) {
+            alert('Please provide Account ID or Email + Password (6+ chars), and Monthly Rent');
             return;
         }
 
         try {
-            await roomService.addTenantToRoom(selectedRoom.room.id, newTenant);
+            const payload = {
+                ...newTenant,
+                roomId: selectedRoom.room.id,
+                accountId: newTenant.accountId ? parseInt(newTenant.accountId) : undefined,
+                bedNumber: newTenant.bedNumber ? parseInt(newTenant.bedNumber) : 1,
+            };
+            // If creating via email/password, ensure accountId is not sent
+            if (hasCreds) {
+                delete payload.accountId;
+            }
+            
+            const result = await tenantService.createTenant(payload);
+            
+            // Store the created tenant's accountId for navigation if needed
+            if (result && result.accountId) {
+                console.log('Created tenant with accountId:', result.accountId);
+            }
+            
             setShowAddTenant(false);
             setNewTenant({
                 accountId: '',
+                email: '',
+                password: '',
                 bedNumber: 1,
                 monthlyRent: '',
                 utilities: '',
@@ -95,7 +131,8 @@ const RoomPage = () => {
             if (refreshed) handleRoomClick(refreshed);
         } catch (error) {
             console.error('Error adding tenant:', error);
-            alert('Error adding tenant: ' + error.message);
+            const msg = error.response?.data?.message || error.message || 'Unknown error';
+            alert('Error adding tenant: ' + msg);
         }
     };
 
@@ -273,7 +310,7 @@ const RoomPage = () => {
                         </div>
                         <div className="modal-body">
                             <div className="form-group">
-                                <label>Account ID:</label>
+                                <label>Account ID (optional):</label>
                                 <input
                                     type="number"
                                     value={newTenant.accountId}
@@ -282,14 +319,44 @@ const RoomPage = () => {
                                 />
                             </div>
                             <div className="form-group">
+                                <label>Account Email:</label>
+                                <input
+                                    type="email"
+                                    value={newTenant.email || ''}
+                                    onChange={(e) => setNewTenant({ ...newTenant, email: e.target.value })}
+                                    placeholder="Enter tenant email (e.g., tenant@example.com)"
+                                    pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                                    title="Please enter a valid email address"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Account Password:</label>
+                                <input
+                                    type="password"
+                                    value={newTenant.password || ''}
+                                    onChange={(e) => setNewTenant({ ...newTenant, password: e.target.value })}
+                                    placeholder="Set tenant password"
+                                />
+                            </div>
+                            <div className="form-group">
                                 <label>Bed Number:</label>
                                 <select
                                     value={newTenant.bedNumber}
                                     onChange={(e) => setNewTenant({...newTenant, bedNumber: parseInt(e.target.value)})}
                                 >
-                                    {[1, 2, 3, 4].map(num => (
-                                        <option key={num} value={num}>Bed {num}</option>
-                                    ))}
+                                    {selectedRoom && selectedRoom.bedStatus ? (
+                                        selectedRoom.bedStatus
+                                            .filter(b => b.status === 'Available')
+                                            .map(b => (
+                                                <option key={b.bedNumber} value={b.bedNumber}>
+                                                    Bed {b.bedNumber}
+                                                </option>
+                                            ))
+                                    ) : (
+                                        [1, 2, 3, 4].map(num => (
+                                            <option key={num} value={num}>Bed {num}</option>
+                                        ))
+                                    )}
                                 </select>
                             </div>
                             <div className="form-group">

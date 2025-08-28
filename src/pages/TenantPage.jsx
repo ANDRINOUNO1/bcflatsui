@@ -130,11 +130,16 @@ const TenantPage = () => {
                 roomId: newTenant.roomId ? parseInt(newTenant.roomId) : undefined,
                 bedNumber: newTenant.bedNumber ? parseInt(newTenant.bedNumber) : 1,
             };
-            // If creating via email/password, ensure accountId is not sent
+            
             if (hasCreds) {
                 delete payload.accountId;
             }
-            await tenantService.createTenant(payload);
+            const result = await tenantService.createTenant(payload);
+            
+           
+            if (result && result.accountId) {
+                console.log('Created tenant with accountId:', result.accountId);
+            }
             setShowAddTenant(false);
             setNewTenant({
                 accountId: '',
@@ -513,7 +518,9 @@ const TenantPage = () => {
                                     type="email"
                                     value={newTenant.email || ''}
                                     onChange={(e) => setNewTenant({ ...newTenant, email: e.target.value })}
-                                    placeholder="Enter tenant email"
+                                    placeholder="Enter tenant email (e.g., tenant@example.com)"
+                                    pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                                    title="Please enter a valid email address"
                                 />
                             </div>
                             <div className="form-group">

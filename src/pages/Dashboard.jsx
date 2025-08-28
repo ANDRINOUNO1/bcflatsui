@@ -181,12 +181,6 @@ const Dashboard = () => {
               <span className="logo-text">BCFlats Management</span>
             </div>
           </div>
-          <div className="user-info header-user-info">
-            <span className="user-email">{user?.email}</span>
-            <button onClick={handleLogout} className="logout-btn">
-              Logout
-            </button>
-          </div>
         </div>
       </header>
 

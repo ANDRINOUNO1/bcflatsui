@@ -14,6 +14,16 @@ export const maintenanceService = {
   setStatus: async (id, status) => {
     const res = await apiService.patch(`${API_BASE_URL}/maintenance/${id}/status`, { status });
     return res.data;
+  },
+  
+  listByTenant: async (tenantId) => {
+    try {
+      const res = await apiService.get(`${API_BASE_URL}/maintenance/tenant/${tenantId}`);
+      return res.data;
+    } catch (error) {
+      console.error('Error fetching maintenance requests by tenant:', error);
+      return [];
+    }
   }
 };
 

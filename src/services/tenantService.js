@@ -134,5 +134,16 @@ export const tenantService = {
             console.error('Error fetching tenants by room:', error);
             throw error;
         }
+    },
+
+    // Get tenant by account ID
+    getTenantByAccountId: async (accountId) => {
+        try {
+            const response = await apiService.get(`${API_BASE_URL}/tenants/search/account/${accountId}`);
+            return response.data.length > 0 ? response.data[0] : null;
+        } catch (error) {
+            console.error('Error fetching tenant by account ID:', error);
+            throw error;
+        }
     }
 };
