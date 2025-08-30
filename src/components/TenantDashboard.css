@@ -326,79 +326,139 @@
   border-left: 4px solid #667eea;
 }
 
+/* Maintenance Request Styles */
 .recent-requests {
-  margin-top: 2rem;
+  margin-top: 1.5rem;
   padding-top: 1.5rem;
-  border-top: 2px solid rgba(102, 126, 234, 0.1);
+  border-top: 1px solid #e1e5e9;
 }
 
 .recent-requests h4 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
   font-size: 1.1rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin: 0 0 1rem 0;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  font-weight: 600;
 }
 
 .requests-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .request-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  background: rgba(255, 255, 255, 0.8);
+  background: #f8f9fa;
   border-radius: 12px;
-  border: 1px solid rgba(102, 126, 234, 0.1);
+  padding: 1rem;
+  border: 1px solid #e1e5e9;
   transition: all 0.3s ease;
 }
 
 .request-item:hover {
-  background: rgba(255, 255, 255, 0.95);
+  background: #e9ecef;
   transform: translateX(4px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.request-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
 }
 
 .request-title {
   font-weight: 600;
-  color: #1a1a1a;
-  font-size: 0.9rem;
+  color: #2c3e50;
+  font-size: 0.95rem;
 }
 
 .request-status {
-  padding: 0.375rem 0.75rem;
-  border-radius: 20px;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  color: white;
 }
 
-.status-pending {
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  color: #92400e;
+.request-status.status-open {
+  background: #ffc107;
 }
 
-.status-in-progress {
-  background: linear-gradient(135deg, #dbeafe, #93c5fd);
-  color: #1e40af;
+.request-status.status-in-progress {
+  background: #17a2b8;
 }
 
-.status-completed {
-  background: linear-gradient(135deg, #d1fae5, #6ee7b7);
-  color: #065f46;
+.request-status.status-resolved {
+  background: #28a745;
 }
 
-.status-cancelled {
-  background: linear-gradient(135deg, #fee2e2, #fca5a5);
-  color: #991b1b;
+.request-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.request-description {
+  color: #6c757d;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.request-priority {
+  color: #495057;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.request-date {
+  color: #6c757d;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-primary, .btn-secondary {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(102, 126, 234, 0.3);
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #545b62;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(108, 117, 125, 0.3);
 }
 
 /* Loading and Error States */

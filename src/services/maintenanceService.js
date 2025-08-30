@@ -24,6 +24,27 @@ export const maintenanceService = {
       console.error('Error fetching maintenance requests by tenant:', error);
       return [];
     }
+  },
+
+  // New functions for admin dashboard
+  getStats: async () => {
+    try {
+      const res = await apiService.get(`${API_BASE_URL}/maintenance/stats`);
+      return res.data;
+    } catch (error) {
+      console.error('Error fetching maintenance stats:', error);
+      return { pending: 0, inProgress: 0, resolved: 0, total: 0 };
+    }
+  },
+
+  updateStatus: async (id, status) => {
+    try {
+      const res = await apiService.patch(`${API_BASE_URL}/maintenance/${id}/status`, { status });
+      return res.data;
+    } catch (error) {
+      console.error('Error updating maintenance status:', error);
+      throw error;
+    }
   }
 };
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { roomService } from '../services/roomService'
 import { tenantService } from '../services/tenantService'
+import { maintenanceService } from '../services/maintenanceService'
 import RoomPage from './RoomPage'
 import TenantPage from './TenantPage'
 import '../components/Dashboard.css'
@@ -16,9 +17,17 @@ const Dashboard = () => {
     occupancyRate: 0,
     availableRooms: 0
   })
+  const [maintenanceStats, setMaintenanceStats] = useState({
+    pending: 0,
+    inProgress: 0,
+    resolved: 0,
+    total: 0
+  })
+  const [maintenanceRequests, setMaintenanceRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [maintenanceFilter, setMaintenanceFilter] = useState('all')
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -35,13 +44,15 @@ const Dashboard = () => {
         }
         
         console.log(' Dashboard: Fetching statistics...')
-        const [roomStats, tenantStats] = await Promise.all([
+        const [roomStats, tenantStats, maintenanceStatsData] = await Promise.all([
           roomService.getRoomStats(),
-          tenantService.getTenantStats()
+          tenantService.getTenantStats(),
+          maintenanceService.getStats()
         ])
 
         console.log('📊 Dashboard: Room stats:', roomStats)
         console.log('📊 Dashboard: Tenant stats:', tenantStats)
+        console.log('📊 Dashboard: Maintenance stats:', maintenanceStatsData)
 
         setStats({
           totalRooms: roomStats.totalRooms,
@@ -51,6 +62,8 @@ const Dashboard = () => {
           occupancyRate: roomStats.occupancyRate,
           availableRooms: roomStats.availableRooms
         })
+
+        setMaintenanceStats(maintenanceStatsData)
       } catch (error) {
         console.error('❌ Dashboard: Failed to fetch stats:', error)
         if (error.response?.status === 401) {
@@ -68,14 +81,71 @@ const Dashboard = () => {
     }
   }, [isAuthenticated])
 
+  useEffect(() => {
+    const fetchMaintenanceRequests = async () => {
+      if (activeTab === 'maintenance' && isAuthenticated) {
+        try {
+          const requests = await maintenanceService.list()
+          setMaintenanceRequests(requests)
+        } catch (error) {
+          console.error('Error fetching maintenance requests:', error)
+          setMaintenanceRequests([])
+        }
+      }
+    }
+
+    fetchMaintenanceRequests()
+  }, [activeTab, isAuthenticated])
+
   const handleLogout = () => {
     logout()
   }
+
+  const handleStatusUpdate = async (requestId, newStatus) => {
+    try {
+      await maintenanceService.updateStatus(requestId, newStatus)
+      // Refresh the maintenance requests
+      const requests = await maintenanceService.list()
+      setMaintenanceRequests(requests)
+      
+      // Refresh stats
+      const stats = await maintenanceService.getStats()
+      setMaintenanceStats(stats)
+      
+      alert('Status updated successfully!')
+    } catch (error) {
+      console.error('Error updating status:', error)
+      alert('Error updating status: ' + error.message)
+    }
+  }
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Open': return '#FF9800'
+      case 'In Progress': return '#2196F3'
+      case 'Resolved': return '#4CAF50'
+      default: return '#757575'
+    }
+  }
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'High': return '#F44336'
+      case 'Medium': return '#FF9800'
+      case 'Low': return '#4CAF50'
+      default: return '#757575'
+    }
+  }
+
+  const filteredMaintenanceRequests = maintenanceFilter === 'all' 
+    ? maintenanceRequests 
+    : maintenanceRequests.filter(req => req.status === maintenanceFilter)
 
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'rooms', label: 'Rooms', icon: '🏠' },
     { id: 'tenants', label: 'Tenants', icon: '👥' },
+    { id: 'maintenance', label: 'Maintenance', icon: '🔧' },
     { id: 'account', label: 'Account', icon: '⚙️' },
     { id: 'users', label: 'Users', icon: '👨‍👩‍👧‍👦' },
     { id: 'reports', label: 'Reports', icon: '📈' },
@@ -89,6 +159,141 @@ const Dashboard = () => {
         return <RoomPage />
       case 'tenants':
         return <TenantPage />
+      case 'maintenance':
+        return (
+          <div className="maintenance-requests-container">
+            <h2>Maintenance Requests</h2>
+            
+            {/* Active Requests Container */}
+            <div className="maintenance-section">
+              <h3>🔄 Active Requests (Pending & In Progress)</h3>
+              <div className="requests-grid">
+                {filteredMaintenanceRequests
+                  .filter(request => request.status === 'Open' || request.status === 'In Progress')
+                  .map((request) => (
+                    <div key={request.id} className="request-card active">
+                      <div className="request-header">
+                        <h4>Request #{request.id}</h4>
+                        <span className="status-badge" style={{ backgroundColor: getStatusColor(request.status) }}>
+                          {request.status}
+                        </span>
+                      </div>
+                      <div className="request-content">
+                        <p><strong>Title:</strong> {request.title}</p>
+                        <p><strong>Description:</strong> {request.description}</p>
+                        <p><strong>Priority:</strong> <span style={{ color: getPriorityColor(request.priority) }}>{request.priority}</span></p>
+                        <p><strong>Room ID:</strong> {request.roomId}</p>
+                        <p><strong>Tenant ID:</strong> {request.tenantId}</p>
+                        <p><strong>Submitted On:</strong> {new Date(request.createdAt).toLocaleDateString()}</p>
+                        {request.updatedAt !== request.createdAt && (
+                          <p><strong>Last Updated:</strong> {new Date(request.updatedAt).toLocaleDateString()}</p>
+                        )}
+                      </div>
+                      <div className="request-actions">
+                        {request.status === 'Open' && (
+                          <button
+                            className="action-btn primary small"
+                            onClick={() => handleStatusUpdate(request.id, 'In Progress')}
+                          >
+                            Start Work
+                          </button>
+                        )}
+                        {request.status === 'In Progress' && (
+                          <button
+                            className="action-btn secondary small"
+                            onClick={() => handleStatusUpdate(request.id, 'Resolved')}
+                          >
+                            Mark as Resolved
+                          </button>
+                        )}
+                        {request.status === 'Open' && (
+                          <button
+                            className="action-btn secondary small"
+                            onClick={() => handleStatusUpdate(request.id, 'Resolved')}
+                          >
+                            Mark as Resolved
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                {filteredMaintenanceRequests.filter(request => request.status === 'Open' || request.status === 'In Progress').length === 0 && (
+                  <div className="no-requests">
+                    <p>No active maintenance requests</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Resolved Requests Container */}
+            <div className="maintenance-section">
+              <h3>✅ Resolved Requests</h3>
+              <div className="requests-grid">
+                {filteredMaintenanceRequests
+                  .filter(request => request.status === 'Resolved')
+                  .map((request) => (
+                    <div key={request.id} className="request-card resolved">
+                      <div className="request-header">
+                        <h4>Request #{request.id}</h4>
+                        <span className="status-badge" style={{ backgroundColor: getStatusColor(request.status) }}>
+                          {request.status}
+                        </span>
+                      </div>
+                      <div className="request-content">
+                        <p><strong>Title:</strong> {request.title}</p>
+                        <p><strong>Description:</strong> {request.description}</p>
+                        <p><strong>Priority:</strong> <span style={{ color: getPriorityColor(request.priority) }}>{request.priority}</span></p>
+                        <p><strong>Room ID:</strong> {request.roomId}</p>
+                        <p><strong>Tenant ID:</strong> {request.tenantId}</p>
+                        <p><strong>Submitted On:</strong> {new Date(request.createdAt).toLocaleDateString()}</p>
+                        <p><strong>Resolved On:</strong> {new Date(request.updatedAt).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  ))}
+                {filteredMaintenanceRequests.filter(request => request.status === 'Resolved').length === 0 && (
+                  <div className="no-requests">
+                    <p>No resolved maintenance requests</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Statistics Overview */}
+            <div className="maintenance-stats">
+              <h3>Maintenance Overview</h3>
+              <div className="stats-grid">
+                <div className="stat-card">
+                  <div className="stat-icon">🔧</div>
+                  <div className="stat-content">
+                    <div className="stat-value">{maintenanceStats.total}</div>
+                    <div className="stat-label">Total Requests</div>
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-icon">⚙️</div>
+                  <div className="stat-content">
+                    <div className="stat-value">{maintenanceStats.pending}</div>
+                    <div className="stat-label">Pending</div>
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-icon">🔄</div>
+                  <div className="stat-content">
+                    <div className="stat-value">{maintenanceStats.inProgress}</div>
+                    <div className="stat-label">In Progress</div>
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-icon">✅</div>
+                  <div className="stat-content">
+                    <div className="stat-value">{maintenanceStats.resolved}</div>
+                    <div className="stat-label">Resolved</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
       case 'dashboard':
       default:
         return (

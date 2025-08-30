@@ -652,6 +652,18 @@ const TenantPage = () => {
                                 />
                             </div>
                             <div className="form-group">
+                                <label>Emergency Contact Relationship:</label>
+                                <input
+                                    type="text"
+                                    value={newTenant.emergencyContact.relationship}
+                                    onChange={(e) => setNewTenant({
+                                        ...newTenant,
+                                        emergencyContact: {...newTenant.emergencyContact, relationship: e.target.value}
+                                    })}
+                                    placeholder="Enter relationship (e.g., Parent, Sibling, Friend)"
+                                />
+                            </div>
+                            <div className="form-group">
                                 <label>Special Requirements:</label>
                                 <textarea
                                     value={newTenant.specialRequirements}

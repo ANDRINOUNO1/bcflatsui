@@ -278,10 +278,17 @@ const TenantDashboard = () => {
               <div className="requests-list">
                 {maintenanceRequests.slice(0, 3).map((request) => (
                   <div key={request.id} className="request-item">
-                    <span className="request-title">{request.title}</span>
-                    <span className={`request-status status-${request.status.toLowerCase()}`}>
-                      {request.status}
-                    </span>
+                    <div className="request-header">
+                      <span className="request-title">{request.title}</span>
+                      <span className={`request-status status-${request.status.toLowerCase()}`}>
+                        {request.status}
+                      </span>
+                    </div>
+                    <div className="request-details">
+                      <p className="request-description">{request.description}</p>
+                      <p className="request-priority">Priority: {request.priority}</p>
+                      <p className="request-date">Submitted: {new Date(request.createdAt).toLocaleDateString()}</p>
+                    </div>
                   </div>
                 ))}
               </div>

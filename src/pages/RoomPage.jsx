@@ -86,8 +86,8 @@ const RoomPage = () => {
 
     const handlePricingClick = (room) => {
         setPricingData({
-            monthlyRent: room.monthlyRent.toString(),
-            utilities: room.utilities.toString()
+            monthlyRent: (room.monthlyRent || 0).toString(),
+            utilities: (room.utilities || 0).toString()
         });
         setSelectedRoom({ room });
         setShowPricingModal(true);
@@ -427,8 +427,8 @@ const RoomPage = () => {
                                 />
                             </div>
                             <div className="pricing-summary">
-                                <p><strong>Total per Bed:</strong> ₱{(parseFloat(pricingData.monthlyRent) || 0) + (parseFloat(pricingData.utilities) || 0)}</p>
-                                <p><strong>Room Total (4 beds):</strong> ₱{(((parseFloat(pricingData.monthlyRent) || 0) + (parseFloat(pricingData.utilities) || 0)) * 4).toFixed(2)}</p>
+                                <p><strong>Total per Bed:</strong> ₱{((parseFloat(pricingData.monthlyRent) || 0) + (parseFloat(pricingData.utilities) || 0)).toLocaleString()}</p>
+                                <p><strong>Room Total (4 beds):</strong> ₱{(((parseFloat(pricingData.monthlyRent) || 0) + (parseFloat(pricingData.utilities) || 0)) * 4).toLocaleString()}</p>
                             </div>
                         </div>
                         <div className="modal-footer">
@@ -568,6 +568,18 @@ const RoomPage = () => {
                                         emergencyContact: {...newTenant.emergencyContact, phone: e.target.value}
                                     })}
                                     placeholder="Enter emergency contact phone"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Emergency Contact Relationship:</label>
+                                <input
+                                    type="text"
+                                    value={newTenant.emergencyContact.relationship}
+                                    onChange={(e) => setNewTenant({
+                                        ...newTenant,
+                                        emergencyContact: {...newTenant.emergencyContact, relationship: e.target.value}
+                                    })}
+                                    placeholder="Enter relationship (e.g., Parent, Sibling, Friend)"
                                 />
                             </div>
                             <div className="form-group">
