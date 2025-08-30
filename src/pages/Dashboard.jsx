@@ -162,134 +162,178 @@ const Dashboard = () => {
       case 'maintenance':
         return (
           <div className="maintenance-requests-container">
-            <h2>Maintenance Requests</h2>
+            <div className="maintenance-header">
+              <h2>🔧 Maintenance Management</h2>
+              <p className="maintenance-subtitle">Manage and track all maintenance requests across the building</p>
+            </div>
             
+            {/* Statistics Overview - Moved to top for better visibility */}
+            <div className="maintenance-overview">
+              <div className="overview-stats">
+                <div className="stat-item total">
+                  <div className="stat-number">{maintenanceStats.total}</div>
+                  <div className="stat-label">Total Requests</div>
+                </div>
+                <div className="stat-item pending">
+                  <div className="stat-number">{maintenanceStats.pending}</div>
+                  <div className="stat-label">Pending</div>
+                </div>
+                <div className="stat-item in-progress">
+                  <div className="stat-number">{maintenanceStats.inProgress}</div>
+                  <div className="stat-label">In Progress</div>
+                </div>
+                <div className="stat-item resolved">
+                  <div className="stat-number">{maintenanceStats.resolved}</div>
+                  <div className="stat-label">Resolved</div>
+                </div>
+              </div>
+            </div>
+
             {/* Active Requests Container */}
-            <div className="maintenance-section">
-              <h3>🔄 Active Requests (Pending & In Progress)</h3>
-              <div className="requests-grid">
+            <div className="maintenance-section active-section">
+              <div className="section-header">
+                <h3>🔄 Active Requests</h3>
+                <span className="request-count">
+                  {filteredMaintenanceRequests.filter(request => request.status === 'Open' || request.status === 'In Progress').length} requests
+                </span>
+              </div>
+              
+              <div className="requests-list">
                 {filteredMaintenanceRequests
                   .filter(request => request.status === 'Open' || request.status === 'In Progress')
                   .map((request) => (
-                    <div key={request.id} className="request-card active">
-                      <div className="request-header">
-                        <h4>Request #{request.id}</h4>
-                        <span className="status-badge" style={{ backgroundColor: getStatusColor(request.status) }}>
-                          {request.status}
-                        </span>
-                      </div>
-                      <div className="request-content">
-                        <p><strong>Title:</strong> {request.title}</p>
-                        <p><strong>Description:</strong> {request.description}</p>
-                        <p><strong>Priority:</strong> <span style={{ color: getPriorityColor(request.priority) }}>{request.priority}</span></p>
-                        <p><strong>Room ID:</strong> {request.roomId}</p>
-                        <p><strong>Tenant ID:</strong> {request.tenantId}</p>
-                        <p><strong>Submitted On:</strong> {new Date(request.createdAt).toLocaleDateString()}</p>
-                        {request.updatedAt !== request.createdAt && (
-                          <p><strong>Last Updated:</strong> {new Date(request.updatedAt).toLocaleDateString()}</p>
-                        )}
-                      </div>
-                      <div className="request-actions">
-                        {request.status === 'Open' && (
-                          <button
-                            className="action-btn primary small"
-                            onClick={() => handleStatusUpdate(request.id, 'In Progress')}
-                          >
-                            Start Work
-                          </button>
-                        )}
-                        {request.status === 'In Progress' && (
-                          <button
-                            className="action-btn secondary small"
-                            onClick={() => handleStatusUpdate(request.id, 'Resolved')}
-                          >
-                            Mark as Resolved
-                          </button>
-                        )}
-                        {request.status === 'Open' && (
-                          <button
-                            className="action-btn secondary small"
-                            onClick={() => handleStatusUpdate(request.id, 'Resolved')}
-                          >
-                            Mark as Resolved
-                          </button>
-                        )}
+                    <div key={request.id} className="request-item active">
+                      <div className="request-main">
+                        <div className="request-info">
+                          <div className="request-header">
+                            <h4 className="request-title">{request.title}</h4>
+                            <div className="request-meta">
+                              <span className="request-id">#{request.id}</span>
+                              <span className={`status-badge ${request.status.toLowerCase().replace(' ', '-')}`}>
+                                {request.status}
+                              </span>
+                            </div>
+                          </div>
+                          <p className="request-description">{request.description}</p>
+                          <div className="request-details">
+                            <div className="detail-item">
+                              <span className="detail-label">Room:</span>
+                              <span className="detail-value">{request.roomId}</span>
+                            </div>
+                            <div className="detail-item">
+                              <span className="detail-label">Tenant:</span>
+                              <span className="detail-value">{request.tenantId}</span>
+                            </div>
+                            <div className="detail-item">
+                              <span className="detail-label">Priority:</span>
+                              <span className={`priority-badge ${request.priority.toLowerCase()}`}>
+                                {request.priority}
+                              </span>
+                            </div>
+                            <div className="detail-item">
+                              <span className="detail-label">Submitted:</span>
+                              <span className="detail-value">{new Date(request.createdAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="request-actions">
+                          {request.status === 'Open' && (
+                            <>
+                              <button
+                                className="action-btn start-work"
+                                onClick={() => handleStatusUpdate(request.id, 'In Progress')}
+                              >
+                                🚀 Start Work
+                              </button>
+                              <button
+                                className="action-btn resolve"
+                                onClick={() => handleStatusUpdate(request.id, 'Resolved')}
+                              >
+                                ✅ Mark Resolved
+                              </button>
+                            </>
+                          )}
+                          {request.status === 'In Progress' && (
+                            <button
+                              className="action-btn resolve"
+                              onClick={() => handleStatusUpdate(request.id, 'Resolved')}
+                            >
+                              ✅ Mark Resolved
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
                 {filteredMaintenanceRequests.filter(request => request.status === 'Open' || request.status === 'In Progress').length === 0 && (
-                  <div className="no-requests">
-                    <p>No active maintenance requests</p>
+                  <div className="empty-state">
+                    <div className="empty-icon">🎉</div>
+                    <h4>No Active Requests</h4>
+                    <p>All maintenance requests are currently resolved!</p>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Resolved Requests Container */}
-            <div className="maintenance-section">
-              <h3>✅ Resolved Requests</h3>
-              <div className="requests-grid">
+            <div className="maintenance-section resolved-section">
+              <div className="section-header">
+                <h3>✅ Resolved Requests</h3>
+                <span className="request-count">
+                  {filteredMaintenanceRequests.filter(request => request.status === 'Resolved').length} requests
+                </span>
+              </div>
+              
+              <div className="requests-list">
                 {filteredMaintenanceRequests
                   .filter(request => request.status === 'Resolved')
                   .map((request) => (
-                    <div key={request.id} className="request-card resolved">
-                      <div className="request-header">
-                        <h4>Request #{request.id}</h4>
-                        <span className="status-badge" style={{ backgroundColor: getStatusColor(request.status) }}>
-                          {request.status}
-                        </span>
-                      </div>
-                      <div className="request-content">
-                        <p><strong>Title:</strong> {request.title}</p>
-                        <p><strong>Description:</strong> {request.description}</p>
-                        <p><strong>Priority:</strong> <span style={{ color: getPriorityColor(request.priority) }}>{request.priority}</span></p>
-                        <p><strong>Room ID:</strong> {request.roomId}</p>
-                        <p><strong>Tenant ID:</strong> {request.tenantId}</p>
-                        <p><strong>Submitted On:</strong> {new Date(request.createdAt).toLocaleDateString()}</p>
-                        <p><strong>Resolved On:</strong> {new Date(request.updatedAt).toLocaleDateString()}</p>
+                    <div key={request.id} className="request-item resolved">
+                      <div className="request-main">
+                        <div className="request-info">
+                          <div className="request-header">
+                            <h4 className="request-title">{request.title}</h4>
+                            <div className="request-meta">
+                              <span className="request-id">#{request.id}</span>
+                              <span className="status-badge resolved">Resolved</span>
+                            </div>
+                          </div>
+                          <p className="request-description">{request.description}</p>
+                          <div className="request-details">
+                            <div className="detail-item">
+                              <span className="detail-label">Room:</span>
+                              <span className="detail-value">{request.roomId}</span>
+                            </div>
+                            <div className="detail-item">
+                              <span className="detail-label">Tenant:</span>
+                              <span className="detail-value">{request.tenantId}</span>
+                            </div>
+                            <div className="detail-item">
+                              <span className="detail-label">Priority:</span>
+                              <span className={`priority-badge ${request.priority.toLowerCase()}`}>
+                                {request.priority}
+                              </span>
+                            </div>
+                            <div className="detail-item">
+                              <span className="detail-label">Submitted:</span>
+                              <span className="detail-value">{new Date(request.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <div className="detail-item">
+                              <span className="detail-label">Resolved:</span>
+                              <span className="detail-value">{new Date(request.updatedAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}
                 {filteredMaintenanceRequests.filter(request => request.status === 'Resolved').length === 0 && (
-                  <div className="no-requests">
-                    <p>No resolved maintenance requests</p>
+                  <div className="empty-state">
+                    <div className="empty-icon">📋</div>
+                    <h4>No Resolved Requests</h4>
+                    <p>Resolved requests will appear here once maintenance is completed.</p>
                   </div>
                 )}
-              </div>
-            </div>
-
-            {/* Statistics Overview */}
-            <div className="maintenance-stats">
-              <h3>Maintenance Overview</h3>
-              <div className="stats-grid">
-                <div className="stat-card">
-                  <div className="stat-icon">🔧</div>
-                  <div className="stat-content">
-                    <div className="stat-value">{maintenanceStats.total}</div>
-                    <div className="stat-label">Total Requests</div>
-                  </div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-icon">⚙️</div>
-                  <div className="stat-content">
-                    <div className="stat-value">{maintenanceStats.pending}</div>
-                    <div className="stat-label">Pending</div>
-                  </div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-icon">🔄</div>
-                  <div className="stat-content">
-                    <div className="stat-value">{maintenanceStats.inProgress}</div>
-                    <div className="stat-label">In Progress</div>
-                  </div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-icon">✅</div>
-                  <div className="stat-content">
-                    <div className="stat-value">{maintenanceStats.resolved}</div>
-                    <div className="stat-label">Resolved</div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
