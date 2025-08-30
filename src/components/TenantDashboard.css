@@ -135,25 +135,9 @@
 }
 
 .info-value.description {
-  font-weight: 500;
-  font-size: 0.9rem;
-  color: #4a5568;
-  max-width: 200px;
-  text-align: right;
-  line-height: 1.4;
-}
-
-/* Room Type Badge */
-.room-type-badge {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    font-style: italic;
+    color: #666;
+    line-height: 1.4;
 }
 
 /* Status Indicators */

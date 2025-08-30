@@ -73,10 +73,10 @@ const TenantDashboard = () => {
 
   // Helper function to get floor suffix
   const getFloorSuffix = (floor) => {
-    if (floor === 1) return '1st';
-    if (floor === 2) return '2nd';
-    if (floor === 3) return '3rd';
-    return `${floor}th`;
+    if (floor === 1) return 'st';
+    if (floor === 2) return 'nd';
+    if (floor === 3) return 'rd';
+    return 'th';
   };
 
   // Helper function to format currency
@@ -85,16 +85,6 @@ const TenantDashboard = () => {
       style: 'currency',
       currency: 'PHP'
     }).format(amount || 0);
-  };
-
-  // Helper function to get room type color
-  const getRoomTypeColor = (roomType) => {
-    switch (roomType) {
-      case 'Standard': return '#2196F3';
-      case 'Premium': return '#FF9800';
-      case 'Deluxe': return '#9C27B0';
-      default: return '#757575';
-    }
   };
 
   if (loading) {
@@ -160,37 +150,15 @@ const TenantDashboard = () => {
             </div>
             <div className="info-item">
               <span className="info-label">ROOM:</span>
-              <span className="info-value">
-                {roomData ? `Room ${roomData.roomNumber}` : 'Not assigned'}
-              </span>
+              <span className="info-value">{roomData?.roomNumber || 'Main Building'}</span>
             </div>
             <div className="info-item">
               <span className="info-label">FLOOR:</span>
-              <span className="info-value">
-                {roomData ? `${getFloorSuffix(roomData.floor)} Floor` : 'Not assigned'}
-              </span>
-            </div>
-            <div className="info-item">
-              <span className="info-label">ROOM TYPE:</span>
-              <span 
-                className="info-value room-type-badge"
-                style={{ 
-                  backgroundColor: getRoomTypeColor(roomData?.roomType),
-                  color: 'white',
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  fontSize: '0.8rem',
-                  fontWeight: '600'
-                }}
-              >
-                {roomData?.roomType || 'Not assigned'}
-              </span>
+              <span className="info-value">{roomData?.floor ? `${roomData.floor}${getFloorSuffix(roomData.floor)}` : 'N/A'}</span>
             </div>
             <div className="info-item">
               <span className="info-label">BED NUMBER:</span>
-              <span className="info-value">
-                {tenantData?.bedNumber ? `Bed ${tenantData.bedNumber}` : 'Not assigned'}
-              </span>
+              <span className="info-value">{tenantData?.bedNumber || 'N/A'}</span>
             </div>
             <div className="info-item">
               <span className="info-label">CHECK-IN DATE:</span>
@@ -217,15 +185,15 @@ const TenantDashboard = () => {
           <h3>💰 Financial Information</h3>
           <div className="financial-overview">
             <div className="financial-item">
-              <span className="info-label">YOUR RENT:</span>
+              <span className="info-label">YOUR RENT (per bed):</span>
               <span className="info-value">{formatCurrency(tenantData?.monthlyRent)}</span>
             </div>
             <div className="financial-item">
-              <span className="info-label">YOUR UTILITIES:</span>
+              <span className="info-label">YOUR UTILITIES (per bed):</span>
               <span className="info-value">{formatCurrency(tenantData?.utilities)}</span>
             </div>
             <div className="financial-item">
-              <span className="info-label">TOTAL MONTHLY:</span>
+              <span className="info-label">TOTAL MONTHLY (per bed):</span>
               <span className="info-value total-amount">
                 {formatCurrency((tenantData?.monthlyRent || 0) + (tenantData?.utilities || 0))}
               </span>

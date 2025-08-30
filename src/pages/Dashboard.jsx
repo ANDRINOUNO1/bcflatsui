@@ -148,10 +148,6 @@ const Dashboard = () => {
                     <span className="overview-value">72 rooms</span>
                   </div>
                   <div className="overview-item">
-                    <span className="overview-label">Room Types:</span>
-                    <span className="overview-value">Standard, Premium, Deluxe</span>
-                  </div>
-                  <div className="overview-item">
                     <span className="overview-label">Beds per Room:</span>
                     <span className="overview-value">4 beds</span>
                   </div>
@@ -160,12 +156,12 @@ const Dashboard = () => {
                     <span className="overview-value">288 students</span>
                   </div>
                   <div className="overview-item">
-                    <span className="overview-label">Rent Range:</span>
-                    <span className="overview-value">₱28,000 - ₱45,000</span>
+                    <span className="overview-label">Rent Range (per bed):</span>
+                    <span className="overview-value">₱7,000 - ₱11,250</span>
                   </div>
                   <div className="overview-item">
-                    <span className="overview-label">Utilities Range:</span>
-                    <span className="overview-value">₱3,900 - ₱6,200</span>
+                    <span className="overview-label">Utilities Range (per bed):</span>
+                    <span className="overview-value">₱975 - ₱1,550</span>
                   </div>
                 </div>
               </div>

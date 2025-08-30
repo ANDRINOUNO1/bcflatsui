@@ -207,15 +207,6 @@ const RoomPage = () => {
         }
     };
 
-    const getRoomTypeColor = (roomType) => {
-        switch (roomType) {
-            case 'Standard': return '#2196F3';
-            case 'Premium': return '#FF9800';
-            case 'Deluxe': return '#9C27B0';
-            default: return '#757575';
-        }
-    };
-
     if (loading) {
         return <div className="rooms-loading">Loading rooms...</div>;
     }
@@ -255,21 +246,14 @@ const RoomPage = () => {
                                     <span className={`status-badge ${room.status.toLowerCase().replace(' ', '-')}`}>
                                         {room.status}
                                     </span>
-                                    <span 
-                                        className="type-badge"
-                                        style={{ backgroundColor: getRoomTypeColor(room.roomType) }}
-                                    >
-                                        {room.roomType}
-                                    </span>
                                 </div>
                             </div>
                             <div className="room-info">
                                 <p><strong>Floor:</strong> {room.floor}{room.floor === 1 ? 'st' : room.floor === 2 ? 'nd' : room.floor === 3 ? 'rd' : 'th'}</p>
                                 <p><strong>Building:</strong> {room.building}</p>
-                                <p><strong>Type:</strong> {room.roomType}</p>
-                                <p><strong>Rent:</strong> ₱{room.monthlyRent.toLocaleString()}</p>
-                                <p><strong>Utilities:</strong> ₱{room.utilities.toLocaleString()}</p>
-                                <p><strong>Total:</strong> ₱{(room.monthlyRent + room.utilities).toLocaleString()}</p>
+                                <p><strong>Rent per Bed:</strong> ₱{(room.monthlyRent || 0).toLocaleString()}</p>
+                                <p><strong>Utilities per Bed:</strong> ₱{(room.utilities || 0).toLocaleString()}</p>
+                                <p><strong>Total per Bed:</strong> ₱{((room.monthlyRent || 0) + (room.utilities || 0)).toLocaleString()}</p>
                             </div>
                             <div className="room-occupancy">
                                 <div className="bed-indicators">
@@ -319,10 +303,6 @@ const RoomPage = () => {
                                         <span className="stat-value">{selectedRoom.room.status}</span>
                                     </div>
                                     <div className="stat-item">
-                                        <span className="stat-label">Room Type:</span>
-                                        <span className="stat-value">{selectedRoom.room.roomType}</span>
-                                    </div>
-                                    <div className="stat-item">
                                         <span className="stat-label">Total Beds:</span>
                                         <span className="stat-value">{selectedRoom.room.totalBeds}</span>
                                     </div>
@@ -339,20 +319,20 @@ const RoomPage = () => {
                                         <span className="stat-value">{selectedRoom.room.occupancyRate}%</span>
                                     </div>
                                     <div className="stat-item">
-                                        <span className="stat-label">Monthly Rent:</span>
-                                        <span className="stat-value">₱{selectedRoom.room.monthlyRent.toLocaleString()}</span>
+                                        <span className="stat-label">Monthly Rent per Bed:</span>
+                                        <span className="stat-value">₱{(selectedRoom.room.monthlyRent || 0).toLocaleString()}</span>
                                     </div>
                                     <div className="stat-item">
-                                        <span className="stat-label">Utilities:</span>
-                                        <span className="stat-value">₱{selectedRoom.room.utilities.toLocaleString()}</span>
+                                        <span className="stat-label">Utilities per Bed:</span>
+                                        <span className="stat-value">₱{(selectedRoom.room.utilities || 0).toLocaleString()}</span>
                                     </div>
                                     <div className="stat-item">
-                                        <span className="stat-label">Total Monthly:</span>
-                                        <span className="stat-value">₱{(selectedRoom.room.monthlyRent + selectedRoom.room.utilities).toLocaleString()}</span>
+                                        <span className="stat-label">Total per Bed:</span>
+                                        <span className="stat-value">₱{((selectedRoom.room.monthlyRent || 0) + (selectedRoom.room.utilities || 0)).toLocaleString()}</span>
                                     </div>
                                     <div className="stat-item">
-                                        <span className="stat-label">Per Bed:</span>
-                                        <span className="stat-value">₱{((selectedRoom.room.monthlyRent + selectedRoom.room.utilities) / 4).toFixed(2)}</span>
+                                        <span className="stat-label">Room Total (4 beds):</span>
+                                        <span className="stat-value">₱{(((selectedRoom.room.monthlyRent || 0) + (selectedRoom.room.utilities || 0)) * 4).toLocaleString()}</span>
                                     </div>
                                 </div>
 
@@ -367,8 +347,8 @@ const RoomPage = () => {
                                                     <div className="tenant-info">
                                                         <p><strong>Name:</strong> {bed.tenant.firstName} {bed.tenant.lastName}</p>
                                                         <p><strong>Email:</strong> {bed.tenant.email}</p>
-                                                        <p><strong>Rent:</strong> ₱{bed.tenant.monthlyRent.toLocaleString()}</p>
-                                                        <p><strong>Utilities:</strong> ₱{bed.tenant.utilities.toLocaleString()}</p>
+                                                        <p><strong>Rent per Bed:</strong> ₱{(bed.tenant.monthlyRent || 0).toLocaleString()}</p>
+                                                        <p><strong>Utilities per Bed:</strong> ₱{(bed.tenant.utilities || 0).toLocaleString()}</p>
                                                         <button
                                                             className="remove-tenant-btn"
                                                             onClick={() => handleRemoveTenant(bed.tenant.id)}
@@ -425,30 +405,30 @@ const RoomPage = () => {
                         </div>
                         <div className="modal-body">
                             <div className="form-group">
-                                <label>Monthly Rent (₱):</label>
+                                <label>Monthly Rent per Bed (₱):</label>
                                 <input
                                     type="number"
                                     step="0.01"
                                     min="0"
                                     value={pricingData.monthlyRent}
                                     onChange={(e) => setPricingData({...pricingData, monthlyRent: e.target.value})}
-                                    placeholder="Enter monthly rent"
+                                    placeholder="Enter monthly rent per bed"
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Utilities (₱):</label>
+                                <label>Utilities per Bed (₱):</label>
                                 <input
                                     type="number"
                                     step="0.01"
                                     min="0"
                                     value={pricingData.utilities}
                                     onChange={(e) => setPricingData({...pricingData, utilities: e.target.value})}
-                                    placeholder="Enter utilities cost"
+                                    placeholder="Enter utilities cost per bed"
                                 />
                             </div>
                             <div className="pricing-summary">
-                                <p><strong>Total Monthly:</strong> ₱{(parseFloat(pricingData.monthlyRent) || 0) + (parseFloat(pricingData.utilities) || 0)}</p>
-                                <p><strong>Per Bed (4 beds):</strong> ₱{(((parseFloat(pricingData.monthlyRent) || 0) + (parseFloat(pricingData.utilities) || 0)) / 4).toFixed(2)}</p>
+                                <p><strong>Total per Bed:</strong> ₱{(parseFloat(pricingData.monthlyRent) || 0) + (parseFloat(pricingData.utilities) || 0)}</p>
+                                <p><strong>Room Total (4 beds):</strong> ₱{(((parseFloat(pricingData.monthlyRent) || 0) + (parseFloat(pricingData.utilities) || 0)) * 4).toFixed(2)}</p>
                             </div>
                         </div>
                         <div className="modal-footer">
@@ -518,23 +498,23 @@ const RoomPage = () => {
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label>Monthly Rent (₱):</label>
+                                <label>Monthly Rent per Bed (₱):</label>
                                 <input
                                     type="number"
                                     step="0.01"
                                     value={newTenant.monthlyRent}
                                     onChange={(e) => setNewTenant({...newTenant, monthlyRent: e.target.value})}
-                                    placeholder="Enter monthly rent"
+                                    placeholder="Enter monthly rent per bed"
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Utilities (₱):</label>
+                                <label>Utilities per Bed (₱):</label>
                                 <input
                                     type="number"
                                     step="0.01"
                                     value={newTenant.utilities}
                                     onChange={(e) => setNewTenant({...newTenant, utilities: e.target.value})}
-                                    placeholder="Enter utilities cost"
+                                    placeholder="Enter utilities cost per bed"
                                 />
                             </div>
                             <div className="form-group">
@@ -548,22 +528,22 @@ const RoomPage = () => {
                                 />
                             </div>
                             <div className="pricing-summary">
-                                <h4>💰 Pricing Summary</h4>
+                                <h4>💰 Pricing Summary (Per Bed)</h4>
                                 <div className="summary-item">
-                                    <span>Monthly Rent:</span>
+                                    <span>Monthly Rent per Bed:</span>
                                     <span>₱{parseFloat(newTenant.monthlyRent || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="summary-item">
-                                    <span>Utilities:</span>
+                                    <span>Utilities per Bed:</span>
                                     <span>₱{parseFloat(newTenant.utilities || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="summary-item total">
-                                    <span>Total Monthly:</span>
+                                    <span>Total per Bed:</span>
                                     <span>₱{(parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)).toLocaleString()}</span>
                                 </div>
                                 <div className="summary-item">
-                                    <span>Per Bed (4 beds):</span>
-                                    <span>₱{(((parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)) / 4)).toFixed(2)}</span>
+                                    <span>Room Total (4 beds):</span>
+                                    <span>₱{(((parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)) * 4)).toFixed(2)}</span>
                                 </div>
                             </div>
                             <div className="form-group">

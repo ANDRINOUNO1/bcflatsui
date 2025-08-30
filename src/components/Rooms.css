@@ -113,50 +113,36 @@
     flex: 1;
 }
 
+/* Room Badges */
 .room-badges {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
-    align-items: flex-end;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
 }
 
 .status-badge {
-    padding: 6px 14px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 700;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
+    color: white;
 }
 
 .status-badge.available {
-    background: #E8F5E8;
-    color: #2E7D32;
+    background-color: #4CAF50;
 }
 
 .status-badge.partially-occupied {
-    background: #FFF3E0;
-    color: #F57C00;
+    background-color: #FF9800;
 }
 
 .status-badge.fully-occupied {
-    background: #FFEBEE;
-    color: #D32F2F;
+    background-color: #F44336;
 }
 
 .status-badge.maintenance {
-    background: #F3E5F5;
-    color: #7B1FA2;
-}
-
-.type-badge {
-    padding: 4px 10px;
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    color: white;
+    background-color: #9C27B0;
 }
 
 .room-info {

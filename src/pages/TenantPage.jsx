@@ -324,7 +324,7 @@ const TenantPage = () => {
                                     <th>Status</th>
                                     <th>Check-in</th>
                                     <th>Check-out</th>
-                                    <th>Monthly Rent</th>
+                                    <th>Monthly Rent per Bed</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -439,11 +439,11 @@ const TenantPage = () => {
                                 <h4>Financial Information</h4>
                                 <div className="info-grid">
                                     <div className="info-item">
-                                        <span className="info-label">Monthly Rent:</span>
+                                        <span className="info-label">Monthly Rent per Bed:</span>
                                         <span className="info-value">₱{selectedTenant.monthlyRent.toLocaleString()}</span>
                                     </div>
                                     <div className="info-item">
-                                        <span className="info-label">Utilities:</span>
+                                        <span className="info-label">Utilities per Bed:</span>
                                         <span className="info-value">₱{selectedTenant.utilities.toLocaleString()}</span>
                                     </div>
                                     <div className="info-item">
@@ -579,23 +579,23 @@ const TenantPage = () => {
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label>Monthly Rent (₱):</label>
+                                <label>Monthly Rent per Bed (₱):</label>
                                 <input
                                     type="number"
                                     step="0.01"
                                     value={newTenant.monthlyRent}
                                     onChange={(e) => setNewTenant({...newTenant, monthlyRent: e.target.value})}
-                                    placeholder="Enter monthly rent"
+                                    placeholder="Enter monthly rent per bed"
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Utilities (₱):</label>
+                                <label>Utilities per Bed (₱):</label>
                                 <input
                                     type="number"
                                     step="0.01"
                                     value={newTenant.utilities}
                                     onChange={(e) => setNewTenant({...newTenant, utilities: e.target.value})}
-                                    placeholder="Enter utilities cost"
+                                    placeholder="Enter utilities cost per bed"
                                 />
                             </div>
                             <div className="form-group">
@@ -609,22 +609,22 @@ const TenantPage = () => {
                                 />
                             </div>
                             <div className="pricing-summary">
-                                <h4>💰 Pricing Summary</h4>
+                                <h4>💰 Pricing Summary (Per Bed)</h4>
                                 <div className="summary-item">
-                                    <span>Monthly Rent:</span>
+                                    <span>Monthly Rent per Bed:</span>
                                     <span>₱{parseFloat(newTenant.monthlyRent || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="summary-item">
-                                    <span>Utilities:</span>
+                                    <span>Utilities per Bed:</span>
                                     <span>₱{parseFloat(newTenant.utilities || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="summary-item total">
-                                    <span>Total Monthly:</span>
+                                    <span>Total per Bed:</span>
                                     <span>₱{(parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)).toLocaleString()}</span>
                                 </div>
                                 <div className="summary-item">
-                                    <span>Per Bed (4 beds):</span>
-                                    <span>₱{(((parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)) / 4)).toFixed(2)}</span>
+                                    <span>Room Total (4 beds):</span>
+                                    <span>₱{(((parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)) * 4)).toFixed(2)}</span>
                                 </div>
                             </div>
                             <div className="form-group">

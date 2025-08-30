@@ -42,6 +42,9 @@ const LandingPage = () => {
               <span>Prime Location</span>
             </div>
           </div>
+          <button className="hero-cta-btn" onClick={handleLoginClick}>
+            Get Started Today
+          </button>
         </div>
       </section>
 
