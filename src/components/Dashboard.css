@@ -368,6 +368,63 @@
   opacity: 0.9;
   text-transform: uppercase;
   font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.stat-subtitle {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  font-weight: 400;
+}
+
+/* Building Overview Section */
+.building-overview {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 2rem;
+  margin: 2rem 0;
+  border: 1px solid #e9ecef;
+}
+
+.building-overview h3 {
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.overview-item {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.overview-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.overview-label {
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.overview-value {
+  font-weight: 700;
+  color: #2c3e50;
+  font-size: 1rem;
 }
 
 /* Quick Actions */
@@ -541,6 +598,10 @@
   .dashboard-sidebar {
     width: 240px;
   }
+  
+  .overview-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
 }
 
 /* Revert to non-attached sticky sidebar on desktop */
@@ -683,6 +744,14 @@
     padding: 0.5rem 0.75rem;
     font-size: 0.9rem;
   }
+  
+  .overview-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .building-overview {
+    padding: 1.5rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -702,6 +771,12 @@
   
   .welcome-section p {
     font-size: 1rem;
+  }
+  
+  .overview-item {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
   }
 }
 

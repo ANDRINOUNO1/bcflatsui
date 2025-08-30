@@ -113,6 +113,13 @@
     flex: 1;
 }
 
+.room-badges {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+}
+
 .status-badge {
     padding: 6px 14px;
     border-radius: 999px;
@@ -140,6 +147,16 @@
 .status-badge.maintenance {
     background: #F3E5F5;
     color: #7B1FA2;
+}
+
+.type-badge {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: white;
 }
 
 .room-info {
@@ -180,6 +197,32 @@
     background: #f9fafb;
     padding: 14px;
     border-radius: 10px;
+}
+
+.room-actions {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #eef2f7;
+    display: flex;
+    justify-content: center;
+}
+
+.btn-secondary.small {
+    padding: 8px 16px;
+    font-size: 12px;
+    border-radius: 6px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary.small:hover {
+    background: #5a6268;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
 }
 
 .bed-indicators { display: flex; gap: 10px; margin-bottom: 10px; justify-content: center; flex-wrap: wrap; }
@@ -395,6 +438,57 @@
     box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
 }
 
+/* Pricing Summary */
+.pricing-summary {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+}
+
+.pricing-summary h4 {
+    margin: 0 0 1rem 0;
+    color: #1a1a1a;
+    font-size: 1.1rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.summary-item:last-child {
+    border-bottom: none;
+}
+
+.summary-item.total {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #667eea;
+    border-top: 2px solid rgba(102, 126, 234, 0.2);
+    border-bottom: none;
+    padding-top: 1rem;
+    margin-top: 0.5rem;
+}
+
+.summary-item span:first-child {
+    color: #4a5568;
+    font-weight: 600;
+}
+
+.summary-item span:last-child {
+    color: #1a1a1a;
+    font-weight: 700;
+}
+
 /* Modal Styles */
 .modal-overlay {
     position: fixed;
@@ -586,6 +680,16 @@
     .room-info p { font-size: 13px; padding: 8px; }
     .bed-indicator { width: 30px; height: 30px; font-size: 12px; }
     
+    .room-badges {
+        flex-direction: row;
+        gap: 4px;
+    }
+    
+    .status-badge, .type-badge {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+    
     .modal-large {
         width: 100vw;
         height: 100vh;
@@ -617,6 +721,11 @@
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
+    }
+    
+    .room-badges {
+        flex-direction: row;
+        align-self: flex-end;
     }
     
     .details-header {

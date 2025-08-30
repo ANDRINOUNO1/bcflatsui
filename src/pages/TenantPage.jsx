@@ -94,6 +94,7 @@ const TenantPage = () => {
                 const firstRoomId = rooms[0].id;
                 setNewTenant((prev) => ({ ...prev, roomId: firstRoomId }));
                 await loadAvailableBeds(firstRoomId);
+                await loadRoomPricing(firstRoomId);
             } else {
                 setAvailableBeds([]);
             }
@@ -112,6 +113,19 @@ const TenantPage = () => {
         } catch (error) {
             console.error('Error loading bed options:', error);
             setAvailableBeds([1, 2, 3, 4]);
+        }
+    };
+
+    const loadRoomPricing = async (roomId) => {
+        try {
+            const room = await roomService.getRoomById(roomId);
+            setNewTenant(prev => ({
+                ...prev,
+                monthlyRent: room.monthlyRent.toString(),
+                utilities: room.utilities.toString()
+            }));
+        } catch (error) {
+            console.error('Error loading room pricing:', error);
         }
     };
 
@@ -278,7 +292,7 @@ const TenantPage = () => {
                     <div className="stat-card">
                         <div className="stat-icon">💰</div>
                         <div className="stat-content">
-                            <div className="stat-value">${stats.totalIncome.toFixed(2)}</div>
+                            <div className="stat-value">₱{stats.totalIncome.toLocaleString()}</div>
                             <div className="stat-label">Total Income</div>
                         </div>
                     </div>
@@ -333,7 +347,7 @@ const TenantPage = () => {
                                         </td>
                                         <td>{new Date(tenant.checkInDate).toLocaleDateString()}</td>
                                         <td>{tenant.checkOutDate ? new Date(tenant.checkOutDate).toLocaleDateString() : '-'}</td>
-                                        <td>${tenant.monthlyRent}</td>
+                                        <td>₱{tenant.monthlyRent.toLocaleString()}</td>
                                         <td>
                                             <div className="tenant-actions">
                                                 {tenant.status === 'Pending' && (
@@ -426,19 +440,19 @@ const TenantPage = () => {
                                 <div className="info-grid">
                                     <div className="info-item">
                                         <span className="info-label">Monthly Rent:</span>
-                                        <span className="info-value">${selectedTenant.monthlyRent}</span>
+                                        <span className="info-value">₱{selectedTenant.monthlyRent.toLocaleString()}</span>
                                     </div>
                                     <div className="info-item">
                                         <span className="info-label">Utilities:</span>
-                                        <span className="info-value">${selectedTenant.utilities}</span>
+                                        <span className="info-value">₱{selectedTenant.utilities.toLocaleString()}</span>
                                     </div>
                                     <div className="info-item">
                                         <span className="info-label">Deposit:</span>
-                                        <span className="info-value">${selectedTenant.deposit}</span>
+                                        <span className="info-value">₱{selectedTenant.deposit.toLocaleString()}</span>
                                     </div>
                                     <div className="info-item">
                                         <span className="info-label">Total Monthly:</span>
-                                        <span className="info-value">${(parseFloat(selectedTenant.monthlyRent) + parseFloat(selectedTenant.utilities)).toFixed(2)}</span>
+                                        <span className="info-value">₱{(parseFloat(selectedTenant.monthlyRent) + parseFloat(selectedTenant.utilities)).toLocaleString()}</span>
                                     </div>
                                 </div>
                             </div>
@@ -540,6 +554,7 @@ const TenantPage = () => {
                                         const roomId = parseInt(e.target.value);
                                         setNewTenant({ ...newTenant, roomId });
                                         await loadAvailableBeds(roomId);
+                                        await loadRoomPricing(roomId);
                                     }}
                                 >
                                     {availableRooms.map((room) => (
@@ -564,7 +579,7 @@ const TenantPage = () => {
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label>Monthly Rent:</label>
+                                <label>Monthly Rent (₱):</label>
                                 <input
                                     type="number"
                                     step="0.01"
@@ -574,7 +589,7 @@ const TenantPage = () => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Utilities:</label>
+                                <label>Utilities (₱):</label>
                                 <input
                                     type="number"
                                     step="0.01"
@@ -584,7 +599,7 @@ const TenantPage = () => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Deposit:</label>
+                                <label>Deposit (₱):</label>
                                 <input
                                     type="number"
                                     step="0.01"
@@ -592,6 +607,25 @@ const TenantPage = () => {
                                     onChange={(e) => setNewTenant({...newTenant, deposit: e.target.value})}
                                     placeholder="Enter deposit amount"
                                 />
+                            </div>
+                            <div className="pricing-summary">
+                                <h4>💰 Pricing Summary</h4>
+                                <div className="summary-item">
+                                    <span>Monthly Rent:</span>
+                                    <span>₱{parseFloat(newTenant.monthlyRent || 0).toLocaleString()}</span>
+                                </div>
+                                <div className="summary-item">
+                                    <span>Utilities:</span>
+                                    <span>₱{parseFloat(newTenant.utilities || 0).toLocaleString()}</span>
+                                </div>
+                                <div className="summary-item total">
+                                    <span>Total Monthly:</span>
+                                    <span>₱{(parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)).toLocaleString()}</span>
+                                </div>
+                                <div className="summary-item">
+                                    <span>Per Bed (4 beds):</span>
+                                    <span>₱{(((parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)) / 4)).toFixed(2)}</span>
+                                </div>
                             </div>
                             <div className="form-group">
                                 <label>Emergency Contact Name:</label>

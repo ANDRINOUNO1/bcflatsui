@@ -12,7 +12,9 @@ const Dashboard = () => {
     totalRooms: 0,
     occupiedRooms: 0,
     totalStudents: 0,
-    maintenanceRequests: 0
+    maintenanceRequests: 0,
+    occupancyRate: 0,
+    availableRooms: 0
   })
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -45,7 +47,9 @@ const Dashboard = () => {
           totalRooms: roomStats.totalRooms,
           occupiedRooms: roomStats.fullyOccupiedRooms + roomStats.partiallyOccupiedRooms,
           totalStudents: tenantStats.activeTenants,
-          maintenanceRequests: roomStats.maintenanceRooms
+          maintenanceRequests: roomStats.maintenanceRooms,
+          occupancyRate: roomStats.occupancyRate,
+          availableRooms: roomStats.availableRooms
         })
       } catch (error) {
         console.error('❌ Dashboard: Failed to fetch stats:', error)
@@ -95,6 +99,7 @@ const Dashboard = () => {
                 <div className="stat-content">
                   <div className="stat-value">{stats.totalRooms}</div>
                   <div className="stat-label">Total Rooms</div>
+                  <div className="stat-subtitle">8 floors × 9 rooms</div>
                 </div>
               </div>
               <div className="stat-card">
@@ -102,6 +107,7 @@ const Dashboard = () => {
                 <div className="stat-content">
                   <div className="stat-value">{stats.totalStudents}</div>
                   <div className="stat-label">Active Students</div>
+                  <div className="stat-subtitle">Current tenants</div>
                 </div>
               </div>
               <div className="stat-card">
@@ -109,6 +115,7 @@ const Dashboard = () => {
                 <div className="stat-content">
                   <div className="stat-value">{stats.occupiedRooms}</div>
                   <div className="stat-label">Occupied Rooms</div>
+                  <div className="stat-subtitle">{stats.occupancyRate}% occupancy</div>
                 </div>
               </div>
               <div className="stat-card">
@@ -116,13 +123,52 @@ const Dashboard = () => {
                 <div className="stat-content">
                   <div className="stat-value">{stats.maintenanceRequests}</div>
                   <div className="stat-label">Maintenance</div>
+                  <div className="stat-subtitle">Rooms under repair</div>
                 </div>
               </div>
             </div>
 
             <div className="welcome-section">
               <h2>Welcome to BCFlats Management System</h2>
-              <p>Manage your student housing efficiently with our comprehensive dashboard.</p>
+              <p>Manage your 8-floor student housing complex with 72 rooms efficiently.</p>
+              
+              <div className="building-overview">
+                <h3>🏢 Building Overview</h3>
+                <div className="overview-grid">
+                  <div className="overview-item">
+                    <span className="overview-label">Floors:</span>
+                    <span className="overview-value">2nd - 9th Floor</span>
+                  </div>
+                  <div className="overview-item">
+                    <span className="overview-label">Rooms per Floor:</span>
+                    <span className="overview-value">9 rooms</span>
+                  </div>
+                  <div className="overview-item">
+                    <span className="overview-label">Total Rooms:</span>
+                    <span className="overview-value">72 rooms</span>
+                  </div>
+                  <div className="overview-item">
+                    <span className="overview-label">Room Types:</span>
+                    <span className="overview-value">Standard, Premium, Deluxe</span>
+                  </div>
+                  <div className="overview-item">
+                    <span className="overview-label">Beds per Room:</span>
+                    <span className="overview-value">4 beds</span>
+                  </div>
+                  <div className="overview-item">
+                    <span className="overview-label">Total Capacity:</span>
+                    <span className="overview-value">288 students</span>
+                  </div>
+                  <div className="overview-item">
+                    <span className="overview-label">Rent Range:</span>
+                    <span className="overview-value">₱28,000 - ₱45,000</span>
+                  </div>
+                  <div className="overview-item">
+                    <span className="overview-label">Utilities Range:</span>
+                    <span className="overview-value">₱3,900 - ₱6,200</span>
+                  </div>
+                </div>
+              </div>
               
               <div className="quick-actions">
                 <h3>Quick Actions</h3>

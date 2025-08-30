@@ -2,6 +2,14 @@ import { apiService } from './apiService';
 
 const API_BASE_URL = 'http://localhost:3000/api';
 
+// Helper function to format currency in Philippine Peso
+const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-PH', {
+        style: 'currency',
+        currency: 'PHP'
+    }).format(amount || 0);
+};
+
 export const roomService = {
     // Get room statistics
     getRoomStats: async () => {
@@ -92,6 +100,17 @@ export const roomService = {
         }
     },
 
+    // Update room pricing (Admin only)
+    updateRoomPricing: async (roomId, pricingData) => {
+        try {
+            const response = await apiService.patch(`${API_BASE_URL}/rooms/${roomId}/pricing`, pricingData);
+            return response.data;
+        } catch (error) {
+            console.error('Error updating room pricing:', error);
+            throw error;
+        }
+    },
+
     // Delete room (Admin only)
     deleteRoom: async (roomId) => {
         try {
@@ -148,5 +167,8 @@ export const roomService = {
             console.error('Error removing tenant from room:', error);
             throw error;
         }
-    }
+    },
+
+    // Helper function to format currency
+    formatCurrency
 };

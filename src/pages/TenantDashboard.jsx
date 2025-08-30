@@ -71,6 +71,32 @@ const TenantDashboard = () => {
     }
   }, [user]);
 
+  // Helper function to get floor suffix
+  const getFloorSuffix = (floor) => {
+    if (floor === 1) return '1st';
+    if (floor === 2) return '2nd';
+    if (floor === 3) return '3rd';
+    return `${floor}th`;
+  };
+
+  // Helper function to format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: 'PHP'
+    }).format(amount || 0);
+  };
+
+  // Helper function to get room type color
+  const getRoomTypeColor = (roomType) => {
+    switch (roomType) {
+      case 'Standard': return '#2196F3';
+      case 'Premium': return '#FF9800';
+      case 'Deluxe': return '#9C27B0';
+      default: return '#757575';
+    }
+  };
+
   if (loading) {
     return (
       <div className="tenant-dashboard">
@@ -119,37 +145,68 @@ const TenantDashboard = () => {
     <div className="tenant-dashboard">
       {/* Welcome Header */}
       <div className="welcome-header">
-        <h1>Welcome back!</h1>
+        <h1>Welcome back, {user?.firstName || user?.email?.split('@')[0] || 'Tenant'}!</h1>
         <p>Here's an overview of your home and account.</p>
       </div>
 
       {/* Property Information & Events Row */}
       <div className="dashboard-row">
         <div className="dashboard-card property-card">
-          <h3>Property Information</h3>
+          <h3>🏠 Property Information</h3>
           <div className="info-list">
             <div className="info-item">
-              <span className="info-label">ADDRESS:</span>
+              <span className="info-label">BUILDING:</span>
               <span className="info-value">{roomData?.building || 'Main Building'}</span>
             </div>
             <div className="info-item">
-              <span className="info-label">UNIT:</span>
-              <span className="info-value">{roomData ? `Room ${roomData.roomNumber}` : 'Your room'}</span>
+              <span className="info-label">ROOM:</span>
+              <span className="info-value">
+                {roomData ? `Room ${roomData.roomNumber}` : 'Not assigned'}
+              </span>
             </div>
             <div className="info-item">
-              <span className="info-label">LEASE:</span>
+              <span className="info-label">FLOOR:</span>
               <span className="info-value">
-                {tenantData?.leaseStart ? new Date(tenantData.leaseStart).toLocaleDateString() : 'Not set'} — {tenantData?.leaseEnd ? new Date(tenantData.leaseEnd).toLocaleDateString() : 'Not set'}
+                {roomData ? `${getFloorSuffix(roomData.floor)} Floor` : 'Not assigned'}
+              </span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">ROOM TYPE:</span>
+              <span 
+                className="info-value room-type-badge"
+                style={{ 
+                  backgroundColor: getRoomTypeColor(roomData?.roomType),
+                  color: 'white',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  fontSize: '0.8rem',
+                  fontWeight: '600'
+                }}
+              >
+                {roomData?.roomType || 'Not assigned'}
+              </span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">BED NUMBER:</span>
+              <span className="info-value">
+                {tenantData?.bedNumber ? `Bed ${tenantData.bedNumber}` : 'Not assigned'}
+              </span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">CHECK-IN DATE:</span>
+              <span className="info-value">
+                {tenantData?.checkInDate ? new Date(tenantData.checkInDate).toLocaleDateString() : 'Not set'}
               </span>
             </div>
           </div>
         </div>
 
         <div className="dashboard-card events-card">
-          <h3>Upcoming Events / Notices</h3>
+          <h3>📅 Upcoming Events / Notices</h3>
           <ul className="events-list">
             <li>Fire drill — next week</li>
             <li>Water maintenance — floor schedule</li>
+            <li>Community meeting — {roomData?.floor ? `${getFloorSuffix(roomData.floor)} floor` : 'Building'}</li>
           </ul>
         </div>
       </div>
@@ -157,11 +214,29 @@ const TenantDashboard = () => {
       {/* Financial Information Row */}
       <div className="dashboard-row">
         <div className="dashboard-card financial-card">
-          <h3>Financial Information</h3>
+          <h3>💰 Financial Information</h3>
           <div className="financial-overview">
             <div className="financial-item">
+              <span className="info-label">YOUR RENT:</span>
+              <span className="info-value">{formatCurrency(tenantData?.monthlyRent)}</span>
+            </div>
+            <div className="financial-item">
+              <span className="info-label">YOUR UTILITIES:</span>
+              <span className="info-value">{formatCurrency(tenantData?.utilities)}</span>
+            </div>
+            <div className="financial-item">
+              <span className="info-label">TOTAL MONTHLY:</span>
+              <span className="info-value total-amount">
+                {formatCurrency((tenantData?.monthlyRent || 0) + (tenantData?.utilities || 0))}
+              </span>
+            </div>
+            <div className="financial-item">
+              <span className="info-label">DEPOSIT PAID:</span>
+              <span className="info-value">{formatCurrency(tenantData?.deposit)}</span>
+            </div>
+            <div className="financial-item">
               <span className="info-label">OUTSTANDING:</span>
-              <span className="info-value outstanding">$0.00</span>
+              <span className="info-value outstanding">₱0.00</span>
             </div>
             <div className="financial-item">
               <span className="info-label">NEXT DUE:</span>
@@ -175,12 +250,55 @@ const TenantDashboard = () => {
         </div>
       </div>
 
+      {/* Room Details Row */}
+      <div className="dashboard-row">
+        <div className="dashboard-card room-details-card">
+          <h3>🏠 Room Details</h3>
+          <div className="info-list">
+            <div className="info-item">
+              <span className="info-label">ROOM STATUS:</span>
+              <span className={`info-value status-${roomData?.status?.toLowerCase()}`}>
+                {roomData?.status || 'Unknown'}
+              </span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">TOTAL BEDS:</span>
+              <span className="info-value">{roomData?.totalBeds || 4}</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">OCCUPIED BEDS:</span>
+              <span className="info-value">{roomData?.occupiedBeds || 0}</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">OCCUPANCY RATE:</span>
+              <span className="info-value">{roomData?.occupancyRate || 0}%</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">ROOM DESCRIPTION:</span>
+              <span className="info-value description">
+                {roomData?.description || 'Standard student accommodation'}
+              </span>
+            </div>
+          </div>
+          {roomData?.amenities && roomData.amenities.length > 0 && (
+            <div className="amenities-section">
+              <h4>🏠 Room Amenities</h4>
+              <div className="amenities-list">
+                {roomData.amenities.map((amenity, index) => (
+                  <span key={index} className="amenity-tag">{amenity}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Maintenance & Support Row */}
       <div className="dashboard-row">
         <div className="dashboard-card maintenance-card">
-          <h3>Maintenance & Support</h3>
+          <h3>🔧 Maintenance & Support</h3>
           <p className="maintenance-description">
-            Submit repair requests and track progress.
+            Submit repair requests and track progress for your room.
           </p>
           <div className="action-buttons">
             <Link to="/tenant/maintenance" className="btn-primary">Request Maintenance</Link>
@@ -204,15 +322,63 @@ const TenantDashboard = () => {
         </div>
       </div>
 
+      {/* Emergency Contact Row */}
+      <div className="dashboard-row">
+        <div className="dashboard-card emergency-card">
+          <h3>🚨 Emergency Contact</h3>
+          <div className="info-list">
+            <div className="info-item">
+              <span className="info-label">CONTACT NAME:</span>
+              <span className="info-value">
+                {tenantData?.emergencyContact?.name || 'Not provided'}
+              </span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">PHONE:</span>
+              <span className="info-value">
+                {tenantData?.emergencyContact?.phone || 'Not provided'}
+              </span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">RELATIONSHIP:</span>
+              <span className="info-value">
+                {tenantData?.emergencyContact?.relationship || 'Not provided'}
+              </span>
+            </div>
+          </div>
+          <div className="action-buttons">
+            <button className="btn-secondary">Update Contact Info</button>
+          </div>
+        </div>
+      </div>
+
       {/* Lease & Documents Row */}
       <div className="dashboard-row">
         <div className="dashboard-card documents-card">
-          <h3>Lease & Document Management</h3>
+          <h3>📄 Lease & Document Management</h3>
           <div className="info-list">
             <div className="info-item">
-              <span className="info-label">Lease Status:</span>
-              <span className="info-value">
+              <span className="info-label">LEASE STATUS:</span>
+              <span className={`info-value status-${tenantData?.leaseEnd ? (new Date(tenantData.leaseEnd) > new Date() ? 'active' : 'expired') : 'unknown'}`}>
                 {tenantData?.leaseEnd ? (new Date(tenantData.leaseEnd) > new Date() ? 'Active' : 'Expired') : 'Not set'}
+              </span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">LEASE START:</span>
+              <span className="info-value">
+                {tenantData?.leaseStart ? new Date(tenantData.leaseStart).toLocaleDateString() : 'Not set'}
+              </span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">LEASE END:</span>
+              <span className="info-value">
+                {tenantData?.leaseEnd ? new Date(tenantData.leaseEnd).toLocaleDateString() : 'Not set'}
+              </span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">SPECIAL REQUIREMENTS:</span>
+              <span className="info-value description">
+                {tenantData?.specialRequirements || 'None specified'}
               </span>
             </div>
           </div>
@@ -226,11 +392,12 @@ const TenantDashboard = () => {
       {/* Community & Events Row */}
       <div className="dashboard-row">
         <div className="dashboard-card community-card">
-          <h3>Community & Events</h3>
+          <h3>👥 Community & Events</h3>
           <ul className="community-list">
-            <li>Building announcement — Welcome!</li>
+            <li>Building announcement — Welcome to {roomData?.building || 'BCFlats'}!</li>
             <li>Community board — Buy/Sell/Share</li>
-            <li>Event calendar — Movie night</li>
+            <li>Event calendar — Movie night on {roomData?.floor ? `${getFloorSuffix(roomData.floor)} floor` : 'ground floor'}</li>
+            <li>Floor meeting — {roomData?.floor ? `${getFloorSuffix(roomData.floor)} floor` : 'Building'} residents</li>
           </ul>
         </div>
       </div>

@@ -128,6 +128,110 @@
   font-weight: 700;
 }
 
+.info-value.total-amount {
+  color: #667eea;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.info-value.description {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #4a5568;
+  max-width: 200px;
+  text-align: right;
+  line-height: 1.4;
+}
+
+/* Room Type Badge */
+.room-type-badge {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+/* Status Indicators */
+.status-available {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.status-partially-occupied {
+  color: #f59e0b;
+  font-weight: 700;
+}
+
+.status-fully-occupied {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+.status-maintenance {
+  color: #8b5cf6;
+  font-weight: 700;
+}
+
+.status-active {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.status-expired {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+.status-unknown {
+  color: #6b7280;
+  font-weight: 700;
+}
+
+/* Amenities Section */
+.amenities-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid rgba(102, 126, 234, 0.1);
+}
+
+.amenities-section h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.amenities-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.amenity-tag {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+  color: #667eea;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  transition: all 0.3s ease;
+}
+
+.amenity-tag:hover {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
 /* Lists */
 .events-list, .community-list {
   list-style: none;
@@ -382,6 +486,10 @@
   .financial-overview {
     grid-template-columns: 1fr;
   }
+  
+  .amenities-list {
+    justify-content: center;
+  }
 }
 
 @media (max-width: 768px) {
@@ -421,6 +529,14 @@
     align-items: flex-start;
     gap: 0.75rem;
   }
+  
+  .financial-overview {
+    grid-template-columns: 1fr;
+  }
+  
+  .amenities-list {
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 480px) {
@@ -450,5 +566,10 @@
   
   .request-item {
     padding: 0.75rem;
+  }
+  
+  .amenity-tag {
+    font-size: 0.7rem;
+    padding: 0.4rem 0.8rem;
   }
 }

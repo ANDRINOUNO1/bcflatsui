@@ -2,6 +2,14 @@ import { apiService } from './apiService';
 
 const API_BASE_URL = 'http://localhost:3000/api';
 
+// Helper function to format currency in Philippine Peso
+const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-PH', {
+        style: 'currency',
+        currency: 'PHP'
+    }).format(amount || 0);
+};
+
 export const tenantService = {
     // Get tenant statistics
     getTenantStats: async () => {
@@ -145,5 +153,8 @@ export const tenantService = {
             console.error('Error fetching tenant by account ID:', error);
             throw error;
         }
-    }
+    },
+
+    // Helper function to format currency
+    formatCurrency
 };

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { roomService } from '../services/roomService';
 import { tenantService } from '../services/tenantService';
+import { useAuth } from '../context/AuthContext';
 import '../components/Rooms.css';
 
 const RoomPage = () => {
+    const { user } = useAuth();
     const [allRooms, setAllRooms] = useState([]);
     const [rooms, setRooms] = useState([]);
     const [floorFilter, setFloorFilter] = useState('all');
@@ -11,6 +13,11 @@ const RoomPage = () => {
     const [selectedRoom, setSelectedRoom] = useState(null);
     const [showRoomDetails, setShowRoomDetails] = useState(false);
     const [showAddTenant, setShowAddTenant] = useState(false);
+    const [showPricingModal, setShowPricingModal] = useState(false);
+    const [pricingData, setPricingData] = useState({
+        monthlyRent: '',
+        utilities: ''
+    });
     const [newTenant, setNewTenant] = useState({
         accountId: '',
         email: '',
@@ -22,6 +29,9 @@ const RoomPage = () => {
         emergencyContact: { name: '', phone: '', relationship: '' },
         specialRequirements: ''
     });
+
+    // Check if user is admin
+    const isAdmin = user?.role === 'Admin' || user?.role === 'SuperAdmin';
 
     useEffect(() => {
         fetchRooms();
@@ -71,6 +81,33 @@ const RoomPage = () => {
             setShowRoomDetails(true);
         } catch (error) {
             console.error('Error fetching room details:', error);
+        }
+    };
+
+    const handlePricingClick = (room) => {
+        setPricingData({
+            monthlyRent: room.monthlyRent.toString(),
+            utilities: room.utilities.toString()
+        });
+        setSelectedRoom({ room });
+        setShowPricingModal(true);
+    };
+
+    const handleUpdatePricing = async () => {
+        if (!selectedRoom?.room?.id) return;
+
+        try {
+            await roomService.updateRoomPricing(selectedRoom.room.id, {
+                monthlyRent: parseFloat(pricingData.monthlyRent),
+                utilities: parseFloat(pricingData.utilities)
+            });
+            
+            setShowPricingModal(false);
+            await fetchRooms();
+            alert('Pricing updated successfully!');
+        } catch (error) {
+            console.error('Error updating pricing:', error);
+            alert('Error updating pricing: ' + (error.response?.data?.message || error.message));
         }
     };
 
@@ -136,6 +173,16 @@ const RoomPage = () => {
         }
     };
 
+    const loadRoomPricing = async () => {
+        if (selectedRoom?.room) {
+            setNewTenant(prev => ({
+                ...prev,
+                monthlyRent: selectedRoom.room.monthlyRent.toString(),
+                utilities: selectedRoom.room.utilities.toString()
+            }));
+        }
+    };
+
     const handleRemoveTenant = async (tenantId) => {
         if (!selectedRoom) return;
 
@@ -160,6 +207,15 @@ const RoomPage = () => {
         }
     };
 
+    const getRoomTypeColor = (roomType) => {
+        switch (roomType) {
+            case 'Standard': return '#2196F3';
+            case 'Premium': return '#FF9800';
+            case 'Deluxe': return '#9C27B0';
+            default: return '#757575';
+        }
+    };
+
     if (loading) {
         return <div className="rooms-loading">Loading rooms...</div>;
     }
@@ -168,7 +224,7 @@ const RoomPage = () => {
         <div className="rooms-container">
             <div className="rooms-header">
                 <h2>🏠 Room Management</h2>
-                <p>Manage rooms and tenant assignments</p>
+                <p>Manage 8 floors (2nd-9th) with 9 rooms per floor - 72 total rooms</p>
                 <div className="rooms-filters">
                     <label htmlFor="floorFilter">Floor:</label>
                     <select
@@ -176,9 +232,9 @@ const RoomPage = () => {
                         value={floorFilter}
                         onChange={(e) => setFloorFilter(e.target.value)}
                     >
-                        <option value="all">All Floors</option>
+                        <option value="all">All Floors (2nd-9th)</option>
                         {floors.map(f => (
-                            <option key={f} value={f}>Floor {f}</option>
+                            <option key={f} value={f}>{f}{f === 1 ? 'st' : f === 2 ? 'nd' : f === 3 ? 'rd' : 'th'} Floor</option>
                         ))}
                     </select>
                 </div>
@@ -195,16 +251,25 @@ const RoomPage = () => {
                         >
                             <div className="room-header">
                                 <h3>Room {room.roomNumber}</h3>
-                                <span className={`status-badge ${room.status.toLowerCase().replace(' ', '-')}`}>
-                                    {room.status}
-                                </span>
+                                <div className="room-badges">
+                                    <span className={`status-badge ${room.status.toLowerCase().replace(' ', '-')}`}>
+                                        {room.status}
+                                    </span>
+                                    <span 
+                                        className="type-badge"
+                                        style={{ backgroundColor: getRoomTypeColor(room.roomType) }}
+                                    >
+                                        {room.roomType}
+                                    </span>
+                                </div>
                             </div>
                             <div className="room-info">
-                                <p><strong>Floor:</strong> {room.floor}</p>
+                                <p><strong>Floor:</strong> {room.floor}{room.floor === 1 ? 'st' : room.floor === 2 ? 'nd' : room.floor === 3 ? 'rd' : 'th'}</p>
                                 <p><strong>Building:</strong> {room.building}</p>
                                 <p><strong>Type:</strong> {room.roomType}</p>
-                                <p><strong>Rent:</strong> ${room.monthlyRent}</p>
-                                <p><strong>Utilities:</strong> ${room.utilities}</p>
+                                <p><strong>Rent:</strong> ₱{room.monthlyRent.toLocaleString()}</p>
+                                <p><strong>Utilities:</strong> ₱{room.utilities.toLocaleString()}</p>
+                                <p><strong>Total:</strong> ₱{(room.monthlyRent + room.utilities).toLocaleString()}</p>
                             </div>
                             <div className="room-occupancy">
                                 <div className="bed-indicators">
@@ -223,6 +288,19 @@ const RoomPage = () => {
                                     {room.occupiedBeds}/{room.totalBeds} beds occupied
                                 </p>
                             </div>
+                            {isAdmin && (
+                                <div className="room-actions">
+                                    <button 
+                                        className="btn-secondary small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handlePricingClick(room);
+                                        }}
+                                    >
+                                        💰 Edit Pricing
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
@@ -241,6 +319,10 @@ const RoomPage = () => {
                                         <span className="stat-value">{selectedRoom.room.status}</span>
                                     </div>
                                     <div className="stat-item">
+                                        <span className="stat-label">Room Type:</span>
+                                        <span className="stat-value">{selectedRoom.room.roomType}</span>
+                                    </div>
+                                    <div className="stat-item">
                                         <span className="stat-label">Total Beds:</span>
                                         <span className="stat-value">{selectedRoom.room.totalBeds}</span>
                                     </div>
@@ -256,6 +338,22 @@ const RoomPage = () => {
                                         <span className="stat-label">Occupancy Rate:</span>
                                         <span className="stat-value">{selectedRoom.room.occupancyRate}%</span>
                                     </div>
+                                    <div className="stat-item">
+                                        <span className="stat-label">Monthly Rent:</span>
+                                        <span className="stat-value">₱{selectedRoom.room.monthlyRent.toLocaleString()}</span>
+                                    </div>
+                                    <div className="stat-item">
+                                        <span className="stat-label">Utilities:</span>
+                                        <span className="stat-value">₱{selectedRoom.room.utilities.toLocaleString()}</span>
+                                    </div>
+                                    <div className="stat-item">
+                                        <span className="stat-label">Total Monthly:</span>
+                                        <span className="stat-value">₱{(selectedRoom.room.monthlyRent + selectedRoom.room.utilities).toLocaleString()}</span>
+                                    </div>
+                                    <div className="stat-item">
+                                        <span className="stat-label">Per Bed:</span>
+                                        <span className="stat-value">₱{((selectedRoom.room.monthlyRent + selectedRoom.room.utilities) / 4).toFixed(2)}</span>
+                                    </div>
                                 </div>
 
                                 <div className="bed-status">
@@ -269,6 +367,8 @@ const RoomPage = () => {
                                                     <div className="tenant-info">
                                                         <p><strong>Name:</strong> {bed.tenant.firstName} {bed.tenant.lastName}</p>
                                                         <p><strong>Email:</strong> {bed.tenant.email}</p>
+                                                        <p><strong>Rent:</strong> ₱{bed.tenant.monthlyRent.toLocaleString()}</p>
+                                                        <p><strong>Utilities:</strong> ₱{bed.tenant.utilities.toLocaleString()}</p>
                                                         <button
                                                             className="remove-tenant-btn"
                                                             onClick={() => handleRemoveTenant(bed.tenant.id)}
@@ -288,9 +388,23 @@ const RoomPage = () => {
                             </div>
                             <div className="modal-footer">
                                 <button className="btn-secondary" onClick={() => setShowRoomDetails(false)}>Close</button>
+                                {isAdmin && (
+                                    <button 
+                                        className="btn-secondary"
+                                        onClick={() => {
+                                            setShowRoomDetails(false);
+                                            handlePricingClick(selectedRoom.room);
+                                        }}
+                                    >
+                                        💰 Edit Pricing
+                                    </button>
+                                )}
                                 <button
                                     className="btn-primary"
-                                    onClick={() => { setShowAddTenant(true); }}
+                                    onClick={() => { 
+                                        setShowAddTenant(true); 
+                                        loadRoomPricing();
+                                    }}
                                     disabled={selectedRoom.room.availableBeds === 0}
                                 >
                                     + Add Tenant
@@ -300,6 +414,50 @@ const RoomPage = () => {
                     </div>
                 )}
             </div>
+
+            {/* Pricing Update Modal */}
+            {showPricingModal && (
+                <div className="modal-overlay">
+                    <div className="modal">
+                        <div className="modal-header">
+                            <h3>Update Room Pricing</h3>
+                            <button className="close-btn" onClick={() => setShowPricingModal(false)}>×</button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="form-group">
+                                <label>Monthly Rent (₱):</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={pricingData.monthlyRent}
+                                    onChange={(e) => setPricingData({...pricingData, monthlyRent: e.target.value})}
+                                    placeholder="Enter monthly rent"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Utilities (₱):</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={pricingData.utilities}
+                                    onChange={(e) => setPricingData({...pricingData, utilities: e.target.value})}
+                                    placeholder="Enter utilities cost"
+                                />
+                            </div>
+                            <div className="pricing-summary">
+                                <p><strong>Total Monthly:</strong> ₱{(parseFloat(pricingData.monthlyRent) || 0) + (parseFloat(pricingData.utilities) || 0)}</p>
+                                <p><strong>Per Bed (4 beds):</strong> ₱{(((parseFloat(pricingData.monthlyRent) || 0) + (parseFloat(pricingData.utilities) || 0)) / 4).toFixed(2)}</p>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn-secondary" onClick={() => setShowPricingModal(false)}>Cancel</button>
+                            <button className="btn-primary" onClick={handleUpdatePricing}>Update Pricing</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {showAddTenant && (
                 <div className="modal-overlay">
@@ -360,7 +518,7 @@ const RoomPage = () => {
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label>Monthly Rent:</label>
+                                <label>Monthly Rent (₱):</label>
                                 <input
                                     type="number"
                                     step="0.01"
@@ -370,7 +528,7 @@ const RoomPage = () => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Utilities:</label>
+                                <label>Utilities (₱):</label>
                                 <input
                                     type="number"
                                     step="0.01"
@@ -380,7 +538,7 @@ const RoomPage = () => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Deposit:</label>
+                                <label>Deposit (₱):</label>
                                 <input
                                     type="number"
                                     step="0.01"
@@ -388,6 +546,25 @@ const RoomPage = () => {
                                     onChange={(e) => setNewTenant({...newTenant, deposit: e.target.value})}
                                     placeholder="Enter deposit amount"
                                 />
+                            </div>
+                            <div className="pricing-summary">
+                                <h4>💰 Pricing Summary</h4>
+                                <div className="summary-item">
+                                    <span>Monthly Rent:</span>
+                                    <span>₱{parseFloat(newTenant.monthlyRent || 0).toLocaleString()}</span>
+                                </div>
+                                <div className="summary-item">
+                                    <span>Utilities:</span>
+                                    <span>₱{parseFloat(newTenant.utilities || 0).toLocaleString()}</span>
+                                </div>
+                                <div className="summary-item total">
+                                    <span>Total Monthly:</span>
+                                    <span>₱{(parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)).toLocaleString()}</span>
+                                </div>
+                                <div className="summary-item">
+                                    <span>Per Bed (4 beds):</span>
+                                    <span>₱{(((parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)) / 4)).toFixed(2)}</span>
+                                </div>
                             </div>
                             <div className="form-group">
                                 <label>Emergency Contact Name:</label>
