@@ -2,6 +2,7 @@ import { BrowserRouter as Router } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import AppRoutes from './routes/AppRoutes'
 import './App.css'
+import './components/BootstrapOverrides.css'
 
 function App() {
   return (

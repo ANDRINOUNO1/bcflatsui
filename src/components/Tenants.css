@@ -1,12 +1,13 @@
 .tenants-container {
     padding: 20px;
-    max-width: 1400px;
-    margin: 0 auto;
+    width: 100%;
+    margin: 0;
+    max-width: none;
 }
 
 .tenants-header {
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
 .tenants-header h2 {
@@ -24,6 +25,7 @@
     display: inline-flex;
     gap: 8px;
     align-items: center;
+    justify-content: center;
 }
 
 .tenants-filters label {
@@ -89,18 +91,25 @@
 }
 
 .tenants-content {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: calc(100vh - 200px);
+    min-height: 600px;
+    gap: 20px;
 }
 
 .tenants-list {
-    background: white;
-    border-radius: 12px;
-    padding: 25px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    max-height: 80vh;
-    overflow-y: auto;
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(31, 41, 55, 0.08);
+    width: 100%;
+    height: auto;
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #eef2f7;
 }
 
 .list-header {
@@ -110,26 +119,39 @@
     margin-bottom: 25px;
     padding-bottom: 15px;
     border-bottom: 2px solid #f0f0f0;
+    flex-shrink: 0;
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 0 0 25px 0;
 }
 
 .list-header h3 {
     margin: 0;
     color: #333;
+    font-size: 20px;
+    font-weight: 600;
 }
 
 .add-tenant-btn {
     background: #4CAF50;
     color: white;
     border: none;
-    padding: 10px 20px;
-    border-radius: 6px;
+    padding: 12px 24px;
+    border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
-    transition: background 0.3s ease;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .add-tenant-btn:hover {
     background: #45a049;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
 }
 
 .tenants-grid {
@@ -140,38 +162,72 @@
 
 .tenants-table-wrapper {
     width: 100%;
-    overflow-x: auto;
-}
-
-.tenants-empty {
-    padding: 24px;
-    text-align: center;
-    color: #666;
+    overflow: visible;
+    height: auto;
+    border-radius: 12px;
+    flex: initial;
+    min-height: 0;
+    border: 1px solid #e9eef5;
+    background: #fbfdff;
 }
 
 .tenants-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
+    min-height: 400px;
+    table-layout: fixed;
 }
 
 .tenants-table th,
 .tenants-table td {
-    border-bottom: 1px solid #eee;
-    padding: 12px 10px;
+    border-bottom: 1px solid #eef2f7;
+    padding: 12px 12px;
     text-align: left;
     font-size: 14px;
-    color: #333;
+    color: #1f2937;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: none;
+    min-width: 80px;
 }
 
-.tenants-table thead th {
+.tenants-table th {
     position: sticky;
     top: 0;
-    background: #fafafa;
+    background: #f3f6fb;
     z-index: 1;
+    font-weight: 600;
+    color: #334155;
+    border-bottom: 2px solid #e5edf7;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.5px;
 }
 
-.tenants-table tr:hover {
-    background: #f7fafe;
+.tenants-table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.tenants-table tbody tr:nth-child(even) { background: #fafcff; }
+.tenants-table tbody tr:hover { background: #f0f6ff; }
+
+.tenants-empty {
+    padding: 40px 24px;
+    text-align: center;
+    color: #666;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin: 20px 0;
+    border: 2px dashed #e0e0e0;
+}
+
+.tenants-empty::before {
+    content: '👥';
+    font-size: 48px;
+    display: block;
+    margin-bottom: 16px;
 }
 
 .tenant-card {
@@ -243,10 +299,9 @@
 
 .tenant-actions {
     display: flex;
-    gap: 10px;
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid #e0e0e0;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
 }
 
 .action-btn {
@@ -287,12 +342,15 @@
 }
 
 .tenant-details {
-    background: white;
-    border-radius: 12px;
-    padding: 25px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    max-height: 80vh;
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 12px 32px rgba(31, 41, 55, 0.08);
+    width: 100%;
+    height: auto;
+    min-height: 400px;
     overflow-y: auto;
+    border: 1px solid #eef2f7;
 }
 
 .details-header {
@@ -313,9 +371,10 @@
 }
 
 .profile-section {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 20px;
+    background: #f7faff;
+    border-radius: 12px;
+    padding: 18px;
+    border: 1px solid #e7eef7;
 }
 
 .profile-section h4 {
@@ -328,8 +387,8 @@
 
 .info-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px 18px;
 }
 
 .info-item {
@@ -495,18 +554,51 @@
 }
 
 /* Responsive Design */
-@media (max-width: 1024px) {
+@media (max-width: 1400px) {
     .tenants-content {
-        grid-template-columns: 1fr;
         gap: 20px;
     }
     
+    .tenants-table th,
+    .tenants-table td {
+        min-width: 100px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .tenants-content {
+        gap: 20px;
+    }
+    
+    .tenants-table th,
+    .tenants-table td {
+        padding: 12px 10px;
+        font-size: 13px;
+        min-width: 90px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .tenants-content {
+        height: auto;
+    }
+    
     .tenants-list {
-        max-height: 50vh;
+        height: 60vh;
     }
     
     .tenant-details {
-        max-height: 50vh;
+        height: auto;
+        min-height: 60vh;
+    }
+    
+    .tenants-table-wrapper {
+        height: calc(100% - 100px);
+    }
+    
+    .tenants-table th,
+    .tenants-table td {
+        min-width: 80px;
     }
 }
 
@@ -525,6 +617,16 @@
         flex-direction: column;
         text-align: center;
         gap: 15px;
+    }
+    
+    .tenants-table-wrapper {
+        height: calc(100% - 120px);
+    }
+    
+    .tenants-table th,
+    .tenants-table td {
+        padding: 12px 8px;
+        font-size: 13px;
     }
     
     .info-grid {
@@ -569,4 +671,55 @@
     .modal-footer {
         flex-direction: column;
     }
+}
+
+/* Pricing Summary */
+.pricing-summary {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+}
+
+.pricing-summary h4 {
+    margin: 0 0 1rem 0;
+    color: #1a1a1a;
+    font-size: 1.1rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.summary-item:last-child {
+    border-bottom: none;
+}
+
+.summary-item.total {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #667eea;
+    border-top: 2px solid rgba(102, 126, 234, 0.2);
+    border-bottom: none;
+    padding-top: 1rem;
+    margin-top: 0.5rem;
+}
+
+.summary-item span:first-child {
+    color: #4a5568;
+    font-weight: 600;
+}
+
+.summary-item span:last-child {
+    color: #1a1a1a;
+    font-weight: 700;
 }

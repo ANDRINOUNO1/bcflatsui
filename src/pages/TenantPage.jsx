@@ -15,6 +15,8 @@ const TenantPage = () => {
     const [floorsList, setFloorsList] = useState([]);
     const [newTenant, setNewTenant] = useState({
         accountId: '',
+        email: '',
+        password: '',
         roomId: '',
         bedNumber: 1,
         monthlyRent: '',
@@ -92,6 +94,7 @@ const TenantPage = () => {
                 const firstRoomId = rooms[0].id;
                 setNewTenant((prev) => ({ ...prev, roomId: firstRoomId }));
                 await loadAvailableBeds(firstRoomId);
+                await loadRoomPricing(firstRoomId);
             } else {
                 setAvailableBeds([]);
             }
@@ -113,17 +116,49 @@ const TenantPage = () => {
         }
     };
 
+    const loadRoomPricing = async (roomId) => {
+        try {
+            const room = await roomService.getRoomById(roomId);
+            setNewTenant(prev => ({
+                ...prev,
+                monthlyRent: room.monthlyRent.toString(),
+                utilities: room.utilities.toString()
+            }));
+        } catch (error) {
+            console.error('Error loading room pricing:', error);
+        }
+    };
+
     const handleAddTenant = async () => {
-        if (!newTenant.accountId || !newTenant.roomId || !newTenant.monthlyRent) {
-            alert('Please fill in all required fields');
+        const hasAccountId = !!newTenant.accountId;
+        const hasCreds = newTenant.email && newTenant.password && newTenant.password.length >= 6;
+        if ((!hasAccountId && !hasCreds) || !newTenant.roomId || !newTenant.monthlyRent) {
+            alert('Please provide Account ID or Email + Password (6+ chars), Room and Monthly Rent');
             return;
         }
 
         try {
-            await tenantService.createTenant(newTenant);
+            const payload = {
+                ...newTenant,
+                accountId: newTenant.accountId ? parseInt(newTenant.accountId) : undefined,
+                roomId: newTenant.roomId ? parseInt(newTenant.roomId) : undefined,
+                bedNumber: newTenant.bedNumber ? parseInt(newTenant.bedNumber) : 1,
+            };
+            
+            if (hasCreds) {
+                delete payload.accountId;
+            }
+            const result = await tenantService.createTenant(payload);
+            
+           
+            if (result && result.accountId) {
+                console.log('Created tenant with accountId:', result.accountId);
+            }
             setShowAddTenant(false);
             setNewTenant({
                 accountId: '',
+                email: '',
+                password: '',
                 roomId: '',
                 bedNumber: 1,
                 monthlyRent: '',
@@ -136,7 +171,8 @@ const TenantPage = () => {
             fetchStats();
         } catch (error) {
             console.error('Error adding tenant:', error);
-            alert('Error adding tenant: ' + error.message);
+            const msg = error.response?.data?.message || error.message || 'Unknown error';
+            alert('Error adding tenant: ' + msg);
         }
     };
 
@@ -166,19 +202,33 @@ const TenantPage = () => {
         }
     };
 
-    const handleDeleteTenant = async (tenantId) => {
-        if (!confirm('Are you sure you want to delete this tenant?')) return;
+    const handleDeleteTenant = async (tenant) => {
+        // If tenant is active, offer to check out first (backend blocks deletion otherwise)
+        if (tenant.status === 'Active') {
+            const proceed = confirm('This tenant is currently Active. Do you want to check them out and delete?');
+            if (!proceed) return;
+            try {
+                await tenantService.checkOutTenant(tenant.id);
+            } catch (error) {
+                const msg = error.response?.data?.message || error.message || 'Unknown error';
+                alert('Error checking out tenant before delete: ' + msg);
+                return;
+            }
+        } else {
+            if (!confirm('Are you sure you want to delete this tenant?')) return;
+        }
 
         try {
-            await tenantService.deleteTenant(tenantId);
+            await tenantService.deleteTenant(tenant.id);
             fetchTenants();
             fetchStats();
-            if (selectedTenant && selectedTenant.id === tenantId) {
+            if (selectedTenant && selectedTenant.id === tenant.id) {
                 setSelectedTenant(null);
             }
         } catch (error) {
             console.error('Error deleting tenant:', error);
-            alert('Error deleting tenant: ' + error.message);
+            const msg = error.response?.data?.message || error.message || 'Unknown error';
+            alert('Error deleting tenant: ' + msg);
         }
     };
 
@@ -242,7 +292,7 @@ const TenantPage = () => {
                     <div className="stat-card">
                         <div className="stat-icon">💰</div>
                         <div className="stat-content">
-                            <div className="stat-value">${stats.totalIncome.toFixed(2)}</div>
+                            <div className="stat-value">₱{stats.totalIncome.toLocaleString()}</div>
                             <div className="stat-label">Total Income</div>
                         </div>
                     </div>
@@ -274,7 +324,7 @@ const TenantPage = () => {
                                     <th>Status</th>
                                     <th>Check-in</th>
                                     <th>Check-out</th>
-                                    <th>Monthly Rent</th>
+                                    <th>Monthly Rent per Bed</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -297,7 +347,7 @@ const TenantPage = () => {
                                         </td>
                                         <td>{new Date(tenant.checkInDate).toLocaleDateString()}</td>
                                         <td>{tenant.checkOutDate ? new Date(tenant.checkOutDate).toLocaleDateString() : '-'}</td>
-                                        <td>${tenant.monthlyRent}</td>
+                                        <td>₱{tenant.monthlyRent.toLocaleString()}</td>
                                         <td>
                                             <div className="tenant-actions">
                                                 {tenant.status === 'Pending' && (
@@ -318,7 +368,7 @@ const TenantPage = () => {
                                                 )}
                                                 <button
                                                     className="action-btn delete-btn"
-                                                    onClick={(e) => { e.stopPropagation(); handleDeleteTenant(tenant.id); }}
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteTenant(tenant); }}
                                                 >
                                                     Delete
                                                 </button>
@@ -333,11 +383,14 @@ const TenantPage = () => {
                 </div>
 
                 {selectedTenant && (
-                    <div className="tenant-details">
-                        <div className="details-header">
-                            <h3>Tenant Details</h3>
-                        </div>
-                        <div className="tenant-profile">
+                    <div className="modal-overlay" onClick={() => setSelectedTenant(null)}>
+                        <div className="modal modal-large" onClick={(e) => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h3>Tenant Details</h3>
+                                <button className="close-btn" onClick={() => setSelectedTenant(null)}>×</button>
+                            </div>
+                            <div className="modal-body">
+                                <div className="tenant-profile">
                             <div className="profile-section">
                                 <h4>Personal Information</h4>
                                 <div className="info-grid">
@@ -386,20 +439,20 @@ const TenantPage = () => {
                                 <h4>Financial Information</h4>
                                 <div className="info-grid">
                                     <div className="info-item">
-                                        <span className="info-label">Monthly Rent:</span>
-                                        <span className="info-value">${selectedTenant.monthlyRent}</span>
+                                        <span className="info-label">Monthly Rent per Bed:</span>
+                                        <span className="info-value">₱{selectedTenant.monthlyRent.toLocaleString()}</span>
                                     </div>
                                     <div className="info-item">
-                                        <span className="info-label">Utilities:</span>
-                                        <span className="info-value">${selectedTenant.utilities}</span>
+                                        <span className="info-label">Utilities per Bed:</span>
+                                        <span className="info-value">₱{selectedTenant.utilities.toLocaleString()}</span>
                                     </div>
                                     <div className="info-item">
                                         <span className="info-label">Deposit:</span>
-                                        <span className="info-value">${selectedTenant.deposit}</span>
+                                        <span className="info-value">₱{selectedTenant.deposit.toLocaleString()}</span>
                                     </div>
                                     <div className="info-item">
                                         <span className="info-label">Total Monthly:</span>
-                                        <span className="info-value">${(parseFloat(selectedTenant.monthlyRent) + parseFloat(selectedTenant.utilities)).toFixed(2)}</span>
+                                        <span className="info-value">₱{(parseFloat(selectedTenant.monthlyRent) + parseFloat(selectedTenant.utilities)).toLocaleString()}</span>
                                     </div>
                                 </div>
                             </div>
@@ -445,6 +498,11 @@ const TenantPage = () => {
                                         </div>
                                     )}
                                 </div>
+                                </div>
+                            </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button className="btn-secondary" onClick={() => setSelectedTenant(null)}>Close</button>
                             </div>
                         </div>
                     </div>
@@ -460,12 +518,32 @@ const TenantPage = () => {
                         </div>
                         <div className="modal-body">
                             <div className="form-group">
-                                <label>Account ID:</label>
+                                <label>Account ID (optional):</label>
                                 <input
                                     type="number"
                                     value={newTenant.accountId}
                                     onChange={(e) => setNewTenant({...newTenant, accountId: e.target.value})}
                                     placeholder="Enter account ID"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Account Email:</label>
+                                <input
+                                    type="email"
+                                    value={newTenant.email || ''}
+                                    onChange={(e) => setNewTenant({ ...newTenant, email: e.target.value })}
+                                    placeholder="Enter tenant email (e.g., tenant@example.com)"
+                                    pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                                    title="Please enter a valid email address"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Account Password:</label>
+                                <input
+                                    type="password"
+                                    value={newTenant.password || ''}
+                                    onChange={(e) => setNewTenant({ ...newTenant, password: e.target.value })}
+                                    placeholder="Set tenant password"
                                 />
                             </div>
                             <div className="form-group">
@@ -476,6 +554,7 @@ const TenantPage = () => {
                                         const roomId = parseInt(e.target.value);
                                         setNewTenant({ ...newTenant, roomId });
                                         await loadAvailableBeds(roomId);
+                                        await loadRoomPricing(roomId);
                                     }}
                                 >
                                     {availableRooms.map((room) => (
@@ -500,27 +579,27 @@ const TenantPage = () => {
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label>Monthly Rent:</label>
+                                <label>Monthly Rent per Bed (₱):</label>
                                 <input
                                     type="number"
                                     step="0.01"
                                     value={newTenant.monthlyRent}
                                     onChange={(e) => setNewTenant({...newTenant, monthlyRent: e.target.value})}
-                                    placeholder="Enter monthly rent"
+                                    placeholder="Enter monthly rent per bed"
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Utilities:</label>
+                                <label>Utilities per Bed (₱):</label>
                                 <input
                                     type="number"
                                     step="0.01"
                                     value={newTenant.utilities}
                                     onChange={(e) => setNewTenant({...newTenant, utilities: e.target.value})}
-                                    placeholder="Enter utilities cost"
+                                    placeholder="Enter utilities cost per bed"
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Deposit:</label>
+                                <label>Deposit (₱):</label>
                                 <input
                                     type="number"
                                     step="0.01"
@@ -528,6 +607,25 @@ const TenantPage = () => {
                                     onChange={(e) => setNewTenant({...newTenant, deposit: e.target.value})}
                                     placeholder="Enter deposit amount"
                                 />
+                            </div>
+                            <div className="pricing-summary">
+                                <h4>💰 Pricing Summary (Per Bed)</h4>
+                                <div className="summary-item">
+                                    <span>Monthly Rent per Bed:</span>
+                                    <span>₱{parseFloat(newTenant.monthlyRent || 0).toLocaleString()}</span>
+                                </div>
+                                <div className="summary-item">
+                                    <span>Utilities per Bed:</span>
+                                    <span>₱{parseFloat(newTenant.utilities || 0).toLocaleString()}</span>
+                                </div>
+                                <div className="summary-item total">
+                                    <span>Total per Bed:</span>
+                                    <span>₱{(parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)).toLocaleString()}</span>
+                                </div>
+                                <div className="summary-item">
+                                    <span>Room Total (4 beds):</span>
+                                    <span>₱{(((parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)) * 4)).toFixed(2)}</span>
+                                </div>
                             </div>
                             <div className="form-group">
                                 <label>Emergency Contact Name:</label>
@@ -551,6 +649,18 @@ const TenantPage = () => {
                                         emergencyContact: {...newTenant.emergencyContact, phone: e.target.value}
                                     })}
                                     placeholder="Enter emergency contact phone"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Emergency Contact Relationship:</label>
+                                <input
+                                    type="text"
+                                    value={newTenant.emergencyContact.relationship}
+                                    onChange={(e) => setNewTenant({
+                                        ...newTenant,
+                                        emergencyContact: {...newTenant.emergencyContact, relationship: e.target.value}
+                                    })}
+                                    placeholder="Enter relationship (e.g., Parent, Sibling, Friend)"
                                 />
                             </div>
                             <div className="form-group">

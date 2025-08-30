@@ -1,17 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { roomService } from '../services/roomService';
 import { tenantService } from '../services/tenantService';
+import { useAuth } from '../context/AuthContext';
 import '../components/Rooms.css';
 
 const RoomPage = () => {
+    const { user } = useAuth();
+    const [allRooms, setAllRooms] = useState([]);
     const [rooms, setRooms] = useState([]);
     const [floorFilter, setFloorFilter] = useState('all');
     const [loading, setLoading] = useState(true);
     const [selectedRoom, setSelectedRoom] = useState(null);
     const [showRoomDetails, setShowRoomDetails] = useState(false);
     const [showAddTenant, setShowAddTenant] = useState(false);
+    const [showPricingModal, setShowPricingModal] = useState(false);
+    const [pricingData, setPricingData] = useState({
+        monthlyRent: '',
+        utilities: ''
+    });
     const [newTenant, setNewTenant] = useState({
         accountId: '',
+        email: '',
+        password: '',
         bedNumber: 1,
         monthlyRent: '',
         utilities: '',
@@ -20,26 +30,40 @@ const RoomPage = () => {
         specialRequirements: ''
     });
 
+    // Check if user is admin
+    const isAdmin = user?.role === 'Admin' || user?.role === 'SuperAdmin';
+
     useEffect(() => {
         fetchRooms();
     }, []);
+
+    // Recompute visible rooms whenever filter or allRooms changes
+    useEffect(() => {
+        if (floorFilter === 'all') {
+            setRooms(allRooms);
+        } else {
+            setRooms(allRooms.filter(r => String(r.floor) === String(floorFilter)));
+        }
+    }, [floorFilter, allRooms]);
 
     const fetchRooms = async () => {
         try {
             setLoading(true);
             console.log(' RoomPage: Fetching rooms...');
-            const roomsData = await roomService.getAllRooms(floorFilter === 'all' ? undefined : floorFilter);
+            // Always fetch all rooms; filtering is client-side to avoid clearing
+            const roomsData = await roomService.getAllRooms();
             console.log(' RoomPage: Rooms fetched successfully:', roomsData.length);
-            setRooms(roomsData);
+            setAllRooms(roomsData);
+            // Keep selection if it still exists
             if (selectedRoom) {
                 const stillExists = roomsData.some(r => r.id === selectedRoom?.room?.id || r.id === selectedRoom?.id);
                 if (!stillExists) setSelectedRoom(null);
             }
         } catch (error) {
             console.error('❌ RoomPage: Error fetching rooms:', error);
-            // Don't redirect on auth errors, just show empty state
             if (error.response?.status === 401) {
                 console.log(' RoomPage: Authentication error, showing empty state');
+                setAllRooms([]);
                 setRooms([]);
             }
         } finally {
@@ -47,8 +71,8 @@ const RoomPage = () => {
         }
     };
 
-    const floors = Array.from(new Set(rooms.map(r => r.floor))).sort((a, b) => a - b);
-    const filteredRooms = floorFilter === 'all' ? rooms : rooms.filter(r => String(r.floor) === String(floorFilter));
+    const floors = Array.from(new Set(allRooms.map(r => r.floor))).sort((a, b) => a - b);
+    const filteredRooms = floorFilter === 'all' ? rooms : rooms; // rooms already filtered via effect
 
     const handleRoomClick = async (room) => {
         try {
@@ -60,17 +84,78 @@ const RoomPage = () => {
         }
     };
 
+    const handlePricingClick = (room) => {
+        setPricingData({
+            monthlyRent: (room.monthlyRent || 0).toString(),
+            utilities: (room.utilities || 0).toString()
+        });
+        setSelectedRoom({ room });
+        setShowPricingModal(true);
+    };
+
+    const handleUpdatePricing = async () => {
+        if (!selectedRoom?.room?.id) return;
+
+        try {
+            await roomService.updateRoomPricing(selectedRoom.room.id, {
+                monthlyRent: parseFloat(pricingData.monthlyRent),
+                utilities: parseFloat(pricingData.utilities)
+            });
+            
+            setShowPricingModal(false);
+            await fetchRooms();
+            alert('Pricing updated successfully!');
+        } catch (error) {
+            console.error('Error updating pricing:', error);
+            alert('Error updating pricing: ' + (error.response?.data?.message || error.message));
+        }
+    };
+
+    const loadAvailableBeds = async (roomId) => {
+        try {
+            const bedStatus = await roomService.getRoomBedStatus(roomId);
+            const freeBeds = bedStatus.bedStatus
+                .filter(b => b.status === 'Available')
+                .map(b => b.bedNumber);
+            return freeBeds;
+        } catch (error) {
+            console.error('Error loading bed options:', error);
+            return [1, 2, 3, 4];
+        }
+    };
+
     const handleAddTenant = async () => {
-        if (!selectedRoom || !newTenant.accountId || !newTenant.monthlyRent) {
-            alert('Please fill in all required fields');
+        const hasAccountId = !!newTenant.accountId;
+        const hasCreds = newTenant.email && newTenant.password && newTenant.password.length >= 6;
+        if ((!hasAccountId && !hasCreds) || !newTenant.monthlyRent) {
+            alert('Please provide Account ID or Email + Password (6+ chars), and Monthly Rent');
             return;
         }
 
         try {
-            await roomService.addTenantToRoom(selectedRoom.room.id, newTenant);
+            const payload = {
+                ...newTenant,
+                roomId: selectedRoom.room.id,
+                accountId: newTenant.accountId ? parseInt(newTenant.accountId) : undefined,
+                bedNumber: newTenant.bedNumber ? parseInt(newTenant.bedNumber) : 1,
+            };
+            // If creating via email/password, ensure accountId is not sent
+            if (hasCreds) {
+                delete payload.accountId;
+            }
+            
+            const result = await tenantService.createTenant(payload);
+            
+            // Store the created tenant's accountId for navigation if needed
+            if (result && result.accountId) {
+                console.log('Created tenant with accountId:', result.accountId);
+            }
+            
             setShowAddTenant(false);
             setNewTenant({
                 accountId: '',
+                email: '',
+                password: '',
                 bedNumber: 1,
                 monthlyRent: '',
                 utilities: '',
@@ -78,11 +163,23 @@ const RoomPage = () => {
                 emergencyContact: { name: '', phone: '', relationship: '' },
                 specialRequirements: ''
             });
-            fetchRooms();
-            handleRoomClick(rooms.find(r => r.id === selectedRoom.room.id));
+            await fetchRooms();
+            const refreshed = (allRooms.find(r => r.id === selectedRoom.room.id));
+            if (refreshed) handleRoomClick(refreshed);
         } catch (error) {
             console.error('Error adding tenant:', error);
-            alert('Error adding tenant: ' + error.message);
+            const msg = error.response?.data?.message || error.message || 'Unknown error';
+            alert('Error adding tenant: ' + msg);
+        }
+    };
+
+    const loadRoomPricing = async () => {
+        if (selectedRoom?.room) {
+            setNewTenant(prev => ({
+                ...prev,
+                monthlyRent: selectedRoom.room.monthlyRent.toString(),
+                utilities: selectedRoom.room.utilities.toString()
+            }));
         }
     };
 
@@ -91,8 +188,9 @@ const RoomPage = () => {
 
         try {
             await roomService.removeTenantFromRoom(selectedRoom.room.id, tenantId);
-            fetchRooms();
-            handleRoomClick(rooms.find(r => r.id === selectedRoom.room.id));
+            await fetchRooms();
+            const refreshed = (allRooms.find(r => r.id === selectedRoom.room.id));
+            if (refreshed) handleRoomClick(refreshed);
         } catch (error) {
             console.error('Error removing tenant:', error);
             alert('Error removing tenant: ' + error.message);
@@ -117,17 +215,17 @@ const RoomPage = () => {
         <div className="rooms-container">
             <div className="rooms-header">
                 <h2>🏠 Room Management</h2>
-                <p>Manage rooms and tenant assignments</p>
+                <p>Manage 8 floors (2nd-9th) with 9 rooms per floor - 72 total rooms</p>
                 <div className="rooms-filters">
                     <label htmlFor="floorFilter">Floor:</label>
                     <select
                         id="floorFilter"
                         value={floorFilter}
-                        onChange={async (e) => { setFloorFilter(e.target.value); await fetchRooms(); }}
+                        onChange={(e) => setFloorFilter(e.target.value)}
                     >
-                        <option value="all">All Floors</option>
+                        <option value="all">All Floors (2nd-9th)</option>
                         {floors.map(f => (
-                            <option key={f} value={f}>Floor {f}</option>
+                            <option key={f} value={f}>{f}{f === 1 ? 'st' : f === 2 ? 'nd' : f === 3 ? 'rd' : 'th'} Floor</option>
                         ))}
                     </select>
                 </div>
@@ -144,16 +242,18 @@ const RoomPage = () => {
                         >
                             <div className="room-header">
                                 <h3>Room {room.roomNumber}</h3>
-                                <span className={`status-badge ${room.status.toLowerCase().replace(' ', '-')}`}>
-                                    {room.status}
-                                </span>
+                                <div className="room-badges">
+                                    <span className={`status-badge ${room.status.toLowerCase().replace(' ', '-')}`}>
+                                        {room.status}
+                                    </span>
+                                </div>
                             </div>
                             <div className="room-info">
-                                <p><strong>Floor:</strong> {room.floor}</p>
+                                <p><strong>Floor:</strong> {room.floor}{room.floor === 1 ? 'st' : room.floor === 2 ? 'nd' : room.floor === 3 ? 'rd' : 'th'}</p>
                                 <p><strong>Building:</strong> {room.building}</p>
-                                <p><strong>Type:</strong> {room.roomType}</p>
-                                <p><strong>Rent:</strong> ${room.monthlyRent}</p>
-                                <p><strong>Utilities:</strong> ${room.utilities}</p>
+                                <p><strong>Rent per Bed:</strong> ₱{(room.monthlyRent || 0).toLocaleString()}</p>
+                                <p><strong>Utilities per Bed:</strong> ₱{(room.utilities || 0).toLocaleString()}</p>
+                                <p><strong>Total per Bed:</strong> ₱{((room.monthlyRent || 0) + (room.utilities || 0)).toLocaleString()}</p>
                             </div>
                             <div className="room-occupancy">
                                 <div className="bed-indicators">
@@ -172,6 +272,19 @@ const RoomPage = () => {
                                     {room.occupiedBeds}/{room.totalBeds} beds occupied
                                 </p>
                             </div>
+                            {isAdmin && (
+                                <div className="room-actions">
+                                    <button 
+                                        className="btn-secondary small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handlePricingClick(room);
+                                        }}
+                                    >
+                                        💰 Edit Pricing
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
@@ -205,6 +318,22 @@ const RoomPage = () => {
                                         <span className="stat-label">Occupancy Rate:</span>
                                         <span className="stat-value">{selectedRoom.room.occupancyRate}%</span>
                                     </div>
+                                    <div className="stat-item">
+                                        <span className="stat-label">Monthly Rent per Bed:</span>
+                                        <span className="stat-value">₱{(selectedRoom.room.monthlyRent || 0).toLocaleString()}</span>
+                                    </div>
+                                    <div className="stat-item">
+                                        <span className="stat-label">Utilities per Bed:</span>
+                                        <span className="stat-value">₱{(selectedRoom.room.utilities || 0).toLocaleString()}</span>
+                                    </div>
+                                    <div className="stat-item">
+                                        <span className="stat-label">Total per Bed:</span>
+                                        <span className="stat-value">₱{((selectedRoom.room.monthlyRent || 0) + (selectedRoom.room.utilities || 0)).toLocaleString()}</span>
+                                    </div>
+                                    <div className="stat-item">
+                                        <span className="stat-label">Room Total (4 beds):</span>
+                                        <span className="stat-value">₱{(((selectedRoom.room.monthlyRent || 0) + (selectedRoom.room.utilities || 0)) * 4).toLocaleString()}</span>
+                                    </div>
                                 </div>
 
                                 <div className="bed-status">
@@ -218,6 +347,8 @@ const RoomPage = () => {
                                                     <div className="tenant-info">
                                                         <p><strong>Name:</strong> {bed.tenant.firstName} {bed.tenant.lastName}</p>
                                                         <p><strong>Email:</strong> {bed.tenant.email}</p>
+                                                        <p><strong>Rent per Bed:</strong> ₱{(bed.tenant.monthlyRent || 0).toLocaleString()}</p>
+                                                        <p><strong>Utilities per Bed:</strong> ₱{(bed.tenant.utilities || 0).toLocaleString()}</p>
                                                         <button
                                                             className="remove-tenant-btn"
                                                             onClick={() => handleRemoveTenant(bed.tenant.id)}
@@ -237,9 +368,23 @@ const RoomPage = () => {
                             </div>
                             <div className="modal-footer">
                                 <button className="btn-secondary" onClick={() => setShowRoomDetails(false)}>Close</button>
+                                {isAdmin && (
+                                    <button 
+                                        className="btn-secondary"
+                                        onClick={() => {
+                                            setShowRoomDetails(false);
+                                            handlePricingClick(selectedRoom.room);
+                                        }}
+                                    >
+                                        💰 Edit Pricing
+                                    </button>
+                                )}
                                 <button
                                     className="btn-primary"
-                                    onClick={() => { setShowAddTenant(true); }}
+                                    onClick={() => { 
+                                        setShowAddTenant(true); 
+                                        loadRoomPricing();
+                                    }}
                                     disabled={selectedRoom.room.availableBeds === 0}
                                 >
                                     + Add Tenant
@@ -250,6 +395,50 @@ const RoomPage = () => {
                 )}
             </div>
 
+            {/* Pricing Update Modal */}
+            {showPricingModal && (
+                <div className="modal-overlay">
+                    <div className="modal">
+                        <div className="modal-header">
+                            <h3>Update Room Pricing</h3>
+                            <button className="close-btn" onClick={() => setShowPricingModal(false)}>×</button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="form-group">
+                                <label>Monthly Rent per Bed (₱):</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={pricingData.monthlyRent}
+                                    onChange={(e) => setPricingData({...pricingData, monthlyRent: e.target.value})}
+                                    placeholder="Enter monthly rent per bed"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Utilities per Bed (₱):</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={pricingData.utilities}
+                                    onChange={(e) => setPricingData({...pricingData, utilities: e.target.value})}
+                                    placeholder="Enter utilities cost per bed"
+                                />
+                            </div>
+                            <div className="pricing-summary">
+                                <p><strong>Total per Bed:</strong> ₱{((parseFloat(pricingData.monthlyRent) || 0) + (parseFloat(pricingData.utilities) || 0)).toLocaleString()}</p>
+                                <p><strong>Room Total (4 beds):</strong> ₱{(((parseFloat(pricingData.monthlyRent) || 0) + (parseFloat(pricingData.utilities) || 0)) * 4).toLocaleString()}</p>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn-secondary" onClick={() => setShowPricingModal(false)}>Cancel</button>
+                            <button className="btn-primary" onClick={handleUpdatePricing}>Update Pricing</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {showAddTenant && (
                 <div className="modal-overlay">
                     <div className="modal">
@@ -259,7 +448,7 @@ const RoomPage = () => {
                         </div>
                         <div className="modal-body">
                             <div className="form-group">
-                                <label>Account ID:</label>
+                                <label>Account ID (optional):</label>
                                 <input
                                     type="number"
                                     value={newTenant.accountId}
@@ -268,38 +457,68 @@ const RoomPage = () => {
                                 />
                             </div>
                             <div className="form-group">
+                                <label>Account Email:</label>
+                                <input
+                                    type="email"
+                                    value={newTenant.email || ''}
+                                    onChange={(e) => setNewTenant({ ...newTenant, email: e.target.value })}
+                                    placeholder="Enter tenant email (e.g., tenant@example.com)"
+                                    pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                                    title="Please enter a valid email address"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Account Password:</label>
+                                <input
+                                    type="password"
+                                    value={newTenant.password || ''}
+                                    onChange={(e) => setNewTenant({ ...newTenant, password: e.target.value })}
+                                    placeholder="Set tenant password"
+                                />
+                            </div>
+                            <div className="form-group">
                                 <label>Bed Number:</label>
                                 <select
                                     value={newTenant.bedNumber}
                                     onChange={(e) => setNewTenant({...newTenant, bedNumber: parseInt(e.target.value)})}
                                 >
-                                    {[1, 2, 3, 4].map(num => (
-                                        <option key={num} value={num}>Bed {num}</option>
-                                    ))}
+                                    {selectedRoom && selectedRoom.bedStatus ? (
+                                        selectedRoom.bedStatus
+                                            .filter(b => b.status === 'Available')
+                                            .map(b => (
+                                                <option key={b.bedNumber} value={b.bedNumber}>
+                                                    Bed {b.bedNumber}
+                                                </option>
+                                            ))
+                                    ) : (
+                                        [1, 2, 3, 4].map(num => (
+                                            <option key={num} value={num}>Bed {num}</option>
+                                        ))
+                                    )}
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label>Monthly Rent:</label>
+                                <label>Monthly Rent per Bed (₱):</label>
                                 <input
                                     type="number"
                                     step="0.01"
                                     value={newTenant.monthlyRent}
                                     onChange={(e) => setNewTenant({...newTenant, monthlyRent: e.target.value})}
-                                    placeholder="Enter monthly rent"
+                                    placeholder="Enter monthly rent per bed"
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Utilities:</label>
+                                <label>Utilities per Bed (₱):</label>
                                 <input
                                     type="number"
                                     step="0.01"
                                     value={newTenant.utilities}
                                     onChange={(e) => setNewTenant({...newTenant, utilities: e.target.value})}
-                                    placeholder="Enter utilities cost"
+                                    placeholder="Enter utilities cost per bed"
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Deposit:</label>
+                                <label>Deposit (₱):</label>
                                 <input
                                     type="number"
                                     step="0.01"
@@ -307,6 +526,25 @@ const RoomPage = () => {
                                     onChange={(e) => setNewTenant({...newTenant, deposit: e.target.value})}
                                     placeholder="Enter deposit amount"
                                 />
+                            </div>
+                            <div className="pricing-summary">
+                                <h4>💰 Pricing Summary (Per Bed)</h4>
+                                <div className="summary-item">
+                                    <span>Monthly Rent per Bed:</span>
+                                    <span>₱{parseFloat(newTenant.monthlyRent || 0).toLocaleString()}</span>
+                                </div>
+                                <div className="summary-item">
+                                    <span>Utilities per Bed:</span>
+                                    <span>₱{parseFloat(newTenant.utilities || 0).toLocaleString()}</span>
+                                </div>
+                                <div className="summary-item total">
+                                    <span>Total per Bed:</span>
+                                    <span>₱{(parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)).toLocaleString()}</span>
+                                </div>
+                                <div className="summary-item">
+                                    <span>Room Total (4 beds):</span>
+                                    <span>₱{(((parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)) * 4)).toFixed(2)}</span>
+                                </div>
                             </div>
                             <div className="form-group">
                                 <label>Emergency Contact Name:</label>
@@ -330,6 +568,18 @@ const RoomPage = () => {
                                         emergencyContact: {...newTenant.emergencyContact, phone: e.target.value}
                                     })}
                                     placeholder="Enter emergency contact phone"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Emergency Contact Relationship:</label>
+                                <input
+                                    type="text"
+                                    value={newTenant.emergencyContact.relationship}
+                                    onChange={(e) => setNewTenant({
+                                        ...newTenant,
+                                        emergencyContact: {...newTenant.emergencyContact, relationship: e.target.value}
+                                    })}
+                                    placeholder="Enter relationship (e.g., Parent, Sibling, Friend)"
                                 />
                             </div>
                             <div className="form-group">
