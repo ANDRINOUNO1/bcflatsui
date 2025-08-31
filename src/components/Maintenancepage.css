@@ -1,0 +1,226 @@
+/* Background + layout */
+.dashboard-main {
+  min-height: 100vh;
+  padding: 40px;
+  background: linear-gradient(135deg, #f0f2f5, #e0e5ec, #d5dde6);
+  font-family: "Inter", sans-serif;
+  color: #2c3e50;
+}
+
+/* Page header */
+.page-header {
+  text-align: center;
+  margin-bottom: 40px;
+  color: #2980b9;
+}
+
+.page-header h2 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.page-subtitle {
+  font-size: 1.1rem;
+  color: #3498db;
+  margin-top: 10px;
+}
+
+/* Alert messages */
+.alert-message {
+  padding: 15px 20px;
+  margin-bottom: 25px;
+  border-radius: 8px;
+  font-weight: 600;
+  background: #eaf6ff;
+  border-left: 6px solid #3498db;
+  color: #2980b9;
+  animation: fadeIn 0.4s ease-in-out;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Sections */
+.section-title {
+  margin-bottom: 25px;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #34495e;
+  position: relative;
+  display: inline-block;
+  padding-bottom: 10px;
+}
+
+.section-title::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 70%;
+  height: 3px;
+  background-color: #3498db;
+  border-radius: 2px;
+}
+
+.form-section,
+.table-section {
+  margin-bottom: 40px;
+}
+
+/* Card for form */
+.form-card {
+  background: #ffffff;
+  padding: 35px;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  max-width: 1200px; /* Updated max-width to match the table */
+  margin: 0 auto 30px auto;
+  border: 1px solid #dbe2ea;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+/* Form controls */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #34495e;
+  font-size: 0.95rem;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccd6e0;
+  border-radius: 10px;
+  outline: none;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  color: #34495e;
+  background-color: #f8fbfd;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+  background-color: #ffffff;
+}
+
+/* Button */
+.btn-primary {
+  background: linear-gradient(180deg, #3498db, #2980b9);
+  color: white;
+  border: none;
+  padding: 14px 25px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  font-size: 1.1rem;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.2);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(180deg, #2980b9, #3498db);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3);
+}
+
+/* Table */
+.table-wrapper {
+  overflow-x: auto;
+  background: #ffffff;
+  padding: 25px;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e5ec;
+  max-width: 1200px; /* Added max-width to match the form card */
+  margin: 0 auto; /* Centered the table container */
+}
+
+.tenants-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.tenants-table th,
+.tenants-table td {
+  padding: 15px 20px;
+  border-bottom: 1px solid #e9edf2;
+  text-align: left;
+}
+
+.tenants-table th {
+  background: #3498db;
+  color: white;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+}
+
+.tenants-table th:first-child {
+  border-top-left-radius: 12px;
+}
+.tenants-table th:last-child {
+  border-top-right-radius: 12px;
+}
+.tenants-table tr:last-child td:first-child {
+  border-bottom-left-radius: 12px;
+}
+.tenants-table tr:last-child td:last-child {
+  border-bottom-right-radius: 12px;
+}
+
+.tenants-table tr:hover {
+  background: #f5f9fc;
+}
+
+/* Priority badges */
+.priority-badge {
+  padding: 7px 14px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.priority-low {
+  background: #eaf6ff;
+  color: #3498db;
+  border: 1px solid #cce7fa;
+}
+
+.priority-medium {
+  background: #fff8e0;
+  color: #f39c12;
+  border: 1px solid #ffe9b3;
+}
+
+.priority-high {
+  background: #ffebeb;
+  color: #e74c3c;
+  border: 1px solid #ffccc7;
+}
+
+/* States */
+.tenants-loading,
+.tenants-empty {
+  text-align: center;
+  color: #3498db;
+  font-weight: 600;
+  margin-top: 25px;
+  font-size: 1.1rem;
+}
+
