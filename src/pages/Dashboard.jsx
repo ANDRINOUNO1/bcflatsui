@@ -4,6 +4,8 @@ import { roomService } from '../services/roomService'
 import { tenantService } from '../services/tenantService'
 import RoomPage from './RoomPage'
 import TenantPage from './TenantPage'
+import PricingPage from './PricingPage'
+import AdminMaintenancePage from './AdminMaintenancePage'
 import '../components/Dashboard.css'
 
 const Dashboard = () => {
@@ -72,6 +74,8 @@ const Dashboard = () => {
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'rooms', label: 'Rooms', icon: '🏠' },
     { id: 'tenants', label: 'Tenants', icon: '👥' },
+    { id: 'pricing', label: 'Pricing', icon: '💰' },
+    { id: 'maintenance', label: 'Maintenance', icon: '🔧' },
     { id: 'account', label: 'Account', icon: '⚙️' },
     { id: 'users', label: 'Users', icon: '👨‍👩‍👧‍👦' },
     { id: 'reports', label: 'Reports', icon: '📈' },
@@ -85,6 +89,10 @@ const Dashboard = () => {
         return <RoomPage />
       case 'tenants':
         return <TenantPage />
+      case 'pricing':
+        return <PricingPage />
+      case 'maintenance':
+        return <AdminMaintenancePage />
       case 'dashboard':
       default:
         return (
@@ -103,7 +111,7 @@ const Dashboard = () => {
                   <div className="stat-value">{stats.totalStudents}</div>
                   <div className="stat-label">Active Tenants</div>
                 </div>
-              </div>z
+              </div>
               <div className="stat-card">
                 <div className="stat-icon">✅</div>
                 <div className="stat-content">

@@ -253,7 +253,7 @@ const RoomPage = () => {
                                 <p><strong>Building:</strong> {room.building}</p>
                                 <p><strong>Rent per Bed:</strong> ₱{(room.monthlyRent || 0).toLocaleString()}</p>
                                 <p><strong>Utilities per Bed:</strong> ₱{(room.utilities || 0).toLocaleString()}</p>
-                                <p><strong>Total per Bed:</strong> ₱{((room.monthlyRent || 0) + (room.utilities || 0)).toLocaleString()}</p>
+                                <p><strong>Total per Bed:</strong> ₱{(parseFloat(room.monthlyRent || 0) + parseFloat(room.utilities || 0)).toLocaleString()}</p>
                             </div>
                             <div className="room-occupancy">
                                 <div className="bed-indicators">

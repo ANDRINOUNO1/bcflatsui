@@ -4,6 +4,8 @@ import LoginPage from '../pages/LoginPage'
 import Dashboard from '../pages/Dashboard'
 import TenantDashboard from '../pages/TenantDashboard'
 import MaintenancePage from '../pages/MaintenancePage'
+import AdminMaintenancePage from '../pages/AdminMaintenancePage'
+import PricingPage from '../pages/PricingPage'
 import { useAuth } from '../context/AuthContext'
 
 const AppRoutes = () => {
@@ -31,6 +33,14 @@ const AppRoutes = () => {
       <Route 
         path="/tenant/maintenance" 
         element={isAuthenticated ? <MaintenancePage /> : <Navigate to="/login" replace />} 
+      />
+      <Route 
+        path="/admin/maintenance" 
+        element={isAuthenticated ? <AdminMaintenancePage /> : <Navigate to="/login" replace />} 
+      />
+      <Route 
+        path="/admin/pricing" 
+        element={isAuthenticated ? <PricingPage /> : <Navigate to="/login" replace />} 
       />
       
       {/* Fallback Route - Redirect to landing page instead of login */}
