@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { maintenanceService } from "../services/maintenanceService";
 import { roomService } from "../services/roomService";
-import { tenantService } from "../services/tenantService"; // ✅ Added missing import
+import { tenantService } from "../services/tenantService"; 
 import { useAuth } from "../context/AuthContext";
 import "../components/MaintenancePage.css";
 
@@ -40,41 +40,35 @@ const MaintenancePage = () => {
       // Fetch tenant and room data if user is logged in
       if (user?.id) {
         try {
-          const tenantResponse = await tenantService.getTenantByAccountId(
-            user.id
-          );
+          const tenantResponse = await tenantService.getTenantByAccountId(user.id);
           if (tenantResponse) {
             setTenantData(tenantResponse);
 
-            // Fetch room information if tenant has a room
             if (tenantResponse.roomId) {
               try {
-                const roomResponse = await roomService.getRoomById(
-                  tenantResponse.roomId
-                );
+                const roomResponse = await roomService.getRoomById(tenantResponse.roomId);
                 setRoomData(roomResponse);
 
-                // Set room ID in form and create display text
+                // Set form roomId
                 setForm((prev) => ({ ...prev, roomId: tenantResponse.roomId }));
 
-                // Create room display text with floor number
+                // Create room display text
                 const floorText = roomResponse?.floor
                   ? `${roomResponse.roomNumber} (${roomResponse.floor}${getFloorSuffix(
                       roomResponse.floor
                     )} floor)`
                   : roomResponse?.roomNumber || tenantResponse.roomId;
+
                 setRoomDisplayText(floorText);
               } catch (roomError) {
-                console.error("Error fetching room data:", roomError);
-                // Fallback to just room ID
+                console.error("❌ Error fetching room data:", roomError);
                 setForm((prev) => ({ ...prev, roomId: tenantResponse.roomId }));
-                setRoomDisplayText(tenantResponse.roomId);
+                setRoomDisplayText(`Room ${tenantResponse.roomId}`);
               }
             }
           }
         } catch (tenantError) {
-          console.error("Error fetching tenant data:", tenantError);
-          // Continue without tenant data
+          console.error("❌ Error fetching tenant data:", tenantError);
         }
       }
     } finally {
@@ -92,12 +86,15 @@ const MaintenancePage = () => {
       setSubmitting(true);
       await maintenanceService.create(form);
       setMessage("✅ Request submitted successfully");
+
+      // Reset form (keep roomId locked if tenant is assigned)
       setForm({
         roomId: form.roomId,
         title: "",
         description: "",
         priority: "Low",
       });
+
       await load();
     } catch (err) {
       const msg =
@@ -121,7 +118,6 @@ const MaintenancePage = () => {
 
       {message && <div className="alert-message">{message}</div>}
 
-      {/* Show message if no tenant data is available */}
       {!tenantData && user?.id && !loading && (
         <div
           className="alert-message"
@@ -137,7 +133,6 @@ const MaintenancePage = () => {
         </div>
       )}
 
-      {/* Property Information Card */}
       {tenantData && roomData && (
         <section className="property-info-section">
           <div className="property-info-card">
@@ -154,9 +149,7 @@ const MaintenancePage = () => {
               </div>
               <div className="info-item">
                 <span className="info-label">ROOM:</span>
-                <span className="info-value">
-                  {roomData?.roomNumber || "N/A"}
-                </span>
+                <span className="info-value">{roomData?.roomNumber || "N/A"}</span>
               </div>
               <div className="info-item">
                 <span className="info-label">FLOOR:</span>
@@ -168,44 +161,32 @@ const MaintenancePage = () => {
               </div>
               <div className="info-item">
                 <span className="info-label">BED NUMBER:</span>
-                <span className="info-value">
-                  {tenantData?.bedNumber || "N/A"}
-                </span>
+                <span className="info-value">{tenantData?.bedNumber || "N/A"}</span>
               </div>
             </div>
           </div>
         </section>
       )}
 
-      {/* Request Form */}
       <section className="form-section">
         <h3 className="section-title">Submit New Request</h3>
         <form onSubmit={submit} className="form-card">
           <div className="form-group">
-            <label htmlFor="roomId">Room ID</label>
+            <label htmlFor="roomId">Room</label>
             {tenantData && roomData ? (
-              <div className="room-display">
-                <input
-                  id="roomId"
-                  type="text"
-                  value={`${roomData.roomNumber} (${roomData.floor}${getFloorSuffix(
-                    roomData.floor
-                  )} floor)`}
-                  readOnly
-                  className="readonly-input"
-                />
-                <small className="room-info">
-                  Your assigned room (see Property Information above)
-                </small>
-              </div>
+              <input
+                id="roomId"
+                type="text"
+                value={roomDisplayText}
+                readOnly
+                className="readonly-input"
+              />
             ) : (
               <input
                 id="roomId"
-                type="number"
+                type="text"
                 value={form.roomId}
-                onChange={(e) =>
-                  setForm({ ...form, roomId: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, roomId: e.target.value })}
                 placeholder="Enter room number"
                 required
               />
@@ -230,9 +211,7 @@ const MaintenancePage = () => {
               id="description"
               rows="3"
               value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder="Provide additional details (optional)"
             />
           </div>
@@ -242,9 +221,7 @@ const MaintenancePage = () => {
             <select
               id="priority"
               value={form.priority}
-              onChange={(e) =>
-                setForm({ ...form, priority: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, priority: e.target.value })}
             >
               <option>Low</option>
               <option>Medium</option>
@@ -258,7 +235,6 @@ const MaintenancePage = () => {
         </form>
       </section>
 
-      {/* Requests Table */}
       <section className="table-section">
         <h3 className="section-title">My Requests</h3>
         {loading ? (
@@ -286,13 +262,17 @@ const MaintenancePage = () => {
                     <td>{r.title}</td>
                     <td>
                       <span
-                        className={`priority-badge priority-${r.priority.toLowerCase()}`}
+                        className={`priority-badge priority-${r.priority?.toLowerCase()}`}
                       >
                         {r.priority}
                       </span>
                     </td>
                     <td>{r.status}</td>
-                    <td>{new Date(r.createdAt).toLocaleString()}</td>
+                    <td>
+                      {r.createdAt
+                        ? new Date(r.createdAt).toLocaleString()
+                        : "N/A"}
+                    </td>
                   </tr>
                 ))}
               </tbody>
