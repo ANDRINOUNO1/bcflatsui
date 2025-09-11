@@ -17,6 +17,16 @@ const AccountingPage = () => {
         description: ''
     });
 
+    // Quick Pay modal state
+    const [showQuickPay, setShowQuickPay] = useState(false);
+    const [quickPaySearch, setQuickPaySearch] = useState('');
+    const [quickPayTenant, setQuickPayTenant] = useState(null);
+    const [quickPay, setQuickPay] = useState({
+        amount: '',
+        paymentMethod: 'Cash',
+        description: ''
+    });
+
     useEffect(() => {
         fetchTenantsWithBillingInfo();
         fetchPaymentStats();
@@ -197,6 +207,18 @@ const AccountingPage = () => {
                             onClick={fetchTenantsWithBillingInfo}
                         >
                             🔄 Refresh
+                        </button>
+                        <button
+                            className="btn-primary"
+                            style={{ marginLeft: 12 }}
+                            onClick={() => {
+                                setShowQuickPay(true);
+                                setQuickPaySearch('');
+                                setQuickPayTenant(null);
+                                setQuickPay({ amount: '', paymentMethod: 'Cash', description: '' });
+                            }}
+                        >
+                            💳 Pay Bill
                         </button>
                     </div>
                     
@@ -457,6 +479,167 @@ const AccountingPage = () => {
                                     </div>
                                 )}
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Quick Pay Modal */}
+            {showQuickPay && (
+                <div className="modal-overlay" onClick={() => setShowQuickPay(false)}>
+                    <div className="modal payment-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>Pay Bill</h3>
+                            <button className="close-btn" onClick={() => setShowQuickPay(false)}>×</button>
+                        </div>
+
+                        <div className="modal-body">
+                            {/* Searchable Tenant Dropdown */}
+                            <div className="form-group">
+                                <label htmlFor="tenantSearch">Select Tenant:</label>
+                                <input
+                                    id="tenantSearch"
+                                    type="text"
+                                    placeholder="Type to search tenant by name or email"
+                                    value={quickPaySearch}
+                                    onChange={(e) => setQuickPaySearch(e.target.value)}
+                                />
+                                <div className="dropdown-list" style={{ maxHeight: 180, overflowY: 'auto', border: '1px solid #ddd', borderRadius: 6, marginTop: 6 }}>
+                                    {tenants
+                                        .filter(t => {
+                                            const q = quickPaySearch.trim().toLowerCase();
+                                            if (!q) return true;
+                                            return (
+                                                (t.name || '').toLowerCase().includes(q) ||
+                                                (t.email || '').toLowerCase().includes(q)
+                                            );
+                                        })
+                                        .slice(0, 50)
+                                        .map(t => (
+                                            <div
+                                                key={t.id}
+                                                className={`dropdown-item ${quickPayTenant?.id === t.id ? 'selected' : ''}`}
+                                                style={{ padding: '8px 10px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
+                                                onClick={() => {
+                                                    setQuickPayTenant(t);
+                                                    // Prefill amount with outstanding balance when available
+                                                    const outstanding = parseFloat(t.outstandingBalance || 0);
+                                                    setQuickPay(prev => ({ ...prev, amount: outstanding > 0 ? String(outstanding) : '' }));
+                                                }}
+                                            >
+                                                <span>
+                                                    {t.name}
+                                                    <span style={{ color: '#777', marginLeft: 8 }}>{t.email}</span>
+                                                </span>
+                                                <span style={{ color: '#555' }}>{formatCurrency(t.outstandingBalance || 0)}</span>
+                                            </div>
+                                        ))}
+                                    {tenants.length === 0 && (
+                                        <div style={{ padding: '8px 10px', color: '#777' }}>No tenants found</div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Selected Tenant Summary */}
+                            {quickPayTenant && (
+                                <div className="tenant-summary" style={{ marginTop: 12 }}>
+                                    <h4>Tenant</h4>
+                                    <div className="info-grid">
+                                        <div className="info-item">
+                                            <span className="info-label">Name:</span>
+                                            <span className="info-value">{quickPayTenant.name}</span>
+                                        </div>
+                                        <div className="info-item">
+                                            <span className="info-label">Outstanding:</span>
+                                            <span className="info-value balance-highlight">{formatCurrency(quickPayTenant.outstandingBalance || 0)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Payment Inputs */}
+                            <form
+                                onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    if (!quickPayTenant) {
+                                        alert('Please select a tenant');
+                                        return;
+                                    }
+                                    const amount = parseFloat(quickPay.amount);
+                                    if (!amount || amount <= 0) {
+                                        alert('Please enter a valid payment amount');
+                                        return;
+                                    }
+                                    try {
+                                        await paymentService.processPayment(quickPayTenant.id, {
+                                            amount,
+                                            paymentMethod: quickPay.paymentMethod,
+                                            reference: null,
+                                            description: quickPay.description || null
+                                        });
+                                        await fetchTenantsWithBillingInfo();
+                                        await fetchPaymentStats();
+                                        alert('Payment recorded successfully!');
+                                        setShowQuickPay(false);
+                                    } catch (error) {
+                                        const msg = error.response?.data?.message || error.message || 'Unknown error';
+                                        alert('Error processing payment: ' + msg);
+                                    }
+                                }}
+                                className="payment-form"
+                                style={{ marginTop: 16 }}
+                            >
+                                <div className="form-group">
+                                    <label htmlFor="qpAmount">Payment Amount (₱):</label>
+                                    <input
+                                        id="qpAmount"
+                                        type="number"
+                                        step="0.01"
+                                        min="0.01"
+                                        value={quickPay.amount}
+                                        onChange={(e) => setQuickPay({ ...quickPay, amount: e.target.value })}
+                                        placeholder="Enter payment amount"
+                                        required
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label htmlFor="qpMethod">Payment Method:</label>
+                                    <select
+                                        id="qpMethod"
+                                        value={quickPay.paymentMethod}
+                                        onChange={(e) => setQuickPay({ ...quickPay, paymentMethod: e.target.value })}
+                                        required
+                                    >
+                                        <option value="Cash">Cash</option>
+                                        <option value="Bank Transfer">Bank Transfer</option>
+                                        <option value="Credit Card">Credit Card</option>
+                                        <option value="Debit Card">Debit Card</option>
+                                        <option value="Check">Check</option>
+                                        <option value="Mobile Payment">Mobile Payment</option>
+                                    </select>
+                                </div>
+
+                                <div className="form-group">
+                                    <label htmlFor="qpNotes">Notes (optional):</label>
+                                    <textarea
+                                        id="qpNotes"
+                                        rows="3"
+                                        value={quickPay.description}
+                                        onChange={(e) => setQuickPay({ ...quickPay, description: e.target.value })}
+                                        placeholder="Optional notes about this payment"
+                                    />
+                                </div>
+
+                                <div className="form-actions">
+                                    <button type="button" className="btn-secondary" onClick={() => setShowQuickPay(false)}>
+                                        Cancel
+                                    </button>
+                                    <button type="submit" className="btn-primary">
+                                        ✅ Confirm Payment
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>

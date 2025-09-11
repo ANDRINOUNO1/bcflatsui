@@ -15,7 +15,8 @@ export const paymentService = {
     // Get payments by tenant
     getPaymentsByTenant: async (tenantId, limit = 50) => {
         try {
-            const response = await apiService.get(`/payments/tenant/${tenantId}?limit=${limit}`);
+            // Support both new and legacy endpoints; prefer new
+            const response = await apiService.get(`/payments/${tenantId}?limit=${limit}`);
             return response.data;
         } catch (error) {
             console.error('Error fetching payments by tenant:', error);
@@ -71,7 +72,8 @@ export const paymentService = {
     // Get payment by ID
     getPaymentById: async (paymentId) => {
         try {
-            const response = await apiService.get(`/payments/${paymentId}`);
+            // Updated path to avoid conflict with tenantId route
+            const response = await apiService.get(`/payments/id/${paymentId}`);
             return response.data;
         } catch (error) {
             console.error('Error fetching payment by ID:', error);
