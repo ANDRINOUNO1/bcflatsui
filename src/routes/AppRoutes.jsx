@@ -6,10 +6,11 @@ import TenantDashboard from '../pages/TenantDashboard'
 import MaintenancePage from '../pages/MaintenancePage'
 import AdminMaintenancePage from '../pages/AdminMaintenancePage'
 import PricingPage from '../pages/PricingPage'
+import AccountingPage from '../pages/AccountingPage'
 import { useAuth } from '../context/AuthContext'
 
 const AppRoutes = () => {
-  const { isAuthenticated, loading } = useAuth()
+  const { isAuthenticated, loading, user } = useAuth()
 
   if (loading) {
     return <div className="loading">Loading...</div>
@@ -24,7 +25,23 @@ const AppRoutes = () => {
       {/* Protected Routes - Only redirect to login if not authenticated */}
       <Route 
         path="/dashboard" 
-        element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" replace />} 
+        element={
+          isAuthenticated
+            ? (user?.role === 'Admin' || user?.role === 'SuperAdmin'
+                ? <Dashboard />
+                : <Navigate to={user?.role === 'Accounting' ? '/accounting' : '/tenant'} replace />)
+            : <Navigate to="/login" replace />
+        } 
+      />
+      <Route 
+        path="/accounting" 
+        element={
+          isAuthenticated
+            ? (user?.role === 'Accounting' || user?.role === 'Admin' || user?.role === 'SuperAdmin'
+                ? <AccountingPage />
+                : <Navigate to="/tenant" replace />)
+            : <Navigate to="/login" replace />
+        } 
       />
       <Route 
         path="/tenant" 

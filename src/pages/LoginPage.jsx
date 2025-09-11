@@ -71,7 +71,7 @@ const LoginPage = () => {
         } else if (user?.role === 'SuperAdmin') {
           navigate('/dashboard') 
         } else {
-          navigate('/') // fallback to home
+          navigate('/') 
         }
       } else {
         setErrors({ general: result.error })
