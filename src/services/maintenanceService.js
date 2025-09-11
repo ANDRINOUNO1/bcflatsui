@@ -33,7 +33,7 @@ export const maintenanceService = {
       return res.data;
     } catch (error) {
       console.error('Error fetching maintenance stats:', error);
-      return { pending: 0, inProgress: 0, resolved: 0, total: 0 };
+      return { pending: 0, ongoing: 0, fixed: 0, total: 0 };
     }
   },
 

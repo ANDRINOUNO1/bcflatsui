@@ -621,12 +621,19 @@
     
     .tenants-table-wrapper {
         height: calc(100% - 120px);
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .tenants-table {
+        min-width: 800px;
     }
     
     .tenants-table th,
     .tenants-table td {
         padding: 12px 8px;
         font-size: 13px;
+        white-space: nowrap;
     }
     
     .info-grid {
@@ -637,39 +644,104 @@
         width: 95%;
         margin: 20px;
     }
+    
+    .list-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .add-tenant-btn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 @media (max-width: 480px) {
+    .tenants-container {
+        padding: 10px;
+    }
+    
+    .tenants-header h2 {
+        font-size: 1.5rem;
+    }
+    
     .stats-grid {
         grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .stat-card {
+        padding: 15px;
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+    
+    .stat-icon {
+        font-size: 2rem;
+        width: 50px;
+        height: 50px;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.8rem;
     }
     
     .tenant-card {
-        padding: 15px;
+        padding: 12px;
     }
     
     .tenant-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 10px;
+        gap: 8px;
+    }
+    
+    .tenant-header h4 {
+        font-size: 1rem;
     }
     
     .tenant-actions {
         flex-direction: column;
-        gap: 8px;
+        gap: 6px;
+        width: 100%;
     }
     
     .action-btn {
         width: 100%;
-        padding: 8px 12px;
+        padding: 10px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .tenants-table th,
+    .tenants-table td {
+        padding: 8px 6px;
+        font-size: 0.75rem;
+    }
+    
+    .modal {
+        width: 95%;
+        margin: 10px;
     }
     
     .modal-body {
-        padding: 20px;
+        padding: 15px;
     }
     
     .modal-footer {
         flex-direction: column;
+        gap: 10px;
+    }
+    
+    .btn-primary,
+    .btn-secondary {
+        width: 100%;
+        padding: 12px;
     }
 }
 
