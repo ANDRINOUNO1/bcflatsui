@@ -325,6 +325,7 @@ const TenantPage = () => {
                                     <th>Check-in</th>
                                     <th>Check-out</th>
                                     <th>Monthly Rent per Bed</th>
+                                    <th>Outstanding Balance</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -348,6 +349,7 @@ const TenantPage = () => {
                                         <td>{new Date(tenant.checkInDate).toLocaleDateString()}</td>
                                         <td>{tenant.checkOutDate ? new Date(tenant.checkOutDate).toLocaleDateString() : '-'}</td>
                                         <td>₱{tenant.monthlyRent.toLocaleString()}</td>
+                                        <td>₱{parseFloat(tenant.outstandingBalance || 0).toLocaleString()}</td>
                                         <td>
                                             <div className="tenant-actions">
                                                 {tenant.status === 'Pending' && (

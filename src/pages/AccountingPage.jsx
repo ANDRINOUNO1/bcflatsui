@@ -10,6 +10,9 @@ const AccountingPage = () => {
     const [paymentHistory, setPaymentHistory] = useState([]);
     const [showPaymentHistory, setShowPaymentHistory] = useState(false);
     const [stats, setStats] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [balanceFilter, setBalanceFilter] = useState('all'); // all | withBalance | zero
+    const [sortKey, setSortKey] = useState('balanceDesc'); // balanceDesc | balanceAsc | name | room
     const [newPayment, setNewPayment] = useState({
         amount: '',
         paymentMethod: 'Cash',
@@ -58,6 +61,35 @@ const AccountingPage = () => {
             console.error('Error fetching payment stats:', error);
         }
     };
+
+    // Derived view of tenants for UI (search, filter, sort)
+    const getFilteredTenants = () => {
+        const q = searchQuery.trim().toLowerCase();
+        let list = [...tenants];
+        if (q) {
+            list = list.filter(t => (
+                (t.name || '').toLowerCase().includes(q) ||
+                (t.email || '').toLowerCase().includes(q) ||
+                String(t.roomNumber || '').toLowerCase().includes(q)
+            ));
+        }
+        if (balanceFilter === 'withBalance') {
+            list = list.filter(t => parseFloat(t.outstandingBalance) > 0);
+        } else if (balanceFilter === 'zero') {
+            list = list.filter(t => parseFloat(t.outstandingBalance) === 0);
+        }
+        list.sort((a, b) => {
+            if (sortKey === 'balanceDesc') return parseFloat(b.outstandingBalance) - parseFloat(a.outstandingBalance);
+            if (sortKey === 'balanceAsc') return parseFloat(a.outstandingBalance) - parseFloat(b.outstandingBalance);
+            if (sortKey === 'name') return (a.name || '').localeCompare(b.name || '');
+            if (sortKey === 'room') return String(a.roomNumber || '').localeCompare(String(b.roomNumber || ''));
+            return 0;
+        });
+        return list;
+    };
+
+    const filteredTenants = getFilteredTenants();
+    const totalOutstanding = filteredTenants.reduce((sum, t) => sum + parseFloat(t.outstandingBalance || 0), 0);
 
     const handlePayButtonClick = async (tenant) => {
         setSelectedTenant(tenant);
@@ -220,12 +252,36 @@ const AccountingPage = () => {
                         >
                             💳 Pay Bill
                         </button>
+                        <div className="table-tools">
+                            <input
+                                className="table-search"
+                                type="text"
+                                placeholder="Search name, email, or room..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            <select className="table-filter" value={balanceFilter} onChange={(e) => setBalanceFilter(e.target.value)}>
+                                <option value="all">All</option>
+                                <option value="withBalance">With Balance</option>
+                                <option value="zero">Zero Balance</option>
+                            </select>
+                            <select className="table-sort" value={sortKey} onChange={(e) => setSortKey(e.target.value)}>
+                                <option value="balanceDesc">Sort: Balance High → Low</option>
+                                <option value="balanceAsc">Sort: Balance Low → High</option>
+                                <option value="name">Sort: Name</option>
+                                <option value="room">Sort: Room</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="summary-bar">
+                        <div>Tenants: <strong>{filteredTenants.length}</strong></div>
+                        <div>Total Outstanding: <strong>{formatCurrency(totalOutstanding)}</strong></div>
                     </div>
                     
                     <div className="table-wrapper">
-                        {tenants.length === 0 ? (
+                        {filteredTenants.length === 0 ? (
                             <div className="empty-state">
-                                <p>No active tenants found.</p>
+                                <p>No tenants match your current search/filter.</p>
                             </div>
                         ) : (
                             <table className="accounting-table">
@@ -241,7 +297,7 @@ const AccountingPage = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {tenants.map((tenant) => {
+                                    {filteredTenants.map((tenant) => {
                                         const balanceStatus = getBalanceStatus(tenant.outstandingBalance);
                                         const dueDateStatus = getDueDateStatus(tenant.nextDueDate);
                                         
@@ -362,15 +418,19 @@ const AccountingPage = () => {
                                         type="number"
                                         id="amount"
                                         step="0.01"
-                                        min="0.01"
-                                        max={selectedTenant.outstandingBalance}
+                                        min={selectedTenant.outstandingBalance > 0 ? 0.01 : 0}
+                                        max={Math.max(0, selectedTenant.outstandingBalance)}
                                         value={newPayment.amount}
                                         onChange={(e) => setNewPayment({...newPayment, amount: e.target.value})}
                                         placeholder="Enter payment amount"
                                         required
                                     />
                                     <small className="form-help">
-                                        Maximum: {formatCurrency(selectedTenant.outstandingBalance)}
+                                        {selectedTenant.outstandingBalance > 0 ? (
+                                            <>Maximum: {formatCurrency(selectedTenant.outstandingBalance)}</>
+                                        ) : (
+                                            <>This tenant currently has no outstanding balance</>
+                                        )}
                                     </small>
                                 </div>
 
@@ -552,6 +612,12 @@ const AccountingPage = () => {
                                         <div className="info-item">
                                             <span className="info-label">Outstanding:</span>
                                             <span className="info-value balance-highlight">{formatCurrency(quickPayTenant.outstandingBalance || 0)}</span>
+                                        </div>
+                                    </div>
+                                    <div className="info-grid">
+                                        <div className="info-item">
+                                            <span className="info-label">Monthly:</span>
+                                            <span className="info-value">{formatCurrency((quickPayTenant.monthlyRent || 0) + (quickPayTenant.utilities || 0))}</span>
                                         </div>
                                     </div>
                                 </div>

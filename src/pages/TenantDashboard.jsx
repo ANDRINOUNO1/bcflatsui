@@ -185,6 +185,12 @@ const TenantDashboard = () => {
           <h3>💰 Financial Information</h3>
           <div className="financial-overview">
             <div className="financial-item">
+              <span className="info-label">OUTSTANDING BALANCE:</span>
+              <span className="info-value total-amount">
+                {formatCurrency(tenantData?.outstandingBalance || 0)}
+              </span>
+            </div>
+            <div className="financial-item">
               <span className="info-label">YOUR RENT (per bed):</span>
               <span className="info-value">{formatCurrency(tenantData?.monthlyRent)}</span>
             </div>
@@ -213,7 +219,7 @@ const TenantDashboard = () => {
           </div>
           <div className="action-buttons">
             <button className="btn-primary">Pay Now</button>
-            <button className="btn-secondary">Manage Payment Methods</button>
+            <button className="btn-secondary">Billing Breakdown</button>
           </div>
         </div>
       </div>
