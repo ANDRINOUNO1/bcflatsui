@@ -6,6 +6,8 @@ import RoomPage from './RoomPage'
 import TenantPage from './TenantPage'
 import PricingPage from './PricingPage'
 import AdminMaintenancePage from './AdminMaintenancePage'
+import AccountingPage from './AccountingPage'
+import AddAccountPage from './AddAccountPage'
 import '../components/Dashboard.css'
 
 const Dashboard = () => {
@@ -74,8 +76,10 @@ const Dashboard = () => {
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'rooms', label: 'Rooms', icon: '🏠' },
     { id: 'tenants', label: 'Tenants', icon: '👥' },
-    { id: 'pricing', label: 'Pricing', icon: '💰' },
+    { id: 'accounting', label: 'Accounting', icon: '💰' },
+    { id: 'pricing', label: 'Pricing', icon: '💵' },
     { id: 'maintenance', label: 'Maintenance', icon: '🔧' },
+    { id: 'add-account', label: 'Add Account', icon: '👤' },
     { id: 'account', label: 'Account', icon: '⚙️' },
     { id: 'users', label: 'Users', icon: '👨‍👩‍👧‍👦' },
     { id: 'reports', label: 'Reports', icon: '📈' },
@@ -89,10 +93,14 @@ const Dashboard = () => {
         return <RoomPage />
       case 'tenants':
         return <TenantPage />
+      case 'accounting':
+        return <AccountingPage />
       case 'pricing':
         return <PricingPage />
       case 'maintenance':
         return <AdminMaintenancePage />
+      case 'add-account':
+        return <AddAccountPage />
       case 'dashboard':
       default:
         return (

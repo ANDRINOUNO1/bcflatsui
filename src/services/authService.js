@@ -63,6 +63,16 @@ export const authService = {
     }
   },
 
+  // Create new account (Admin function)
+  async createAccount(accountData) {
+    try {
+      const response = await api.post('/accounts', accountData);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || error.response?.data || 'Account creation failed');
+    }
+  },
+
   // Validate JWT token
   async validateToken(token) {
     try {
