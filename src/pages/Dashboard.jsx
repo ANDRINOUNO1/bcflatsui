@@ -9,7 +9,7 @@ import PricingPage from './PricingPage'
 import AdminMaintenancePage from './AdminMaintenancePage'
 import AccountingPage from './AccountingPage'
 import AddAccountPage from './AddAccountPage'
-// Removed legacy CSS import to prevent overrides of Tailwind styles
+import '../components/Dashboard.css'
 
 
 const Dashboard = () => {
@@ -131,85 +131,71 @@ const Dashboard = () => {
           <div className="dashboard-screen">
             {/* Header with Blue Gradient */}
             <div className="dashboard-header-gradient">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between items-center py-8">
+              <div className="dash-container">
+                <div className="dash-header-row">
                   <div>
-                    <h1 className="text-4xl font-bold text-white">Admin Dashboard</h1>
-                    <p className="text-blue-100 mt-2 text-lg">Manage your student housing efficiently with real-time data.</p>
+                    <h1 className="dash-title">Admin Dashboard</h1>
+                    <p className="dash-subtitle">Manage your student housing efficiently with real-time data.</p>
                   </div>
                   <button
                     onClick={handleRefresh}
                     disabled={refreshing}
-                    className="bg-white hover:bg-gray-50 disabled:bg-gray-200 text-blue-600 font-semibold py-3 px-6 rounded-full transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
+                    className="btn-primary"
                   >
                     {refreshing ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                        Refreshing...
-                      </>
+                      'Refreshing...'
                     ) : (
-                      <>
-                        <span>🔄</span>
-                        Refresh Data
-                      </>
+                      'Refresh Data'
                     )}
                   </button>
                 </div>
               </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="dash-container dash-content">
               {/* Stats Overview Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-blue-100">
+              <div className="dash-grid">
+                <div className="card">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Total Tenants</p>
-                      <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalStudents}</p>
+                      <p className="dash-label">Total Tenants</p>
+                      <p className="dash-number">{stats.totalStudents}</p>
                     </div>
-                    <div className="bg-blue-50 p-3 rounded-full">
-                      <div className="text-2xl">👥</div>
-                    </div>
+                    <div className="dash-icon">👥</div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-green-100">
+                <div className="card">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Occupancy Rate</p>
-                      <p className="text-3xl font-bold text-gray-900 mt-2">
+                      <p className="dash-label">Occupancy Rate</p>
+                      <p className="dash-number">
                         {stats.totalRooms > 0 ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100) : 0}%
                       </p>
                     </div>
-                    <div className="bg-green-50 p-3 rounded-full">
-                      <div className="text-2xl">📊</div>
-                    </div>
+                    <div className="dash-icon">📊</div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-red-100">
+                <div className="card">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Unpaid Bills</p>
-                      <p className="text-3xl font-bold text-gray-900 mt-2">{dashboardStats?.totalUnpaidBills || 0}</p>
+                      <p className="dash-label">Unpaid Bills</p>
+                      <p className="dash-number">{dashboardStats?.totalUnpaidBills || 0}</p>
                     </div>
-                    <div className="bg-red-50 p-3 rounded-full">
-                      <div className="text-2xl">⚠️</div>
-                    </div>
+                    <div className="dash-icon">⚠️</div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-purple-100">
+                <div className="card">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Total Collected</p>
-                      <p className="text-3xl font-bold text-gray-900 mt-2">
+                      <p className="dash-label">Total Collected</p>
+                      <p className="dash-number">
                         ₱{dashboardStats?.totalAmountCollected?.toLocaleString() || '0'}
                       </p>
                     </div>
-                    <div className="bg-purple-50 p-3 rounded-full">
-                      <div className="text-2xl">💰</div>
-                    </div>
+                    <div className="dash-icon">💰</div>
                   </div>
                 </div>
               </div>

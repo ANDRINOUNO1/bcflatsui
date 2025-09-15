@@ -5,9 +5,7 @@ import { maintenanceService } from '../services/maintenanceService';
 import { tenantService } from '../services/tenantService';
 import { roomService } from '../services/roomService';
 import { paymentService } from '../services/paymentService';
-// Removed legacy CSS import to prevent overrides of Tailwind styles
 import '../components/TenantDashboard.css';
-// Inline modal state will be used instead of a shared modal component
 
 const TenantDashboard = () => {
   const { user } = useAuth();
