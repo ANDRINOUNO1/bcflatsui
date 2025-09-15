@@ -259,7 +259,7 @@ const AccountingPage = () => {
                 {/* Stats Summary */}
                 {stats && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 border-l-4 border-green-500">
+                        <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-green-100">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Total Payments</p>
@@ -270,7 +270,7 @@ const AccountingPage = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 border-l-4 border-blue-500">
+                        <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-blue-100">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Payment Count</p>
@@ -281,7 +281,7 @@ const AccountingPage = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 border-l-4 border-purple-500">
+                        <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-purple-100">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Active Tenants</p>
@@ -292,7 +292,7 @@ const AccountingPage = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 border-l-4 border-red-500">
+                        <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-red-100">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Outstanding Balances</p>
@@ -332,8 +332,24 @@ const AccountingPage = () => {
                             </div>
                         </div>
                         
-                        {/* Filters & Search */}
+                        {/* Quick Tabs and Filters */}
                         <div className="mt-6 bg-gray-50 rounded-lg p-4">
+                            {/* Quick Tabs */}
+                            <div className="mb-4 flex flex-wrap items-center gap-2">
+                                {[
+                                    { id: 'all', label: 'All' },
+                                    { id: 'withBalance', label: 'Outstanding' },
+                                    { id: 'zero', label: 'Paid' }
+                                ].map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setBalanceFilter(tab.id)}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${balanceFilter === tab.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 hover:bg-gray-100 border-gray-200'}`}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
                             <div className="flex flex-col sm:flex-row gap-4">
                                 <div className="flex-1">
                                     <input
@@ -398,12 +414,12 @@ const AccountingPage = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {filteredTenants.map((tenant) => {
+                                    {filteredTenants.map((tenant, idx) => {
                                         const balanceStatus = getBalanceStatus(tenant.outstandingBalance);
                                         const dueDateStatus = getDueDateStatus(tenant.nextDueDate);
                                         
                                         return (
-                                            <tr key={tenant.id} className="hover:bg-blue-50 transition-colors duration-200 even:bg-gray-50">
+                                            <tr key={tenant.id} className={`hover:bg-blue-50 transition-colors duration-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div>
                                                         <div className="text-sm font-medium text-gray-900">{tenant.name}</div>
@@ -423,12 +439,9 @@ const AccountingPage = () => {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div 
-                                                        className="text-sm font-medium"
-                                                        style={{ color: balanceStatus.color }}
-                                                    >
+                                                    <span className="inline-block px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
                                                         {formatCurrency(tenant.outstandingBalance)}
-                                                    </div>
+                                                    </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                     {tenant.lastPaymentDate ? formatDate(tenant.lastPaymentDate) : 'No payments yet'}

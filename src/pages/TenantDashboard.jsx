@@ -229,7 +229,7 @@ const TenantDashboard = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 border-l-4 border-blue-500">
+          <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-blue-100">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Next Due Date</p>
@@ -246,7 +246,7 @@ const TenantDashboard = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 border-l-4 border-green-500">
+          <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-green-100">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Deposit Balance</p>
@@ -260,7 +260,7 @@ const TenantDashboard = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 border-l-4 border-purple-500">
+          <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-purple-100">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Payment History</p>
@@ -333,6 +333,31 @@ const TenantDashboard = () => {
                   }
                 </span>
               </div>
+              {billingInfo?.nextDueDate && (
+                <div className="py-3">
+                  {(() => {
+                    const due = new Date(billingInfo.nextDueDate)
+                    const now = new Date()
+                    const start = new Date(now.getFullYear(), now.getMonth(), 1)
+                    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+                    const totalMs = end - start || 1
+                    const elapsedMs = Math.min(Math.max(now - start, 0), totalMs)
+                    const pct = Math.round((elapsedMs / totalMs) * 100)
+                    return (
+                      <>
+                        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div className={`h-2 ${pct > 80 ? 'bg-red-500' : pct > 60 ? 'bg-orange-400' : 'bg-blue-500'}`} style={{ width: pct + '%' }}></div>
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                          <span>Start</span>
+                          <span>{pct}%</span>
+                          <span>End</span>
+                        </div>
+                      </>
+                    )
+                  })()}
+                </div>
+              )}
               <div className="flex justify-between items-center py-3 border-b border-gray-100">
                 <span className="text-gray-600 font-medium">Total Monthly:</span>
                 <span className="font-bold text-blue-600">
@@ -349,11 +374,11 @@ const TenantDashboard = () => {
           </div>
           
           <div className="mt-8 flex flex-col sm:flex-row gap-4">
-            <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-full transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+            <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-lg transition-all duration-200 flex items-center justify-center gap-3 shadow-md hover:shadow-xl transform hover:-translate-y-1">
               <span className="text-xl">💳</span>
               <span>Pay Now</span>
             </button>
-            <button className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 px-8 rounded-full transition-all duration-200 flex items-center justify-center gap-3">
+            <button className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 px-8 rounded-lg transition-all duration-200 flex items-center justify-center gap-3">
               <span className="text-xl">📊</span>
               <span>Billing History</span>
             </button>

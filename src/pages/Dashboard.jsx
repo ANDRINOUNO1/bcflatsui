@@ -161,19 +161,19 @@ const Dashboard = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               {/* Stats Overview Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 border-l-4 border-blue-500">
+                <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-blue-100">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Total Tenants</p>
                       <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalStudents}</p>
                     </div>
-                    <div className="bg-blue-100 p-3 rounded-full">
+                    <div className="bg-blue-50 p-3 rounded-full">
                       <div className="text-2xl">👥</div>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 border-l-4 border-green-500">
+                <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-green-100">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Occupancy Rate</p>
@@ -181,25 +181,25 @@ const Dashboard = () => {
                         {stats.totalRooms > 0 ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100) : 0}%
                       </p>
                     </div>
-                    <div className="bg-green-100 p-3 rounded-full">
+                    <div className="bg-green-50 p-3 rounded-full">
                       <div className="text-2xl">📊</div>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 border-l-4 border-red-500">
+                <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-red-100">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Unpaid Bills</p>
                       <p className="text-3xl font-bold text-gray-900 mt-2">{dashboardStats?.totalUnpaidBills || 0}</p>
                     </div>
-                    <div className="bg-red-100 p-3 rounded-full">
+                    <div className="bg-red-50 p-3 rounded-full">
                       <div className="text-2xl">⚠️</div>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 border-l-4 border-purple-500">
+                <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-purple-100">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Total Collected</p>
@@ -207,7 +207,7 @@ const Dashboard = () => {
                         ₱{dashboardStats?.totalAmountCollected?.toLocaleString() || '0'}
                       </p>
                     </div>
-                    <div className="bg-purple-100 p-3 rounded-full">
+                    <div className="bg-purple-50 p-3 rounded-full">
                       <div className="text-2xl">💰</div>
                     </div>
                   </div>
@@ -240,6 +240,26 @@ const Dashboard = () => {
                         <span className="font-bold text-orange-600">
                           {dashboardStats.totalUnpaidBills || 0}
                         </span>
+                      </div>
+                      {/* Inline progress bar (no deps) */}
+                      <div className="mt-4">
+                        {(() => {
+                          const collected = Number(dashboardStats.totalAmountCollected || 0)
+                          const outstanding = Number(dashboardStats.totalOutstandingAmount || 0)
+                          const total = collected + outstanding || 1
+                          const collectedPct = Math.round((collected / total) * 100)
+                          const outstandingPct = 100 - collectedPct
+                          return (
+                            <div className="w-full h-3 rounded-full bg-gray-100 overflow-hidden flex">
+                              <div className="h-3 bg-green-500" style={{ width: collectedPct + '%' }}></div>
+                              <div className="h-3 bg-red-400" style={{ width: outstandingPct + '%' }}></div>
+                            </div>
+                          )
+                        })()}
+                        <div className="flex justify-between text-xs text-gray-500 mt-2">
+                          <span>Collected</span>
+                          <span>Outstanding</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -283,7 +303,7 @@ const Dashboard = () => {
                               <p className="text-xs text-gray-500">Room {tenant.roomNumber}</p>
                             </div>
                             <div className="text-right">
-                              <p className="text-sm font-medium text-red-600">₱{tenant.outstandingBalance.toLocaleString()}</p>
+                              <span className="inline-block px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">₱{tenant.outstandingBalance.toLocaleString()}</span>
                               <p className="text-xs text-gray-500">{new Date(tenant.nextDueDate).toLocaleDateString()}</p>
                             </div>
                           </div>
@@ -301,28 +321,28 @@ const Dashboard = () => {
                 <h3 className="text-2xl font-bold text-gray-900 mb-6">Quick Actions</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   <button 
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-full transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-3 shadow-md hover:shadow-xl transform hover:-translate-y-1"
                     onClick={() => setActiveTab('rooms')}
                   >
                     <span className="text-xl">🏠</span>
                     <span>Manage Rooms</span>
                   </button>
                   <button 
-                    className="bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-full transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                    className="bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-3 shadow-md hover:shadow-xl transform hover:-translate-y-1"
                     onClick={() => setActiveTab('tenants')}
                   >
                     <span className="text-xl">👥</span>
                     <span>Manage Tenants</span>
                   </button>
                   <button 
-                    className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 px-6 rounded-full transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-3 shadow-md hover:shadow-xl transform hover:-translate-y-1"
                     onClick={() => setActiveTab('accounting')}
                   >
                     <span className="text-xl">💰</span>
                     <span>View Accounting</span>
                   </button>
                   <button 
-                    className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-4 px-6 rounded-full transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                    className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-3 shadow-md hover:shadow-xl transform hover:-translate-y-1"
                     onClick={() => setActiveTab('maintenance')}
                   >
                     <span className="text-xl">🔧</span>
@@ -404,7 +424,7 @@ const Dashboard = () => {
 
       <div className="dashboard-content">
         {/* Sidebar */}
-        <aside className={`dashboard-sidebar ${sidebarOpen ? 'open' : 'collapsed'}`}>
+        <aside className={`dashboard-sidebar ${sidebarOpen ? 'open' : 'collapsed'} hidden md:block`}>
           <div className="sidebar-profile">
             <div className="avatar">👤</div>
             <div className="profile-meta">
@@ -439,9 +459,31 @@ const Dashboard = () => {
           </nav>
         </aside>
 
-        {sidebarOpen && (
-          <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>
-        )}
+        {/* Mobile slide-over sidebar */}
+        <div className={`fixed inset-0 z-40 md:hidden ${sidebarOpen ? '' : 'pointer-events-none'}`}>
+          <div
+            className={`absolute inset-0 bg-black/40 transition-opacity ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}
+            onClick={() => setSidebarOpen(false)}
+          ></div>
+          <div className={`absolute left-0 top-0 bottom-0 w-64 bg-white shadow-xl transform transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <div className="p-4 border-b flex items-center justify-between">
+              <div className="font-semibold">Menu</div>
+              <button onClick={() => setSidebarOpen(false)} aria-label="Close">×</button>
+            </div>
+            <nav className="p-2">
+              {navigationItems.map((item) => (
+                <button
+                  key={item.id}
+                  className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-left ${activeTab === item.id ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'}`}
+                  onClick={() => { setActiveTab(item.id); setSidebarOpen(false) }}
+                >
+                  <span className="text-lg">{item.icon}</span>
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </nav>
+          </div>
+        </div>
 
                  {/* Main Content */}
          <main className="dashboard-main-content">
