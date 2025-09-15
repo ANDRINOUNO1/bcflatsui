@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind removed: using project CSS components instead */
 
 :root {
   --bc-blue: #1e3a8a;    /* Deep blue */

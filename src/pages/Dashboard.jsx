@@ -9,7 +9,7 @@ import PricingPage from './PricingPage'
 import AdminMaintenancePage from './AdminMaintenancePage'
 import AccountingPage from './AccountingPage'
 import AddAccountPage from './AddAccountPage'
-import '../components/Dashboard.css'
+// Removed legacy CSS import to prevent overrides of Tailwind styles
 
 
 const Dashboard = () => {
@@ -128,9 +128,9 @@ const Dashboard = () => {
       case 'dashboard':
       default:
         return (
-          <div className="min-h-screen bg-gray-50">
+          <div className="dashboard-screen">
             {/* Header with Blue Gradient */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-800 shadow-lg">
+            <div className="dashboard-header-gradient">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center py-8">
                   <div>

@@ -334,10 +334,9 @@ const AccountingPage = () => {
                         </div>
                         
                         {/* Quick Tabs and Filters */}
-                        <div className="mt-6 bg-gray-50 rounded-lg p-4">
-                            {/* Quick Tabs */}
-                            <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-600">Quick Filters</div>
-                            <div className="mb-4 flex flex-wrap items-center gap-2" role="tablist" aria-label="Quick Filters">
+                        <div className="quick-filters-container">
+                            <div className="quick-filters-title">Quick Filters</div>
+                            <div className="quick-filters" role="tablist" aria-label="Quick Filters">
                                 {[
                                     { id: 'all', label: 'All' },
                                     { id: 'withBalance', label: 'Outstanding' },
@@ -347,16 +346,16 @@ const AccountingPage = () => {
                                         key={tab.id}
                                         onClick={() => setBalanceFilter(tab.id)}
                                         aria-selected={balanceFilter === tab.id}
-                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border focus:outline-none focus:ring-2 focus:ring-blue-500 ${balanceFilter === tab.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 hover:bg-gray-100 border-gray-200'}`}
+                                        className={`quick-tab ${balanceFilter === tab.id ? 'active' : ''}`}
                                     >
                                         {tab.label}
                                     </button>
                                 ))}
                             </div>
-                            <div className="flex flex-col sm:flex-row gap-4">
-                                <div className="flex-1">
+                            <div className="filters-row">
+                                <div className="filters-row-item">
                                     <input
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                        className="table-search"
                                         type="text"
                                         placeholder="Search name, email, or room..."
                                         value={searchQuery}
@@ -364,7 +363,7 @@ const AccountingPage = () => {
                                     />
                                 </div>
                                 <select 
-                                    className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                    className="table-filter"
                                     value={balanceFilter} 
                                     onChange={(e) => setBalanceFilter(e.target.value)}
                                 >
@@ -373,7 +372,7 @@ const AccountingPage = () => {
                                     <option value="zero">Zero Balance</option>
                                 </select>
                                 <select 
-                                    className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                    className="table-sort"
                                     value={sortKey} 
                                     onChange={(e) => setSortKey(e.target.value)}
                                 >
@@ -422,7 +421,7 @@ const AccountingPage = () => {
                                         const dueDateStatus = getDueDateStatus(tenant.nextDueDate);
                                         
                                         return (
-                                            <tr key={tenant.id} className={`hover:bg-blue-50 transition-colors duration-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                                            <tr key={tenant.id}>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div>
                                                         <div className="text-sm font-medium text-gray-900">{tenant.name}</div>
@@ -442,7 +441,7 @@ const AccountingPage = () => {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className="inline-block px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                                                    <span className="badge badge-red">
                                                         {formatCurrency(tenant.outstandingBalance)}
                                                     </span>
                                                 </td>

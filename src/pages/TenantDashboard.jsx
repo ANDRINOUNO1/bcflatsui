@@ -5,7 +5,7 @@ import { maintenanceService } from '../services/maintenanceService';
 import { tenantService } from '../services/tenantService';
 import { roomService } from '../services/roomService';
 import { paymentService } from '../services/paymentService';
-import '../components/Dashboard.css';
+// Removed legacy CSS import to prevent overrides of Tailwind styles
 import '../components/TenantDashboard.css';
 // Inline modal state will be used instead of a shared modal component
 
@@ -215,7 +215,7 @@ const TenantDashboard = () => {
 
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 border-l-4 border-red-500">
+          <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-red-100">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Current Balance</p>
@@ -223,7 +223,7 @@ const TenantDashboard = () => {
                   {formatCurrency(billingInfo?.outstandingBalance || 0)}
                 </p>
               </div>
-              <div className="bg-red-100 p-3 rounded-full">
+              <div className="bg-red-50 p-3 rounded-full">
                 <div className="text-2xl">💰</div>
               </div>
             </div>
