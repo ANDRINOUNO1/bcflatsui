@@ -10,6 +10,7 @@ const AccountingPage = () => {
     const [paymentHistory, setPaymentHistory] = useState([]);
     const [showPaymentHistory, setShowPaymentHistory] = useState(false);
     const [stats, setStats] = useState(null);
+    const [errorModal, setErrorModal] = useState({ open: false, title: '', message: '', details: '' });
     const [searchQuery, setSearchQuery] = useState('');
     const [balanceFilter, setBalanceFilter] = useState('all'); // all | withBalance | zero
     const [sortKey, setSortKey] = useState('balanceDesc'); // balanceDesc | balanceAsc | name | room
@@ -48,6 +49,12 @@ const AccountingPage = () => {
                 console.log('💰 AccountingPage: Authentication error, showing empty state');
                 setTenants([]);
             }
+            setErrorModal({
+                open: true,
+                title: 'Failed to load tenants',
+                message: 'We could not load tenant billing information.',
+                details: error?.response?.data?.message || error.message || 'Unknown error'
+            });
         } finally {
             setLoading(false);
         }
@@ -59,6 +66,12 @@ const AccountingPage = () => {
             setStats(statsData);
         } catch (error) {
             console.error('Error fetching payment stats:', error);
+            setErrorModal({
+                open: true,
+                title: 'Failed to load payment statistics',
+                message: 'Please try refreshing the page.',
+                details: error?.response?.data?.message || error.message || 'Unknown error'
+            });
         }
     };
 
@@ -110,6 +123,12 @@ const AccountingPage = () => {
         } catch (error) {
             console.error('Error fetching payment history:', error);
             setPaymentHistory([]);
+            setErrorModal({
+                open: true,
+                title: 'Failed to load payment history',
+                message: 'Payment history could not be loaded for this tenant.',
+                details: error?.response?.data?.message || error.message || 'Unknown error'
+            });
         }
     };
 
@@ -117,7 +136,7 @@ const AccountingPage = () => {
         e.preventDefault();
         
         if (!newPayment.amount || parseFloat(newPayment.amount) <= 0) {
-            alert('Please enter a valid payment amount');
+            setErrorModal({ open: true, title: 'Invalid amount', message: 'Please enter a valid payment amount.', details: '' });
             return;
         }
 
@@ -147,20 +166,38 @@ const AccountingPage = () => {
                 description: ''
             });
             
-            alert('Payment recorded successfully!');
+            setErrorModal({
+                open: true,
+                title: 'Payment recorded',
+                message: 'The payment was recorded successfully.',
+                details: ''
+            });
         } catch (error) {
             console.error('Error processing payment:', error);
             const msg = error.response?.data?.message || error.message || 'Unknown error';
-            alert('Error processing payment: ' + msg);
+            setErrorModal({
+                open: true,
+                title: 'Error processing payment',
+                message: 'There was a problem recording this payment.',
+                details: msg
+            });
         }
     };
 
+    // Formatting helpers with guards
+    const toNumber = (value) => {
+        const n = Number(value);
+        return Number.isFinite(n) ? n : 0;
+    };
+
     const formatCurrency = (amount) => {
-        return `₱${parseFloat(amount).toLocaleString()}`;
+        const n = toNumber(amount);
+        return `₱${n.toLocaleString()}`;
     };
 
     const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString();
+        const d = new Date(dateString);
+        return isNaN(d.getTime()) ? 'Invalid date' : d.toLocaleDateString();
     };
 
     const getBalanceStatus = (balance) => {
@@ -478,7 +515,7 @@ const AccountingPage = () => {
                                         id="amount"
                                         step="0.01"
                                         min={selectedTenant.outstandingBalance > 0 ? 0.01 : 0}
-                                        max={Math.max(0, selectedTenant.outstandingBalance)}
+                                        max={selectedTenant.outstandingBalance > 0 ? toNumber(selectedTenant.outstandingBalance) : undefined}
                                         value={newPayment.amount}
                                         onChange={(e) => setNewPayment({...newPayment, amount: e.target.value})}
                                         placeholder="Enter payment amount"
@@ -687,12 +724,12 @@ const AccountingPage = () => {
                                 onSubmit={async (e) => {
                                     e.preventDefault();
                                     if (!quickPayTenant) {
-                                        alert('Please select a tenant');
+                                        setErrorModal({ open: true, title: 'No tenant selected', message: 'Please select a tenant to proceed.', details: '' });
                                         return;
                                     }
                                     const amount = parseFloat(quickPay.amount);
                                     if (!amount || amount <= 0) {
-                                        alert('Please enter a valid payment amount');
+                                        setErrorModal({ open: true, title: 'Invalid amount', message: 'Please enter a valid payment amount.', details: '' });
                                         return;
                                     }
                                     try {
@@ -704,11 +741,11 @@ const AccountingPage = () => {
                                         });
                                         await fetchTenantsWithBillingInfo();
                                         await fetchPaymentStats();
-                                        alert('Payment recorded successfully!');
+                                        setErrorModal({ open: true, title: 'Payment recorded', message: 'The payment was recorded successfully.', details: '' });
                                         setShowQuickPay(false);
                                     } catch (error) {
                                         const msg = error.response?.data?.message || error.message || 'Unknown error';
-                                        alert('Error processing payment: ' + msg);
+                                        setErrorModal({ open: true, title: 'Error processing payment', message: 'There was a problem recording this payment.', details: msg });
                                     }
                                 }}
                                 className="payment-form"
@@ -771,3 +808,4 @@ const AccountingPage = () => {
 };
 
 export default AccountingPage;
+

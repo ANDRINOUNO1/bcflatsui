@@ -7,6 +7,7 @@ import { roomService } from '../services/roomService';
 import { paymentService } from '../services/paymentService';
 import '../components/Dashboard.css';
 import '../components/TenantDashboard.css';
+// Inline modal state will be used instead of a shared modal component
 
 const TenantDashboard = () => {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ const TenantDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [errorModal, setErrorModal] = useState({ open: false, title: '', message: '', details: '' });
 
   const fetchTenantData = async () => {
     try {
@@ -69,6 +71,12 @@ const TenantDashboard = () => {
     } catch (error) {
       console.error('Error fetching tenant data:', error);
       setError('Failed to load dashboard data. Please try again later.');
+      setErrorModal({
+        open: true,
+        title: 'Failed to load your dashboard',
+        message: 'Please try again in a moment.',
+        details: error?.response?.data?.message || error.message || 'Unknown error'
+      });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -88,18 +96,26 @@ const TenantDashboard = () => {
 
   // Helper function to get floor suffix
   const getFloorSuffix = (floor) => {
-    if (floor === 1) return 'st';
-    if (floor === 2) return 'nd';
-    if (floor === 3) return 'rd';
+    const n = Number(floor);
+    if (!Number.isFinite(n)) return '';
+    const j = n % 10, k = n % 100;
+    if (j === 1 && k !== 11) return 'st';
+    if (j === 2 && k !== 12) return 'nd';
+    if (j === 3 && k !== 13) return 'rd';
     return 'th';
   };
 
   // Helper function to format currency
+  const toNumber = (value) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  };
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-PH', {
       style: 'currency',
       currency: 'PHP'
-    }).format(amount || 0);
+    }).format(toNumber(amount));
   };
 
   if (loading) {
@@ -113,25 +129,7 @@ const TenantDashboard = () => {
     );
   } 
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full mx-4">
-          <div className="text-center">
-            <div className="text-red-500 text-6xl mb-4">⚠️</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Something went wrong</h2>
-            <p className="text-gray-600 mb-6">{error}</p>
-            <button 
-              onClick={handleRefresh}
-              className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-            >
-              Try Again
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Show normal page with modal for error instead of replacing the whole view
 
   // Show welcome message if no tenant data is available
   if (!tenantData && !loading) {
@@ -158,6 +156,29 @@ const TenantDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {errorModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}></div>
+          <div className="relative bg-white w-full max-w-md mx-4 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-red-500 to-rose-600 p-4 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">⚠️</span>
+                  <h3 className="text-lg font-semibold">{errorModal.title || 'Something went wrong'}</h3>
+                </div>
+                <button aria-label="Close" className="text-white/90 hover:text-white text-xl leading-none" onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}>×</button>
+              </div>
+            </div>
+            <div className="p-6">
+              {errorModal.message && <p className="text-gray-800 mb-2">{errorModal.message}</p>}
+              {errorModal.details && <pre className="mt-3 text-xs text-gray-600 bg-gray-50 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap">{errorModal.details}</pre>}
+              <div className="mt-6 flex justify-end">
+                <button onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })} className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg shadow">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Header with Gradient Background */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

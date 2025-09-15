@@ -11,6 +11,7 @@ import AccountingPage from './AccountingPage'
 import AddAccountPage from './AddAccountPage'
 import '../components/Dashboard.css'
 
+
 const Dashboard = () => {
   const { user, logout, isAuthenticated } = useAuth()
   const [stats, setStats] = useState({
@@ -24,6 +25,7 @@ const Dashboard = () => {
   const [refreshing, setRefreshing] = useState(false)
   const [activeTab, setActiveTab] = useState('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [errorModal, setErrorModal] = useState({ open: false, title: '', message: '', details: '' })
 
   const fetchDashboardData = async () => {
     try {
@@ -40,9 +42,18 @@ const Dashboard = () => {
       
       console.log(' Dashboard: Fetching statistics...')
       const [roomStats, tenantStats, paymentStats] = await Promise.all([
-        roomService.getRoomStats(),
-        tenantService.getTenantStats(),
-        paymentService.getDashboardStats()
+        roomService.getRoomStats().catch((e) => {
+          setErrorModal({ open: true, title: 'Failed to load room stats', message: 'Some dashboard data may be incomplete.', details: e?.response?.data?.message || e.message })
+          return { totalRooms: 0, fullyOccupiedRooms: 0, partiallyOccupiedRooms: 0, maintenanceRooms: 0 }
+        }),
+        tenantService.getTenantStats().catch((e) => {
+          setErrorModal({ open: true, title: 'Failed to load tenant stats', message: 'Some dashboard data may be incomplete.', details: e?.response?.data?.message || e.message })
+          return { activeTenants: 0 }
+        }),
+        paymentService.getDashboardStats().catch((e) => {
+          setErrorModal({ open: true, title: 'Failed to load payment stats', message: 'Some dashboard data may be incomplete.', details: e?.response?.data?.message || e.message })
+          return { totalUnpaidBills: 0, totalAmountCollected: 0, totalOutstandingAmount: 0, recentPayments: [], topOutstandingTenants: [] }
+        })
       ])
 
       console.log('📊 Dashboard: Room stats:', roomStats)
@@ -50,10 +61,10 @@ const Dashboard = () => {
       console.log('📊 Dashboard: Payment stats:', paymentStats)
 
       setStats({
-        totalRooms: roomStats.totalRooms,
-        occupiedRooms: roomStats.fullyOccupiedRooms + roomStats.partiallyOccupiedRooms,
-        totalStudents: tenantStats.activeTenants,
-        maintenanceRequests: roomStats.maintenanceRooms
+        totalRooms: Number(roomStats.totalRooms || 0),
+        occupiedRooms: Number((roomStats.fullyOccupiedRooms || 0)) + Number((roomStats.partiallyOccupiedRooms || 0)),
+        totalStudents: Number(tenantStats.activeTenants || 0),
+        maintenanceRequests: Number(roomStats.maintenanceRooms || 0)
       })
 
       setDashboardStats(paymentStats)
@@ -349,6 +360,29 @@ const Dashboard = () => {
 
   return (
     <div className={`dashboard ${sidebarOpen ? '' : 'sidebar-collapsed'}`}>
+      {errorModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}></div>
+          <div className="relative bg-white w-full max-w-md mx-4 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-red-500 to-rose-600 p-4 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">⚠️</span>
+                  <h3 className="text-lg font-semibold">{errorModal.title || 'Something went wrong'}</h3>
+                </div>
+                <button aria-label="Close" className="text-white/90 hover:text-white text-xl leading-none" onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}>×</button>
+              </div>
+            </div>
+            <div className="p-6">
+              {errorModal.message && <p className="text-gray-800 mb-2">{errorModal.message}</p>}
+              {errorModal.details && <pre className="mt-3 text-xs text-gray-600 bg-gray-50 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap">{errorModal.details}</pre>}
+              <div className="mt-6 flex justify-end">
+                <button onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })} className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg shadow">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <header className="dashboard-header">
         <div className="header-content">
