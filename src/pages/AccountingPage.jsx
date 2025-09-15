@@ -250,6 +250,7 @@ const AccountingPage = () => {
                             <span>🔄</span>
                             Refresh Data
                         </button>
+                        <span className="ml-3 hidden sm:inline-block bg-white/20 text-white text-xs px-2 py-1 rounded">UI vA1</span>
                     </div>
                 </div>
             </div>
@@ -335,7 +336,8 @@ const AccountingPage = () => {
                         {/* Quick Tabs and Filters */}
                         <div className="mt-6 bg-gray-50 rounded-lg p-4">
                             {/* Quick Tabs */}
-                            <div className="mb-4 flex flex-wrap items-center gap-2">
+                            <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-600">Quick Filters</div>
+                            <div className="mb-4 flex flex-wrap items-center gap-2" role="tablist" aria-label="Quick Filters">
                                 {[
                                     { id: 'all', label: 'All' },
                                     { id: 'withBalance', label: 'Outstanding' },
@@ -344,7 +346,8 @@ const AccountingPage = () => {
                                     <button
                                         key={tab.id}
                                         onClick={() => setBalanceFilter(tab.id)}
-                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${balanceFilter === tab.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 hover:bg-gray-100 border-gray-200'}`}
+                                        aria-selected={balanceFilter === tab.id}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border focus:outline-none focus:ring-2 focus:ring-blue-500 ${balanceFilter === tab.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 hover:bg-gray-100 border-gray-200'}`}
                                     >
                                         {tab.label}
                                     </button>

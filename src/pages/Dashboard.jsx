@@ -424,6 +424,7 @@ const Dashboard = () => {
 
       <div className="dashboard-content">
         {/* Sidebar */}
+        {/* Desktop sidebar */}
         <aside className={`dashboard-sidebar ${sidebarOpen ? 'open' : 'collapsed'} hidden md:block`}>
           <div className="sidebar-profile">
             <div className="avatar">👤</div>
