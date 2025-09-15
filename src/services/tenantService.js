@@ -155,6 +155,17 @@ export const tenantService = {
         }
     },
 
+    // Get comprehensive billing information for a specific tenant
+    getTenantBillingInfo: async (tenantId) => {
+        try {
+            const response = await apiService.get(`${API_BASE_URL}/tenants/${tenantId}/billing-info`);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching tenant billing info:', error);
+            throw error;
+        }
+    },
+
     // Helper function to format currency
     formatCurrency
 };
