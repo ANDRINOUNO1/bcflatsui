@@ -24,7 +24,6 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [activeTab, setActiveTab] = useState('dashboard')
-  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [errorModal, setErrorModal] = useState({ open: false, title: '', message: '', details: '' })
 
   const fetchDashboardData = async () => {
@@ -145,7 +144,7 @@ const Dashboard = () => {
                     {refreshing ? (
                       'Refreshing...'
                     ) : (
-                      'Refresh Data'
+                      'Refresh Data 🔄'
                     )}
                   </button>
                 </div>
@@ -365,7 +364,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className={`dashboard ${sidebarOpen ? '' : 'sidebar-collapsed'}`}>
+    <div className="dashboard-layout">
       {errorModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}></div>
@@ -393,35 +392,22 @@ const Dashboard = () => {
       <header className="dashboard-header">
         <div className="header-content">
           <div className="header-left">
-            <button
-              className="sidebar-toggle"
-              onClick={() => setSidebarOpen((v) => !v)}
-              aria-label="Toggle navigation"
-            >
-              ☰
-            </button>
             <div className="logo">
               <span className="logo-icon">🏢</span>
               <span className="logo-text">BCFlats Management</span>
             </div>
           </div>
+          <div className="profile-meta">
+            <div className="email">{user?.email}</div>
+          </div>
         </div>
       </header>
 
-      <div className="dashboard-content">
+      <div className="dashboard-body">
         {/* Sidebar */}
-        {/* Desktop sidebar */}
-        <aside className={`dashboard-sidebar ${sidebarOpen ? 'open' : 'collapsed'} hidden md:block`}>
-          <div className="sidebar-profile">
-            <div className="avatar">👤</div>
-            <div className="profile-meta">
-              <div className="name">{user?.email?.split('@')[0] || 'User'}</div>
-              <div className="email">{user?.email}</div>
-            </div>
-            <button className="logout-btn small" onClick={handleLogout}>Logout</button>
-          </div>
+        <aside className="dashboard-sidebar">
           <nav className="sidebar-nav">
-            {navigationItems.filter(i => i.id !== 'help').map((item) => (
+            {navigationItems.map((item) => (
               <button
                 key={item.id}
                 className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
@@ -431,56 +417,22 @@ const Dashboard = () => {
                 <span className="nav-label">{item.label}</span>
               </button>
             ))}
-            <div className="sidebar-footer">
-              {navigationItems.filter(i => i.id === 'help').map((item) => (
-                <button
-                  key={item.id}
-                  className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
-                  onClick={() => setActiveTab(item.id)}
-                >
-                  <span className="nav-icon">{item.icon}</span>
-                  <span className="nav-label">{item.label}</span>
-                </button>
-              ))}
-            </div>
           </nav>
+          <div className="sidebar-footer">
+            <button className="logout-btn" onClick={handleLogout}>
+              <span className="nav-icon">🚪</span>
+              <span className="nav-label">Logout</span>
+            </button>
+          </div>
         </aside>
 
-        {/* Mobile slide-over sidebar */}
-        <div className={`fixed inset-0 z-40 md:hidden ${sidebarOpen ? '' : 'pointer-events-none'}`}>
-          <div
-            className={`absolute inset-0 bg-black/40 transition-opacity ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}
-            onClick={() => setSidebarOpen(false)}
-          ></div>
-          <div className={`absolute left-0 top-0 bottom-0 w-64 bg-white shadow-xl transform transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-            <div className="p-4 border-b flex items-center justify-between">
-              <div className="font-semibold">Menu</div>
-              <button onClick={() => setSidebarOpen(false)} aria-label="Close">×</button>
-            </div>
-            <nav className="p-2">
-              {navigationItems.map((item) => (
-                <button
-                  key={item.id}
-                  className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-left ${activeTab === item.id ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'}`}
-                  onClick={() => { setActiveTab(item.id); setSidebarOpen(false) }}
-                >
-                  <span className="text-lg">{item.icon}</span>
-                  <span>{item.label}</span>
-                </button>
-              ))}
-            </nav>
-          </div>
-        </div>
-
-                 {/* Main Content */}
-         <main className="dashboard-main-content">
-           {renderContent()}
-         </main>
+        {/* Main Content */}
+        <main className="dashboard-main-content">
+          {renderContent()}
+        </main>
       </div>
     </div>
   )
 }
 
 export default Dashboard
-
-
