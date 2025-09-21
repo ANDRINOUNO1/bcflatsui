@@ -4,7 +4,6 @@
   background: #f5f7fa;
 }
 
-/* Lightweight utility replacements to reduce reliance on Tailwind for these pages */
 .dashboard-screen { min-height: 100vh; background: #f8fafc; }
 .dashboard-header-gradient { background: linear-gradient(90deg,#2563eb,#1e40af); box-shadow: 0 10px 20px rgba(0,0,0,.08); }
 
