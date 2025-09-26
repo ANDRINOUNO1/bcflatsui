@@ -1,0 +1,122 @@
+.superadmin-container {
+    padding: 16px;
+}
+
+.superadmin-title {
+    margin: 16px 0;
+    font-weight: 600;
+}
+
+.sa-section {
+    margin-bottom: 16px;
+}
+
+.sa-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.sa-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.sa-card-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sa-card-title .sa-icon {
+    font-size: 20px;
+}
+
+.sa-card-body {
+    padding: 16px;
+}
+
+.sa-list {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.sa-table-wrap {
+    width: 100%;
+    overflow: auto;
+}
+
+.sa-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.sa-table thead th {
+    text-align: left;
+    padding: 10px 12px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e5e7eb;
+    color: #374151;
+    font-weight: 600;
+}
+
+.sa-table tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f1f3f5;
+}
+
+.sa-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.sa-select {
+    padding: 6px 8px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: #fff;
+}
+
+.sa-btn {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.sa-btn.secondary {
+    background: #f3f4f6;
+    border-color: #e5e7eb;
+}
+
+.sa-btn.success {
+    background: #10b981;
+    color: white;
+}
+
+.sa-btn.danger-outline {
+    background: transparent;
+    color: #dc2626;
+    border-color: #fecaca;
+}
+
+/* Role badges */
+.role-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.role-badge.admin { background: #e8f5e8; color: #27ae60; }
+.role-badge.superadmin { background: #e8efff; color: #335dff; }
+.role-badge.accounting { background: #fff3cd; color: #f39c12; }
+.role-badge.tenant { background: #f1f5f9; color: #475569; }
+
+
