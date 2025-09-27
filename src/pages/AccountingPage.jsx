@@ -221,88 +221,88 @@ const AccountingPage = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading accounting data...</p>
+            <div className="loading-container">
+                <div className="loading-content">
+                    <div className="loading-spinner"></div>
+                    <p className="loading-text">Loading accounting data...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="accounting-page">
             {/* Header with Gradient Background */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-800 shadow-lg">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center py-8">
+            <div className="accounting-header-gradient">
+                <div className="accounting-header-container">
+                    <div className="accounting-header-content">
                         <div>
-                            <h1 className="text-4xl font-bold text-white flex items-center">
-                                <span className="mr-4">💰</span>
+                            <h1 className="accounting-title">
+                                <span className="accounting-icon">💰</span>
                                 Accounting & Payments
                             </h1>
-                            <p className="text-blue-100 mt-2 text-lg">Manage tenant payments and track outstanding balances</p>
+                            <p className="accounting-subtitle">Manage tenant payments and track outstanding balances</p>
                         </div>
                         <button
                             onClick={fetchTenantsWithBillingInfo}
-                            className="bg-white hover:bg-gray-50 text-blue-600 font-semibold py-3 px-6 rounded-full transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
+                            className="refresh-button"
                         >
                             <span>🔄</span>
                             Refresh Data
                         </button>
-                        <span className="ml-3 hidden sm:inline-block bg-white/20 text-white text-xs px-2 py-1 rounded">UI vA1</span>
+                        <span className="version-badge">UI vA1</span>
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="accounting-content-container">
 
                 {/* Stats Summary */}
                 {stats && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-green-100">
-                            <div className="flex items-center justify-between">
+                    <div className="stats-grid">
+                        <div className="stat-card stat-card-green">
+                            <div className="stat-card-content">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Total Payments</p>
-                                    <p className="text-3xl font-bold text-gray-900 mt-2">{formatCurrency(stats.totalAmount)}</p>
+                                    <p className="stat-label">Total Payments</p>
+                                    <p className="stat-value">{formatCurrency(stats.totalAmount)}</p>
                                 </div>
-                                <div className="bg-green-100 p-3 rounded-full">
-                                    <div className="text-2xl">💰</div>
+                                <div className="stat-icon stat-icon-green">
+                                    <div className="stat-icon-emoji">💰</div>
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-blue-100">
-                            <div className="flex items-center justify-between">
+                        <div className="stat-card stat-card-blue">
+                            <div className="stat-card-content">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Payment Count</p>
-                                    <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalPayments}</p>
+                                    <p className="stat-label">Payment Count</p>
+                                    <p className="stat-value">{stats.totalPayments}</p>
                                 </div>
-                                <div className="bg-blue-100 p-3 rounded-full">
-                                    <div className="text-2xl">📊</div>
+                                <div className="stat-icon stat-icon-blue">
+                                    <div className="stat-icon-emoji">📊</div>
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-purple-100">
-                            <div className="flex items-center justify-between">
+                        <div className="stat-card stat-card-purple">
+                            <div className="stat-card-content">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Active Tenants</p>
-                                    <p className="text-3xl font-bold text-gray-900 mt-2">{tenants.length}</p>
+                                    <p className="stat-label">Active Tenants</p>
+                                    <p className="stat-value">{tenants.length}</p>
                                 </div>
-                                <div className="bg-purple-100 p-3 rounded-full">
-                                    <div className="text-2xl">👥</div>
+                                <div className="stat-icon stat-icon-purple">
+                                    <div className="stat-icon-emoji">👥</div>
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-red-100">
-                            <div className="flex items-center justify-between">
+                        <div className="stat-card stat-card-red">
+                            <div className="stat-card-content">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Outstanding Balances</p>
-                                    <p className="text-3xl font-bold text-gray-900 mt-2">
+                                    <p className="stat-label">Outstanding Balances</p>
+                                    <p className="stat-value">
                                         {tenants.filter(t => parseFloat(t.outstandingBalance) > 0).length}
                                     </p>
                                 </div>
-                                <div className="bg-red-100 p-3 rounded-full">
-                                    <div className="text-2xl">⚠️</div>
+                                <div className="stat-icon stat-icon-red">
+                                    <div className="stat-icon-emoji">⚠️</div>
                                 </div>
                             </div>
                         </div>
@@ -310,16 +310,16 @@ const AccountingPage = () => {
                 )}
 
                 {/* Tenant Billing Overview Table */}
-                <div className="bg-white rounded-xl shadow-lg">
-                    <div className="px-8 py-6 border-b border-gray-200">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="billing-table-container">
+                    <div className="billing-table-header">
+                        <div className="billing-table-header-content">
                             <div>
-                                <h3 className="text-2xl font-bold text-gray-900">Tenant Billing Overview</h3>
-                                <p className="text-gray-600 mt-1">Manage payments and track balances</p>
+                                <h3 className="billing-table-title">Tenant Billing Overview</h3>
+                                <p className="billing-table-subtitle">Manage payments and track balances</p>
                             </div>
-                            <div className="flex gap-3">
+                            <div className="billing-table-actions">
                                 <button
-                                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-full transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
+                                    className="pay-bill-button"
                                     onClick={() => {
                                         setShowQuickPay(true);
                                         setQuickPaySearch('');

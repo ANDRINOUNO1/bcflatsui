@@ -153,48 +153,46 @@ const TenantDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="tenant-dashboard">
       {errorModal.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}></div>
-          <div className="relative bg-white w-full max-w-md mx-4 rounded-2xl shadow-2xl overflow-hidden">
-            <div className="bg-gradient-to-r from-red-500 to-rose-600 p-4 text-white">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">⚠️</span>
-                  <h3 className="text-lg font-semibold">{errorModal.title || 'Something went wrong'}</h3>
-                </div>
-                <button aria-label="Close" className="text-white/90 hover:text-white text-xl leading-none" onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}>×</button>
+        <div className="modal-overlay">
+          <div className="modal-backdrop" onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}></div>
+          <div className="error-modal">
+            <div className="error-modal-header">
+              <div className="error-modal-title-content">
+                <span className="error-modal-icon">⚠️</span>
+                <h3 className="error-modal-title">{errorModal.title || 'Something went wrong'}</h3>
               </div>
+              <button aria-label="Close" className="error-modal-close" onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}>×</button>
             </div>
-            <div className="p-6">
-              {errorModal.message && <p className="text-gray-800 mb-2">{errorModal.message}</p>}
-              {errorModal.details && <pre className="mt-3 text-xs text-gray-600 bg-gray-50 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap">{errorModal.details}</pre>}
-              <div className="mt-6 flex justify-end">
-                <button onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })} className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg shadow">Close</button>
+            <div className="error-modal-body">
+              {errorModal.message && <p className="error-modal-message">{errorModal.message}</p>}
+              {errorModal.details && <pre className="error-modal-details">{errorModal.details}</pre>}
+              <div className="error-modal-actions">
+                <button onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })} className="error-modal-button">Close</button>
               </div>
             </div>
           </div>
         </div>
       )}
       {/* Header with Gradient Background */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-8">
+      <div className="tenant-header-gradient">
+        <div className="tenant-header-container">
+          <div className="tenant-header-content">
             <div>
-              <h1 className="text-4xl font-bold text-white">
+              <h1 className="tenant-welcome-title">
                 Welcome back, {user?.firstName || user?.email?.split('@')[0] || 'Tenant'}!
               </h1>
-              <p className="text-blue-100 mt-2 text-lg">Here's an overview of your home and account.</p>
+              <p className="tenant-welcome-subtitle">Here's an overview of your home and account.</p>
             </div>
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="bg-white hover:bg-gray-50 disabled:bg-gray-200 text-blue-600 font-semibold py-3 px-6 rounded-full transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
+              className="tenant-refresh-button"
             >
               {refreshing ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                  <div className="tenant-refresh-spinner"></div>
                   Refreshing...
                 </>
               ) : (

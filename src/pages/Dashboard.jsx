@@ -366,23 +366,21 @@ const Dashboard = () => {
   return (
     <div className="dashboard-layout">
       {errorModal.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}></div>
-          <div className="relative bg-white w-full max-w-md mx-4 rounded-2xl shadow-2xl overflow-hidden">
-            <div className="bg-gradient-to-r from-red-500 to-rose-600 p-4 text-white">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">⚠️</span>
-                  <h3 className="text-lg font-semibold">{errorModal.title || 'Something went wrong'}</h3>
-                </div>
-                <button aria-label="Close" className="text-white/90 hover:text-white text-xl leading-none" onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}>×</button>
+        <div className="modal-overlay">
+          <div className="modal-backdrop" onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}></div>
+          <div className="error-modal">
+            <div className="error-modal-header">
+              <div className="error-modal-title-content">
+                <span className="error-modal-icon">⚠️</span>
+                <h3 className="error-modal-title">{errorModal.title || 'Something went wrong'}</h3>
               </div>
+              <button aria-label="Close" className="error-modal-close" onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}>×</button>
             </div>
-            <div className="p-6">
-              {errorModal.message && <p className="text-gray-800 mb-2">{errorModal.message}</p>}
-              {errorModal.details && <pre className="mt-3 text-xs text-gray-600 bg-gray-50 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap">{errorModal.details}</pre>}
-              <div className="mt-6 flex justify-end">
-                <button onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })} className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg shadow">Close</button>
+            <div className="error-modal-body">
+              {errorModal.message && <p className="error-modal-message">{errorModal.message}</p>}
+              {errorModal.details && <pre className="error-modal-details">{errorModal.details}</pre>}
+              <div className="error-modal-actions">
+                <button onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })} className="error-modal-button">Close</button>
               </div>
             </div>
           </div>
