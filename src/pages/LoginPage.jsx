@@ -74,7 +74,14 @@ const LoginPage = () => {
           navigate('/') 
         }
       } else {
-        setErrors({ general: result.error })
+        if (result.status === 'Pending') {
+          setErrors({ 
+            general: result.error,
+            pending: true 
+          })
+        } else {
+          setErrors({ general: result.error })
+        }
       }
     } catch (error) {
       setErrors({ general: 'Login failed. Please try again.' })
@@ -100,8 +107,24 @@ const LoginPage = () => {
 
           <form className="login-form" onSubmit={handleSubmit}>
             {errors.general && (
-              <div className="error-message general">
-                {errors.general}
+              <div className={`error-message general ${errors.pending ? 'pending' : ''}`}>
+                <div className="error-icon">
+                  {errors.pending ? '⏳' : '⚠️'}
+                </div>
+                <div className="error-content">
+                  <div className="error-title">
+                    {errors.pending ? 'Account Pending Approval' : 'Login Failed'}
+                  </div>
+                  <div className="error-text">
+                    {errors.general}
+                  </div>
+                  {errors.pending && (
+                    <div className="pending-info">
+                      <p>Your account has been created but is waiting for superadmin approval.</p>
+                      <p>You will be able to log in once your account is approved.</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

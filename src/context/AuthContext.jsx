@@ -49,6 +49,29 @@ const login = async (email, password) => {
     const response = await authService.login(email, password)
     const { token, user: userData } = response
     
+
+    if (userData.status && userData.status !== 'Active') {
+      let errorMessage = 'Login failed'
+      switch (userData.status) {
+        case 'Pending':
+          errorMessage = 'Your account is pending approval. Please wait for a superadmin to approve your account.'
+          break
+        case 'Suspended':
+          errorMessage = 'Your account has been suspended. Please contact support.'
+          break
+        case 'Rejected':
+          errorMessage = 'Your account has been rejected. Please contact support for more information.'
+          break
+        default:
+          errorMessage = 'Your account is not active. Please contact support.'
+      }
+      return { 
+        success: false, 
+        error: errorMessage,
+        status: userData.status
+      }
+    }
+    
     sessionStorage.setItem('token', token)
     setUser(userData)
     setIsAuthenticated(true)

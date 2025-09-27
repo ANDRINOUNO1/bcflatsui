@@ -24,6 +24,10 @@ export const superAdminService = {
     async updateStatus(id, status) {
         const res = await apiService.patch(`/accounts/${id}/status`, { status });
         return res.data;
+    },
+    async createAccount(accountData) {
+        const res = await apiService.post('/accounts', accountData);
+        return res.data;
     }
 };
 

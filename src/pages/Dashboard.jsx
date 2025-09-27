@@ -25,6 +25,7 @@ const Dashboard = () => {
   const [refreshing, setRefreshing] = useState(false)
   const [activeTab, setActiveTab] = useState('dashboard')
   const [errorModal, setErrorModal] = useState({ open: false, title: '', message: '', details: '' })
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const fetchDashboardData = async () => {
     try {
@@ -390,6 +391,13 @@ const Dashboard = () => {
       <header className="dashboard-header">
         <div className="header-content">
           <div className="header-left">
+            <button 
+              className="mobile-menu-toggle"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label="Toggle menu"
+            >
+              <span className="hamburger-icon">☰</span>
+            </button>
             <div className="logo">
               <span className="logo-icon">🏢</span>
               <span className="logo-text">BCFlats Management</span>
@@ -401,7 +409,10 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <div className="dashboard-body">
+      <div className={`dashboard-body ${sidebarOpen ? 'sidebar-open' : ''}`}>
+        {/* Sidebar Overlay for Mobile */}
+        {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>}
+        
         {/* Sidebar */}
         <aside className="dashboard-sidebar">
           <nav className="sidebar-nav">

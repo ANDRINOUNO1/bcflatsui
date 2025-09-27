@@ -4,6 +4,12 @@
     background-color: #f9fafb;
 }
 
+/* When rendered within Dashboard layout */
+.dashboard-main-content .accounting-page {
+    min-height: auto;
+    background-color: transparent;
+}
+
 .accounting-container {
     padding: 20px;
     max-width: 1400px;
