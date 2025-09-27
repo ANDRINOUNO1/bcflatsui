@@ -35,7 +35,6 @@ const TenantDashboard = () => {
             setBillingInfo(billingResponse);
           } catch (billingError) {
             console.error('Error fetching billing info:', billingError);
-            // Continue without billing data
           }
           
           // Fetch room information if tenant has a room
@@ -118,31 +117,28 @@ const TenantDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your dashboard...</p>
+      <div className="loading-container">
+        <div className="loading-content">
+          <div className="loading-spinner"></div>
+          <p className="loading-text">Loading your dashboard...</p>
         </div>
       </div>
     );
   } 
 
-  // Show normal page with modal for error instead of replacing the whole view
-
-  // Show welcome message if no tenant data is available
   if (!tenantData && !loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <div className="text-6xl mb-4">🏠</div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Welcome to BCFlats!</h1>
-            <p className="text-gray-600 mb-8">Your tenant dashboard will be available once your account is set up.</p>
+      <div className="welcome-screen">
+        <div className="welcome-container">
+          <div className="welcome-card">
+            <div className="welcome-icon">🏠</div>
+            <h1 className="welcome-title">Welcome to BCFlats!</h1>
+            <p className="welcome-subtitle">Your tenant dashboard will be available once your account is set up.</p>
             
-            <div className="bg-blue-50 rounded-lg p-6">
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Getting Started</h3>
-              <p className="text-gray-700 mb-6">Please contact the property management to complete your tenant registration and room assignment.</p>
-              <button className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+            <div className="welcome-getting-started">
+              <h3 className="welcome-getting-started-title">Getting Started</h3>
+              <p className="welcome-getting-started-text">Please contact the property management to complete your tenant registration and room assignment.</p>
+              <button className="btn btn--primary">
                 Contact Management
               </button>
             </div>
@@ -175,7 +171,6 @@ const TenantDashboard = () => {
           </div>
         </div>
       )}
-      {/* Header with Gradient Background */}
       <div className="tenant-header-gradient">
         <div className="tenant-header-container">
           <div className="tenant-header-content">
@@ -206,101 +201,97 @@ const TenantDashboard = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-
-        {/* Quick Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-red-100">
-            <div className="flex items-center justify-between">
+      <div className="dashboard-main-content">
+        <div className="stats-grid">
+          <div className="stats-card stats-card--red">
+            <div className="stats-card-content">
               <div>
-                <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Current Balance</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
+                <p className="stats-card-label">Current Balance</p>
+                <p className="stats-card-value">
                   {formatCurrency(billingInfo?.outstandingBalance || 0)}
                 </p>
               </div>
-              <div className="bg-red-50 p-3 rounded-full">
-                <div className="text-2xl">💰</div>
+              <div className="stats-card-icon-wrapper stats-card-icon-wrapper--red">
+                <div className="stats-card-icon">💰</div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-blue-100">
-            <div className="flex items-center justify-between">
+          <div className="stats-card stats-card--blue">
+            <div className="stats-card-content">
               <div>
-                <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Next Due Date</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
+                <p className="stats-card-label">Next Due Date</p>
+                <p className="stats-card-value">
                   {billingInfo?.nextDueDate 
                     ? new Date(billingInfo.nextDueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                     : 'N/A'
                   }
                 </p>
               </div>
-              <div className="bg-blue-100 p-3 rounded-full">
-                <div className="text-2xl">📅</div>
+              <div className="stats-card-icon-wrapper stats-card-icon-wrapper--blue">
+                <div className="stats-card-icon">📅</div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-green-100">
-            <div className="flex items-center justify-between">
+          <div className="stats-card stats-card--green">
+            <div className="stats-card-content">
               <div>
-                <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Deposit Balance</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
+                <p className="stats-card-label">Deposit Balance</p>
+                <p className="stats-card-value">
                   {formatCurrency(billingInfo?.deposit || 0)}
                 </p>
               </div>
-              <div className="bg-green-100 p-3 rounded-full">
-                <div className="text-2xl">🏦</div>
+              <div className="stats-card-icon-wrapper stats-card-icon-wrapper--green">
+                <div className="stats-card-icon">🏦</div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-200 border border-purple-100">
-            <div className="flex items-center justify-between">
+          <div className="stats-card stats-card--purple">
+            <div className="stats-card-content">
               <div>
-                <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Payment History</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
+                <p className="stats-card-label">Payment History</p>
+                <p className="stats-card-value">
                   {billingInfo?.paymentHistory?.length || 0}
                 </p>
               </div>
-              <div className="bg-purple-100 p-3 rounded-full">
-                <div className="text-2xl">📊</div>
+              <div className="stats-card-icon-wrapper stats-card-icon-wrapper--purple">
+                <div className="stats-card-icon">📊</div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Billing Section */}
-        <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
-          <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-            <span className="mr-3">💰</span>
+        <div className="content-card content-card--large-padding">
+          <h3 className="card-title card-title-with-icon">
+            <span className="card-title-icon">💰</span>
             Billing Information
           </h3>
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                <span className="text-gray-600 font-medium">Monthly Rent:</span>
-                <span className="font-bold text-gray-900">
+          <div className="billing-info-grid">
+            <div className="info-list">
+              <div className="info-row">
+                <span className="info-label">Monthly Rent:</span>
+                <span className="info-value info-value--strong">
                   {formatCurrency(billingInfo?.monthlyRent || 0)}
                 </span>
               </div>
-              <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                <span className="text-gray-600 font-medium">Utilities:</span>
-                <span className="font-bold text-gray-900">
+              <div className="info-row">
+                <span className="info-label">Utilities:</span>
+                <span className="info-value info-value--strong">
                   {formatCurrency(billingInfo?.utilities || 0)}
                 </span>
               </div>
-              <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                <span className="text-gray-600 font-medium">Deposit Paid:</span>
-                <span className="font-bold text-gray-900">
+              <div className="info-row">
+                <span className="info-label">Deposit Paid:</span>
+                <span className="info-value info-value--strong">
                   {formatCurrency(billingInfo?.deposit || 0)}
                 </span>
               </div>
-              <div className="flex justify-between items-center py-3">
-                <span className="text-gray-600 font-medium">Last Payment:</span>
-                <span className="font-bold text-gray-900">
+              <div className="info-row info-row--no-border">
+                <span className="info-label">Last Payment:</span>
+                <span className="info-value info-value--strong">
                   {billingInfo?.lastPaymentDate 
                     ? new Date(billingInfo.lastPaymentDate).toLocaleDateString()
                     : 'No payments yet'
@@ -309,20 +300,20 @@ const TenantDashboard = () => {
               </div>
             </div>
             
-            <div className="space-y-4">
-              <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                <span className="text-gray-600 font-medium">Account Status:</span>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+            <div className="info-list">
+              <div className="info-row">
+                <span className="info-label">Account Status:</span>
+                <span className={`status-badge ${
                   billingInfo?.status === 'Active' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-yellow-100 text-yellow-800'
+                    ? 'status-badge--green' 
+                    : 'status-badge--yellow'
                 }`}>
                   {billingInfo?.status || 'Unknown'}
                 </span>
               </div>
-              <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                <span className="text-gray-600 font-medium">Next Due Date:</span>
-                <span className="font-bold text-gray-900">
+              <div className="info-row">
+                <span className="info-label">Next Due Date:</span>
+                <span className="info-value info-value--strong">
                   {billingInfo?.nextDueDate 
                     ? new Date(billingInfo.nextDueDate).toLocaleDateString()
                     : 'Not set'
@@ -330,21 +321,20 @@ const TenantDashboard = () => {
                 </span>
               </div>
               {billingInfo?.nextDueDate && (
-                <div className="py-3">
+                <div className="progress-bar-container">
                   {(() => {
-                    const due = new Date(billingInfo.nextDueDate)
-                    const now = new Date()
-                    const start = new Date(now.getFullYear(), now.getMonth(), 1)
-                    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-                    const totalMs = end - start || 1
-                    const elapsedMs = Math.min(Math.max(now - start, 0), totalMs)
-                    const pct = Math.round((elapsedMs / totalMs) * 100)
+                    const now = new Date();
+                    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+                    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                    const totalMs = end - start || 1;
+                    const elapsedMs = Math.min(Math.max(now - start, 0), totalMs);
+                    const pct = Math.round((elapsedMs / totalMs) * 100);
                     return (
                       <>
-                        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div className={`h-2 ${pct > 80 ? 'bg-red-500' : pct > 60 ? 'bg-orange-400' : 'bg-blue-500'}`} style={{ width: pct + '%' }}></div>
+                        <div className="progress-bar-track">
+                          <div className={`progress-bar-fill ${pct > 80 ? 'progress-bar-fill--red' : pct > 60 ? 'progress-bar-fill--orange' : 'progress-bar-fill--blue'}`} style={{ width: pct + '%' }}></div>
                         </div>
-                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <div className="progress-bar-labels">
                           <span>Start</span>
                           <span>{pct}%</span>
                           <span>End</span>
@@ -354,105 +344,95 @@ const TenantDashboard = () => {
                   })()}
                 </div>
               )}
-              <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                <span className="text-gray-600 font-medium">Total Monthly:</span>
-                <span className="font-bold text-blue-600">
+              <div className="info-row">
+                <span className="info-label">Total Monthly:</span>
+                <span className="info-value info-value--blue">
                   {formatCurrency(billingInfo?.totalMonthlyCost || 0)}
                 </span>
               </div>
-              <div className="flex justify-between items-center py-3">
-                <span className="text-gray-600 font-medium">Outstanding Balance:</span>
-                <span className="font-bold text-red-600">
+              <div className="info-row info-row--no-border">
+                <span className="info-label">Outstanding Balance:</span>
+                <span className="info-value info-value--red">
                   {formatCurrency(billingInfo?.outstandingBalance || 0)}
                 </span>
               </div>
             </div>
           </div>
           
-          <div className="mt-8 flex flex-col sm:flex-row gap-4">
-            <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-lg transition-all duration-200 flex items-center justify-center gap-3 shadow-md hover:shadow-xl transform hover:-translate-y-1">
-              <span className="text-xl">💳</span>
+          <div className="card-actions-footer">
+            <button className="btn-action btn-action--primary">
+              <span className="btn-action-icon">💳</span>
               <span>Pay Now</span>
             </button>
-            <button className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 px-8 rounded-lg transition-all duration-200 flex items-center justify-center gap-3">
-              <span className="text-xl">📊</span>
+            <button className="btn-action btn-action--secondary">
+              <span className="btn-action-icon">📊</span>
               <span>Billing History</span>
             </button>
           </div>
         </div>
 
-        {/* Property Information */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <span className="mr-2">🏠</span>
+        <div className="content-card">
+          <h3 className="card-title card-title-with-icon">
+            <span className="card-title-icon">🏠</span>
             Property Information
           </h3>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-gray-600">Building:</span>
-              <span className="font-medium text-gray-900">{roomData?.building || 'Main Building'}</span>
+          <div className="info-list">
+            <div className="info-row info-row--light-border">
+              <span className="info-label">Building:</span>
+              <span className="info-value">{roomData?.building || 'Main Building'}</span>
             </div>
-            <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-gray-600">Room:</span>
-              <span className="font-medium text-gray-900">{roomData?.roomNumber || 'N/A'}</span>
+            <div className="info-row info-row--light-border">
+              <span className="info-label">Room:</span>
+              <span className="info-value">{roomData?.roomNumber || 'N/A'}</span>
             </div>
-            <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-gray-600">Floor:</span>
-              <span className="font-medium text-gray-900">
+            <div className="info-row info-row--light-border">
+              <span className="info-label">Floor:</span>
+              <span className="info-value">
                 {roomData?.floor ? `${roomData.floor}${getFloorSuffix(roomData.floor)}` : 'N/A'}
               </span>
             </div>
-            <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-gray-600">Bed Number:</span>
-              <span className="font-medium text-gray-900">{tenantData?.bedNumber || 'N/A'}</span>
+            <div className="info-row info-row--light-border">
+              <span className="info-label">Bed Number:</span>
+              <span className="info-value">{tenantData?.bedNumber || 'N/A'}</span>
             </div>
-            <div className="flex justify-between items-center py-2">
-              <span className="text-gray-600">Check-in Date:</span>
-              <span className="font-medium text-gray-900">
+            <div className="info-row info-row--no-border">
+              <span className="info-label">Check-in Date:</span>
+              <span className="info-value">
                 {tenantData?.checkInDate ? new Date(tenantData.checkInDate).toLocaleDateString() : 'Not set'}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Payment History */}
         {billingInfo?.paymentHistory && billingInfo.paymentHistory.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <span className="mr-2">💳</span>
+          <div className="content-card">
+            <h3 className="card-title card-title-with-icon">
+              <span className="card-title-icon">💳</span>
               Recent Payment History
             </h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+            <div className="table-container">
+              <table className="payment-table">
+                <thead className="payment-table-header">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance After</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Method</th>
+                    <th>Balance After</th>
+                    <th>Status</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="payment-table-body">
                   {billingInfo.paymentHistory.slice(0, 5).map((payment) => (
                     <tr key={payment.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {new Date(payment.paymentDate).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                        {formatCurrency(payment.amount)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {payment.paymentMethod}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatCurrency(payment.balanceAfter)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      <td className="cell-text-strong">{new Date(payment.paymentDate).toLocaleDateString()}</td>
+                      <td className="cell-text-green">{formatCurrency(payment.amount)}</td>
+                      <td>{payment.paymentMethod}</td>
+                      <td>{formatCurrency(payment.balanceAfter)}</td>
+                      <td>
+                        <span className={`status-badge ${
                           payment.status === 'Completed' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
+                            ? 'status-badge--green' 
+                            : 'status-badge--yellow'
                         }`}>
                           {payment.status}
                         </span>
@@ -463,8 +443,8 @@ const TenantDashboard = () => {
               </table>
             </div>
             {billingInfo.paymentHistory.length > 5 && (
-              <div className="mt-4 text-center">
-                <button className="text-primary-600 hover:text-primary-700 font-medium">
+              <div className="view-all-container">
+                <button className="btn-view-all">
                   View All Payments
                 </button>
               </div>
@@ -472,50 +452,43 @@ const TenantDashboard = () => {
           </div>
         )}
 
-        {/* Maintenance & Support */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <span className="mr-2">🔧</span>
+        <div className="content-card">
+          <h3 className="card-title card-title-with-icon">
+            <span className="card-title-icon">🔧</span>
             Maintenance & Support
           </h3>
-          <p className="text-gray-600 mb-6">
+          <p className="card-description">
             Submit repair requests and track progress for your room.
           </p>
-          <div className="flex gap-3 mb-6">
-            <Link 
-              to="/tenant/maintenance" 
-              className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-            >
+          <div className="maintenance-actions">
+            <Link to="/tenant/maintenance" className="btn btn--primary">
               🔧 Request Maintenance
             </Link>
-            <Link 
-              to="/tenant/maintenance" 
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors"
-            >
+            <Link to="/tenant/maintenance" className="btn btn--secondary">
               📋 View Requests
             </Link>
           </div>
           
           {maintenanceRequests.length > 0 && (
             <div>
-              <h4 className="text-md font-medium text-gray-900 mb-3">Recent Requests</h4>
-              <div className="space-y-3">
+              <h4 className="card-subtitle">Recent Requests</h4>
+              <div className="requests-list">
                 {maintenanceRequests.slice(0, 3).map((request) => (
-                  <div key={request.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <h5 className="font-medium text-gray-900">{request.title}</h5>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  <div key={request.id} className="request-card">
+                    <div className="request-card-header">
+                      <h5 className="request-card-title">{request.title}</h5>
+                      <span className={`status-badge ${
                         request.status === 'Completed' 
-                          ? 'bg-green-100 text-green-800'
+                          ? 'status-badge--green'
                           : request.status === 'In Progress'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-yellow-100 text-yellow-800'
+                          ? 'status-badge--blue'
+                          : 'status-badge--yellow'
                       }`}>
                         {request.status}
                       </span>
                     </div>
-                    <p className="text-gray-600 text-sm mb-2">{request.description}</p>
-                    <div className="flex justify-between items-center text-xs text-gray-500">
+                    <p className="request-card-description">{request.description}</p>
+                    <div className="request-card-footer">
                       <span>Priority: {request.priority}</span>
                       <span>Submitted: {new Date(request.createdAt).toLocaleDateString()}</span>
                     </div>
@@ -526,52 +499,45 @@ const TenantDashboard = () => {
           )}
         </div>
 
-        {/* Emergency Contact & Lease Info */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <span className="mr-2">🚨</span>
+        <div className="grid-2-col">
+          <div className="content-card">
+            <h3 className="card-title card-title-with-icon">
+              <span className="card-title-icon">🚨</span>
               Emergency Contact
             </h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-gray-600">Contact Name:</span>
-                <span className="font-medium text-gray-900">
-                  {tenantData?.emergencyContact?.name || 'Not provided'}
-                </span>
+            <div className="info-list">
+              <div className="info-row info-row--light-border">
+                <span className="info-label">Contact Name:</span>
+                <span className="info-value">{tenantData?.emergencyContact?.name || 'Not provided'}</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-gray-600">Phone:</span>
-                <span className="font-medium text-gray-900">
-                  {tenantData?.emergencyContact?.phone || 'Not provided'}
-                </span>
+              <div className="info-row info-row--light-border">
+                <span className="info-label">Phone:</span>
+                <span className="info-value">{tenantData?.emergencyContact?.phone || 'Not provided'}</span>
               </div>
-              <div className="flex justify-between items-center py-2">
-                <span className="text-gray-600">Relationship:</span>
-                <span className="font-medium text-gray-900">
-                  {tenantData?.emergencyContact?.relationship || 'Not provided'}
-                </span>
+              <div className="info-row info-row--no-border">
+                <span className="info-label">Relationship:</span>
+                <span className="info-value">{tenantData?.emergencyContact?.relationship || 'Not provided'}</span>
               </div>
             </div>
-            <div className="mt-6">
-              <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors">
+            <div className="card-footer-action">
+              <button className="btn-full-width">
                 Update Contact Info
               </button>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <span className="mr-2">📄</span>
+          <div className="content-card">
+            <h3 className="card-title card-title-with-icon">
+              <span className="card-title-icon">📄</span>
               Lease Information
             </h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-gray-600">Lease Status:</span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            <div className="info-list">
+              <div className="info-row info-row--light-border">
+                <span className="info-label">Lease Status:</span>
+                <span className={`status-badge-xs ${
                   tenantData?.leaseEnd && new Date(tenantData.leaseEnd) > new Date()
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'
+                    ? 'status-badge--green'
+                    : 'status-badge--red'
                 }`}>
                   {tenantData?.leaseEnd 
                     ? (new Date(tenantData.leaseEnd) > new Date() ? 'Active' : 'Expired')
@@ -579,52 +545,43 @@ const TenantDashboard = () => {
                   }
                 </span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-gray-600">Lease Start:</span>
-                <span className="font-medium text-gray-900">
-                  {tenantData?.leaseStart ? new Date(tenantData.leaseStart).toLocaleDateString() : 'Not set'}
-                </span>
+              <div className="info-row info-row--light-border">
+                <span className="info-label">Lease Start:</span>
+                <span className="info-value">{tenantData?.leaseStart ? new Date(tenantData.leaseStart).toLocaleDateString() : 'Not set'}</span>
               </div>
-              <div className="flex justify-between items-center py-2">
-                <span className="text-gray-600">Lease End:</span>
-                <span className="font-medium text-gray-900">
-                  {tenantData?.leaseEnd ? new Date(tenantData.leaseEnd).toLocaleDateString() : 'Not set'}
-                </span>
+              <div className="info-row info-row--no-border">
+                <span className="info-label">Lease End:</span>
+                <span className="info-value">{tenantData?.leaseEnd ? new Date(tenantData.leaseEnd).toLocaleDateString() : 'Not set'}</span>
               </div>
             </div>
-            <div className="mt-6 flex gap-3">
-              <button className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors">
-                View Lease
-              </button>
-              <button className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors">
-                Renew Lease
-              </button>
+            <div className="card-footer-action-group">
+              <button className="btn-flex-1">View Lease</button>
+              <button className="btn-flex-1">Renew Lease</button>
             </div>
           </div>
         </div>
 
-        {/* Community & Events */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <span className="mr-2">👥</span>
+        <div className="content-card">
+          <h3 className="card-title card-title-with-icon">
+            <span className="card-title-icon">👥</span>
             Community & Events
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-blue-50 rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-2">📢 Building Announcements</h4>
-              <p className="text-gray-600 text-sm">Welcome to {roomData?.building || 'BCFlats'}!</p>
+          <div className="community-grid">
+            <div className="community-card community-card--blue">
+              <h4 className="community-card-title">📢 Building Announcements</h4>
+              <p className="community-card-text">Welcome to {roomData?.building || 'BCFlats'}!</p>
             </div>
-            <div className="bg-green-50 rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-2">🛒 Community Board</h4>
-              <p className="text-gray-600 text-sm">Buy/Sell/Share items with neighbors</p>
+            <div className="community-card community-card--green">
+              <h4 className="community-card-title">🛒 Community Board</h4>
+              <p className="community-card-text">Buy/Sell/Share items with neighbors</p>
             </div>
-            <div className="bg-purple-50 rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-2">🎬 Event Calendar</h4>
-              <p className="text-gray-600 text-sm">Movie night on {roomData?.floor ? `${getFloorSuffix(roomData.floor)} floor` : 'ground floor'}</p>
+            <div className="community-card community-card--purple">
+              <h4 className="community-card-title">🎬 Event Calendar</h4>
+              <p className="community-card-text">Movie night on {roomData?.floor ? `${getFloorSuffix(roomData.floor)} floor` : 'ground floor'}</p>
             </div>
-            <div className="bg-orange-50 rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-2">🏠 Floor Meeting</h4>
-              <p className="text-gray-600 text-sm">{roomData?.floor ? `${getFloorSuffix(roomData.floor)} floor` : 'Building'} residents meeting</p>
+            <div className="community-card community-card--orange">
+              <h4 className="community-card-title">🏠 Floor Meeting</h4>
+              <p className="community-card-text">{roomData?.floor ? `${getFloorSuffix(roomData.floor)} floor` : 'Building'} residents meeting</p>
             </div>
           </div>
         </div>
@@ -634,5 +591,3 @@ const TenantDashboard = () => {
 };
 
 export default TenantDashboard;
-
-
