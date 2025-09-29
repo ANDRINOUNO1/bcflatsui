@@ -4,6 +4,7 @@
   background: #f5f7fa;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .superadmin-body {
@@ -31,10 +32,15 @@
 .superadmin-header {
   background: white;
   border-bottom: 1px solid #e1e5e9;
-  padding: 1rem 0;
+  height: 64px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  position: relative;
-  z-index: 100;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
 }
 
 .header-content {

@@ -174,84 +174,84 @@ const PricingPage = () => {
               </tr>
             </thead>
             <tbody>
-              {rooms.map((room) => (
-                <tr key={room.id}>
-                  <td className="room-cell">
-                    <strong>Room {room.roomNumber}</strong>
-                  </td>
-                  <td>{room.floor}{getFloorSuffix(room.floor)}</td>
-                  <td>{room.building}</td>
-                  <td>
-                    <span className={`status-badge ${getStatusBadgeClass(room.status)}`}>
-                      {room.status}
-                    </span>
-                  </td>
-                  <td className="price-cell">
-                    {editingRoom?.id === room.id ? (
-                      <input
-                        type="number"
-                        value={editForm.monthlyRent}
-                        onChange={(e) => setEditForm({ ...editForm, monthlyRent: e.target.value })}
-                        className="price-input"
-                        placeholder="0.00"
-                        step="0.01"
-                        min="0"
-                      />
-                    ) : (
-                      formatCurrency(room.monthlyRent)
-                    )}
-                  </td>
-                  <td className="price-cell">
-                    {editingRoom?.id === room.id ? (
-                      <input
-                        type="number"
-                        value={editForm.utilities}
-                        onChange={(e) => setEditForm({ ...editForm, utilities: e.target.value })}
-                        className="price-input"
-                        placeholder="0.00"
-                        step="0.01"
-                        min="0"
-                      />
-                    ) : (
-                      formatCurrency(room.utilities)
-                    )}
-                  </td>
-                  <td className="price-cell total-cell">
-                   {formatCurrency(parseFloat(room.monthlyRent || 0) + parseFloat(room.utilities || 0))}
-                    </td>
-                 <td className="price-cell room-total-cell">
-                    {formatCurrency((parseFloat(room.monthlyRent || 0) + parseFloat(room.utilities || 0)) * 4)}
-                  </td>
-                  <td className="actions-cell">
-                    {editingRoom?.id === room.id ? (
-                      <div className="edit-actions">
-                        <button
-                          className="action-btn save-btn"
-                          onClick={handleSaveEdit}
-                          disabled={saving}
-                        >
-                          {saving ? 'Saving...' : 'Save'}
-                        </button>
-                        <button
-                          className="action-btn cancel-btn"
-                          onClick={handleCancelEdit}
-                          disabled={saving}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
+            {rooms.map((room) => (
+              <tr key={room.id}>
+                <td data-label="Room" className="room-cell">
+                  <strong>Room {room.roomNumber}</strong>
+                </td>
+                <td data-label="Floor">{room.floor}{getFloorSuffix(room.floor)}</td>
+                <td data-label="Building">{room.building}</td>
+                <td data-label="Status">
+                  <span className={`status-badge ${getStatusBadgeClass(room.status)}`}>
+                    {room.status}
+                  </span>
+                </td>
+                <td data-label="Rent per Bed" className="price-cell">
+                  {editingRoom?.id === room.id ? (
+                    <input
+                      type="number"
+                      value={editForm.monthlyRent}
+                      onChange={(e) => setEditForm({ ...editForm, monthlyRent: e.target.value })}
+                      className="price-input"
+                      placeholder="0.00"
+                      step="0.01"
+                      min="0"
+                    />
+                  ) : (
+                    formatCurrency(room.monthlyRent)
+                  )}
+                </td>
+                <td data-label="Utilities per Bed" className="price-cell">
+                  {editingRoom?.id === room.id ? (
+                    <input
+                      type="number"
+                      value={editForm.utilities}
+                      onChange={(e) => setEditForm({ ...editForm, utilities: e.target.value })}
+                      className="price-input"
+                      placeholder="0.00"
+                      step="0.01"
+                      min="0"
+                    />
+                  ) : (
+                    formatCurrency(room.utilities)
+                  )}
+                </td>
+                <td data-label="Total per Bed" className="price-cell total-cell">
+                {formatCurrency(parseFloat(room.monthlyRent || 0) + parseFloat(room.utilities || 0))}
+                </td>
+                <td data-label="Room Total" className="price-cell room-total-cell">
+                  {formatCurrency((parseFloat(room.monthlyRent || 0) + parseFloat(room.utilities || 0)) * 4)}
+                </td>
+                <td data-label="Actions" className="actions-cell">
+                  {editingRoom?.id === room.id ? (
+                    <div className="edit-actions">
                       <button
-                        className="action-btn edit-btn"
-                        onClick={() => handleEditClick(room)}
+                        className="action-btn save-btn"
+                        onClick={handleSaveEdit}
+                        disabled={saving}
                       >
-                        Edit
+                        {saving ? 'Saving...' : 'Save'}
                       </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+                      <button
+                        className="action-btn cancel-btn"
+                        onClick={handleCancelEdit}
+                        disabled={saving}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      className="action-btn edit-btn"
+                      onClick={() => handleEditClick(room)}
+                    >
+                      Edit
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
           </table>
         </div>
       </div>
