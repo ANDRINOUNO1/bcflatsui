@@ -79,5 +79,16 @@ export const paymentService = {
             console.error('Error fetching payment by ID:', error);
             throw error;
         }
+    },
+
+    // Get comprehensive dashboard statistics
+    getDashboardStats: async () => {
+        try {
+            const response = await apiService.get('/payments/dashboard-stats');
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching dashboard stats:', error);
+            throw error;
+        }
     }
 };

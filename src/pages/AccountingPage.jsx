@@ -10,6 +10,7 @@ const AccountingPage = () => {
     const [paymentHistory, setPaymentHistory] = useState([]);
     const [showPaymentHistory, setShowPaymentHistory] = useState(false);
     const [stats, setStats] = useState(null);
+    const [errorModal, setErrorModal] = useState({ open: false, title: '', message: '', details: '' });
     const [searchQuery, setSearchQuery] = useState('');
     const [balanceFilter, setBalanceFilter] = useState('all'); // all | withBalance | zero
     const [sortKey, setSortKey] = useState('balanceDesc'); // balanceDesc | balanceAsc | name | room
@@ -48,6 +49,12 @@ const AccountingPage = () => {
                 console.log('💰 AccountingPage: Authentication error, showing empty state');
                 setTenants([]);
             }
+            setErrorModal({
+                open: true,
+                title: 'Failed to load tenants',
+                message: 'We could not load tenant billing information.',
+                details: error?.response?.data?.message || error.message || 'Unknown error'
+            });
         } finally {
             setLoading(false);
         }
@@ -59,6 +66,12 @@ const AccountingPage = () => {
             setStats(statsData);
         } catch (error) {
             console.error('Error fetching payment stats:', error);
+            setErrorModal({
+                open: true,
+                title: 'Failed to load payment statistics',
+                message: 'Please try refreshing the page.',
+                details: error?.response?.data?.message || error.message || 'Unknown error'
+            });
         }
     };
 
@@ -110,6 +123,12 @@ const AccountingPage = () => {
         } catch (error) {
             console.error('Error fetching payment history:', error);
             setPaymentHistory([]);
+            setErrorModal({
+                open: true,
+                title: 'Failed to load payment history',
+                message: 'Payment history could not be loaded for this tenant.',
+                details: error?.response?.data?.message || error.message || 'Unknown error'
+            });
         }
     };
 
@@ -117,7 +136,7 @@ const AccountingPage = () => {
         e.preventDefault();
         
         if (!newPayment.amount || parseFloat(newPayment.amount) <= 0) {
-            alert('Please enter a valid payment amount');
+            setErrorModal({ open: true, title: 'Invalid amount', message: 'Please enter a valid payment amount.', details: '' });
             return;
         }
 
@@ -147,20 +166,38 @@ const AccountingPage = () => {
                 description: ''
             });
             
-            alert('Payment recorded successfully!');
+            setErrorModal({
+                open: true,
+                title: 'Payment recorded',
+                message: 'The payment was recorded successfully.',
+                details: ''
+            });
         } catch (error) {
             console.error('Error processing payment:', error);
             const msg = error.response?.data?.message || error.message || 'Unknown error';
-            alert('Error processing payment: ' + msg);
+            setErrorModal({
+                open: true,
+                title: 'Error processing payment',
+                message: 'There was a problem recording this payment.',
+                details: msg
+            });
         }
     };
 
+    // Formatting helpers with guards
+    const toNumber = (value) => {
+        const n = Number(value);
+        return Number.isFinite(n) ? n : 0;
+    };
+
     const formatCurrency = (amount) => {
-        return `₱${parseFloat(amount).toLocaleString()}`;
+        const n = toNumber(amount);
+        return `₱${n.toLocaleString()}`;
     };
 
     const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString();
+        const d = new Date(dateString);
+        return isNaN(d.getTime()) ? 'Invalid date' : d.toLocaleDateString();
     };
 
     const getBalanceStatus = (balance) => {
@@ -183,179 +220,240 @@ const AccountingPage = () => {
     };
 
     if (loading) {
-        return <div className="accounting-loading">Loading accounting data...</div>;
+        return (
+            <div className="loading-container">
+                <div className="loading-content">
+                    <div className="loading-spinner"></div>
+                    <p className="loading-text">Loading accounting data...</p>
+                </div>
+            </div>
+        );
     }
 
     return (
-        <div className="accounting-container">
-            <div className="accounting-header">
-                <h2>💰 Accounting & Payments</h2>
-                <p>Manage tenant payments and track outstanding balances</p>
-            </div>
-
-            {/* Statistics Cards */}
-            {stats && (
-                <div className="stats-grid">
-                    <div className="stat-card">
-                        <div className="stat-icon">💰</div>
-                        <div className="stat-content">
-                            <div className="stat-value">{formatCurrency(stats.totalAmount)}</div>
-                            <div className="stat-label">Total Payments</div>
+        <div className="accounting-page">
+            <div className="accounting-header-gradient">
+                <div className="accounting-header-container">
+                    <div className="accounting-header-content">
+                        <div>
+                            <h1 className="accounting-title">
+                                <span className="accounting-icon">💰</span>
+                                Accounting & Payments
+                            </h1>
+                            <p className="accounting-subtitle">Manage tenant payments and track outstanding balances</p>
                         </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon">📊</div>
-                        <div className="stat-content">
-                            <div className="stat-value">{stats.totalPayments}</div>
-                            <div className="stat-label">Payment Count</div>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon">👥</div>
-                        <div className="stat-content">
-                            <div className="stat-value">{tenants.length}</div>
-                            <div className="stat-label">Active Tenants</div>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon">⚠️</div>
-                        <div className="stat-content">
-                            <div className="stat-value">
-                                {tenants.filter(t => parseFloat(t.outstandingBalance) > 0).length}
-                            </div>
-                            <div className="stat-label">With Outstanding Balance</div>
-                        </div>
+                        <button
+                            onClick={fetchTenantsWithBillingInfo}
+                            className="refresh-button"
+                        >
+                            <span>🔄</span>
+                            Refresh Data
+                        </button>
+                        <span className="version-badge">UI vA1</span>
                     </div>
                 </div>
-            )}
+            </div>
 
-            {/* Tenants Table */}
-            <div className="accounting-content">
-                <div className="tenants-table-section">
-                    <div className="table-header">
-                        <h3>Tenant Billing Overview</h3>
-                        <button 
-                            className="refresh-btn" 
-                            onClick={fetchTenantsWithBillingInfo}
-                        >
-                            🔄 Refresh
-                        </button>
-                        <button
-                            className="btn-primary"
-                            style={{ marginLeft: 12 }}
-                            onClick={() => {
-                                setShowQuickPay(true);
-                                setQuickPaySearch('');
-                                setQuickPayTenant(null);
-                                setQuickPay({ amount: '', paymentMethod: 'Cash', description: '' });
-                            }}
-                        >
-                            💳 Pay Bill
-                        </button>
-                        <div className="table-tools">
+            <div className="accounting-content-container">
+
+                {/* Stats Summary */}
+                {stats && (
+                    <div className="stats-grid">
+                        <div className="stat-card stat-card-green">
+                            <div className="stat-card-content">
+                                <div>
+                                    <p className="stat-label">Total Payments</p>
+                                    <p className="stat-value">{formatCurrency(stats.totalAmount)}</p>
+                                </div>
+                                <div className="stat-icon stat-icon-green">
+                                    <div className="stat-icon-emoji">💰</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="stat-card stat-card-blue">
+                            <div className="stat-card-content">
+                                <div>
+                                    <p className="stat-label">Payment Count</p>
+                                    <p className="stat-value">{stats.totalPayments}</p>
+                                </div>
+                                <div className="stat-icon stat-icon-blue">
+                                    <div className="stat-icon-emoji">📊</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="stat-card stat-card-purple">
+                            <div className="stat-card-content">
+                                <div>
+                                    <p className="stat-label">Active Tenants</p>
+                                    <p className="stat-value">{tenants.length}</p>
+                                </div>
+                                <div className="stat-icon stat-icon-purple">
+                                    <div className="stat-icon-emoji">👥</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="stat-card stat-card-red">
+                            <div className="stat-card-content">
+                                <div>
+                                    <p className="stat-label">Outstanding Balances</p>
+                                    <p className="stat-value">
+                                        {tenants.filter(t => parseFloat(t.outstandingBalance) > 0).length}
+                                    </p>
+                                </div>
+                                <div className="stat-icon stat-icon-red">
+                                    <div className="stat-icon-emoji">⚠️</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div className="billing-table-container">
+                    <div className="billing-table-header">
+                        <div>
+                            <h3 className="billing-table-title">Tenant Billing Overview</h3>
+                            <p className="billing-table-subtitle">
+                                Manage payments and track balances for {filteredTenants.length} tenants
+                            </p>
+                        </div>
+                        <div className="billing-table-actions">
+                            <button
+                                className="btn-primary" // Use unified button style
+                                onClick={() => {
+                                    setShowQuickPay(true);
+                                    setQuickPaySearch('');
+                                    setQuickPayTenant(null);
+                                    setQuickPay({ amount: '', paymentMethod: 'Cash', description: '' });
+                                }}
+                            >
+                                <span>💳</span>
+                                Pay Bill
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Table Controls: Filters, Search, and Sort */}
+                    <div className="billing-table-controls">
+                        <div className="filter-group">
+                            <label>Status:</label>
+                            {[
+                                { id: 'all', label: 'All' },
+                                { id: 'withBalance', label: 'Outstanding' },
+                                { id: 'zero', label: 'Paid' }
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setBalanceFilter(tab.id)}
+                                    className={`btn-filter ${balanceFilter === tab.id ? 'active' : ''}`}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="filter-group">
                             <input
-                                className="table-search"
+                                className="control-input"
                                 type="text"
-                                placeholder="Search name, email, or room..."
+                                placeholder="Search name, email, room..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
-                            <select className="table-filter" value={balanceFilter} onChange={(e) => setBalanceFilter(e.target.value)}>
-                                <option value="all">All</option>
-                                <option value="withBalance">With Balance</option>
-                                <option value="zero">Zero Balance</option>
-                            </select>
-                            <select className="table-sort" value={sortKey} onChange={(e) => setSortKey(e.target.value)}>
-                                <option value="balanceDesc">Sort: Balance High → Low</option>
-                                <option value="balanceAsc">Sort: Balance Low → High</option>
-                                <option value="name">Sort: Name</option>
-                                <option value="room">Sort: Room</option>
+                        </div>
+
+                        <div className="filter-group">
+                            <label>Sort by:</label>
+                            <select
+                                className="control-input"
+                                value={sortKey}
+                                onChange={(e) => setSortKey(e.target.value)}
+                            >
+                                <option value="balanceDesc">Balance: High → Low</option>
+                                <option value="balanceAsc">Balance: Low → High</option>
+                                <option value="name">Name (A-Z)</option>
+                                <option value="room">Room Number</option>
                             </select>
                         </div>
                     </div>
-                    <div className="summary-bar">
-                        <div>Tenants: <strong>{filteredTenants.length}</strong></div>
-                        <div>Total Outstanding: <strong>{formatCurrency(totalOutstanding)}</strong></div>
+                    
+                    {/* Summary Bar */}
+                    <div className="billing-table-summary">
+                        <div>
+                            Showing <strong>{filteredTenants.length}</strong> of <strong>{tenants.length}</strong> tenants
+                        </div>
+                        <div>
+                            Total Outstanding: <span className="summary-amount">{formatCurrency(totalOutstanding)}</span>
+                        </div>
                     </div>
                     
                     <div className="table-wrapper">
                         {filteredTenants.length === 0 ? (
                             <div className="empty-state">
-                                <p>No tenants match your current search/filter.</p>
+                                <div className="empty-state-icon">📊</div>
+                                <h3 className="empty-state-title">No Tenants Found</h3>
+                                <p className="empty-state-message">No tenants match your current search or filter criteria.</p>
                             </div>
                         ) : (
                             <table className="accounting-table">
                                 <thead>
                                     <tr>
-                                        <th>Tenant Name</th>
+                                        <th>Tenant</th>
                                         <th>Room</th>
                                         <th>Monthly Rent</th>
                                         <th>Outstanding Balance</th>
                                         <th>Last Payment</th>
-                                        <th>Next Due Date</th>
+                                        <th>Next Due</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredTenants.map((tenant) => {
-                                        const balanceStatus = getBalanceStatus(tenant.outstandingBalance);
                                         const dueDateStatus = getDueDateStatus(tenant.nextDueDate);
                                         
                                         return (
                                             <tr key={tenant.id}>
                                                 <td>
-                                                    <div className="tenant-info">
-                                                        <div className="tenant-name">{tenant.name}</div>
-                                                        <div className="tenant-email">{tenant.email}</div>
-                                                    </div>
+                                                    <div className="cell-text-strong">{tenant.name}</div>
+                                                    <div>{tenant.email}</div>
                                                 </td>
                                                 <td>
-                                                    <div className="room-info">
-                                                        <div className="room-number">Room {tenant.roomNumber}</div>
-                                                        <div className="room-floor">Floor {tenant.floor}</div>
-                                                    </div>
+                                                    <div className="cell-text-strong">Room {tenant.roomNumber}</div>
+                                                    <div>Floor {tenant.floor}</div>
                                                 </td>
                                                 <td>
-                                                    <div className="rent-info">
-                                                        <div className="monthly-rent">{formatCurrency(tenant.monthlyRent)}</div>
-                                                        <div className="utilities">+ {formatCurrency(tenant.utilities)} utilities</div>
-                                                    </div>
+                                                    <div className="cell-text-strong">{formatCurrency(tenant.monthlyRent)}</div>
+                                                    <div>+ {formatCurrency(tenant.utilities)} utilities</div>
                                                 </td>
                                                 <td>
-                                                    <div 
-                                                        className="balance-amount"
-                                                        style={{ color: balanceStatus.color }}
-                                                    >
-                                                        {formatCurrency(tenant.outstandingBalance)}
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    {tenant.lastPaymentDate ? (
-                                                        <div className="last-payment">
-                                                            {formatDate(tenant.lastPaymentDate)}
-                                                        </div>
+                                                    {parseFloat(tenant.outstandingBalance) > 0 ? (
+                                                        <span className="status-badge status-badge--red">
+                                                            {formatCurrency(tenant.outstandingBalance)}
+                                                        </span>
                                                     ) : (
-                                                        <div className="no-payment">No payments yet</div>
+                                                        <span className="status-badge status-badge--green">
+                                                            Paid
+                                                        </span>
                                                     )}
                                                 </td>
                                                 <td>
+                                                    {tenant.lastPaymentDate ? formatDate(tenant.lastPaymentDate) : 'No payments yet'}
+                                                </td>
+                                                <td>
                                                     {tenant.nextDueDate ? (
-                                                        <div 
-                                                            className="due-date"
-                                                            style={{ color: dueDateStatus.color }}
-                                                        >
+                                                        <div style={{ color: dueDateStatus.color, fontWeight: 600 }}>
                                                             {formatDate(tenant.nextDueDate)}
                                                         </div>
                                                     ) : (
-                                                        <div className="no-due-date">Not set</div>
+                                                        <div>Not set</div>
                                                     )}
                                                 </td>
                                                 <td>
                                                     <button
-                                                        className="pay-btn"
+                                                        className="btn-action btn-action--primary"
                                                         onClick={() => handlePayButtonClick(tenant)}
                                                     >
-                                                        💳 Pay
+                                                        <span className="btn-action-icon">💳</span>
+                                                        <span>Pay</span>
                                                     </button>
                                                 </td>
                                             </tr>
@@ -419,7 +517,7 @@ const AccountingPage = () => {
                                         id="amount"
                                         step="0.01"
                                         min={selectedTenant.outstandingBalance > 0 ? 0.01 : 0}
-                                        max={Math.max(0, selectedTenant.outstandingBalance)}
+                                        max={selectedTenant.outstandingBalance > 0 ? toNumber(selectedTenant.outstandingBalance) : undefined}
                                         value={newPayment.amount}
                                         onChange={(e) => setNewPayment({...newPayment, amount: e.target.value})}
                                         placeholder="Enter payment amount"
@@ -628,12 +726,12 @@ const AccountingPage = () => {
                                 onSubmit={async (e) => {
                                     e.preventDefault();
                                     if (!quickPayTenant) {
-                                        alert('Please select a tenant');
+                                        setErrorModal({ open: true, title: 'No tenant selected', message: 'Please select a tenant to proceed.', details: '' });
                                         return;
                                     }
                                     const amount = parseFloat(quickPay.amount);
                                     if (!amount || amount <= 0) {
-                                        alert('Please enter a valid payment amount');
+                                        setErrorModal({ open: true, title: 'Invalid amount', message: 'Please enter a valid payment amount.', details: '' });
                                         return;
                                     }
                                     try {
@@ -645,11 +743,11 @@ const AccountingPage = () => {
                                         });
                                         await fetchTenantsWithBillingInfo();
                                         await fetchPaymentStats();
-                                        alert('Payment recorded successfully!');
+                                        setErrorModal({ open: true, title: 'Payment recorded', message: 'The payment was recorded successfully.', details: '' });
                                         setShowQuickPay(false);
                                     } catch (error) {
                                         const msg = error.response?.data?.message || error.message || 'Unknown error';
-                                        alert('Error processing payment: ' + msg);
+                                        setErrorModal({ open: true, title: 'Error processing payment', message: 'There was a problem recording this payment.', details: msg });
                                     }
                                 }}
                                 className="payment-form"
@@ -679,9 +777,6 @@ const AccountingPage = () => {
                                     >
                                         <option value="Cash">Cash</option>
                                         <option value="Bank Transfer">Bank Transfer</option>
-                                        <option value="Credit Card">Credit Card</option>
-                                        <option value="Debit Card">Debit Card</option>
-                                        <option value="Check">Check</option>
                                         <option value="Mobile Payment">Mobile Payment</option>
                                     </select>
                                 </div>

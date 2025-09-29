@@ -7,6 +7,7 @@ import MaintenancePage from '../pages/MaintenancePage'
 import AdminMaintenancePage from '../pages/AdminMaintenancePage'
 import PricingPage from '../pages/PricingPage'
 import AccountingPage from '../pages/AccountingPage'
+import SuperAdminPage from '../pages/SuperAdminPage'
 import { useAuth } from '../context/AuthContext'
 
 const AppRoutes = () => {
@@ -27,11 +28,25 @@ const AppRoutes = () => {
         path="/dashboard" 
         element={
           isAuthenticated
-            ? (user?.role === 'Admin' || user?.role === 'SuperAdmin'
-                ? <Dashboard />
-                : <Navigate to={user?.role === 'Accounting' ? '/accounting' : '/tenant'} replace />)
+            ? (
+                user?.role === 'Admin' ? (
+                  <Dashboard />
+                ) : user?.role === 'SuperAdmin' ? (
+                  <SuperAdminPage />
+                ) : (
+                  <Navigate to={user?.role === 'Accounting' ? '/accounting' : '/tenant'} replace />
+                )
+              )
             : <Navigate to="/login" replace />
         } 
+      />
+      <Route 
+        path="/super-admin" 
+        element={
+          isAuthenticated
+            ? (user?.role === 'SuperAdmin' ? <SuperAdminPage /> : <Navigate to="/" replace />)
+            : <Navigate to="/login" replace />
+        }
       />
       <Route 
         path="/accounting" 

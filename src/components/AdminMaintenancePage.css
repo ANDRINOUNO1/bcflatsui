@@ -7,6 +7,13 @@
   color: #2c3e50;
 }
 
+/* When rendered within Dashboard layout */
+.dashboard-main-content .admin-maintenance-page {
+  min-height: auto;
+  background: transparent;
+  padding: 0;
+}
+
 /* Page Header */
 .page-header {
   text-align: center;

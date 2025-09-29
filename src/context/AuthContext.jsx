@@ -17,57 +17,79 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check if user is already logged in on app start
-    const token = localStorage.getItem('token')
-    if (token) {
-      authService.validateToken(token)
-        .then(userData => {
-          if (userData) {
-            setUser(userData)
-            setIsAuthenticated(true)
-          } else {
-            localStorage.removeItem('token')
-            setUser(null)
-            setIsAuthenticated(false)
-          }
-        })
-        .catch((error) => {
-          console.error('Token validation failed:', error)
-          localStorage.removeItem('token')
+  const token = sessionStorage.getItem('token')
+  if (token) {
+    authService.validateToken(token)
+      .then(userData => {
+        if (userData) {
+          setUser(userData)
+          setIsAuthenticated(true)
+        } else {
+          sessionStorage.removeItem('token')
           setUser(null)
           setIsAuthenticated(false)
-        })
-        .finally(() => {
-          setLoading(false)
-        })
-    } else {
-      setLoading(false)
-    }
-  }, [])
+        }
+      })
+      .catch((error) => {
+        console.error('Token validation failed:', error)
+        sessionStorage.removeItem('token')
+        setUser(null)
+        setIsAuthenticated(false)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  } else {
+    setLoading(false)
+  }
+}, [])
 
-  const login = async (email, password) => {
-    try {
-      const response = await authService.login(email, password)
-      const { token, user: userData } = response
-      
-      localStorage.setItem('token', token)
-      setUser(userData)
-      setIsAuthenticated(true)
-      
-      return { success: true }
-    } catch (error) {
+const login = async (email, password) => {
+  try {
+    const response = await authService.login(email, password)
+    const { token, user: userData } = response
+    
+
+    if (userData.status && userData.status !== 'Active') {
+      let errorMessage = 'Login failed'
+      switch (userData.status) {
+        case 'Pending':
+          errorMessage = 'Your account is pending approval. Please wait for a superadmin to approve your account.'
+          break
+        case 'Suspended':
+          errorMessage = 'Your account has been suspended. Please contact support.'
+          break
+        case 'Rejected':
+          errorMessage = 'Your account has been rejected. Please contact support for more information.'
+          break
+        default:
+          errorMessage = 'Your account is not active. Please contact support.'
+      }
       return { 
         success: false, 
-        error: error.message || 'Login failed' 
+        error: errorMessage,
+        status: userData.status
       }
     }
+    
+    sessionStorage.setItem('token', token)
+    setUser(userData)
+    setIsAuthenticated(true)
+    
+    return { success: true }
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error.message || 'Login failed' 
+    }
   }
+}
 
-  const logout = () => {
-    localStorage.removeItem('token')
-    setUser(null)
-    setIsAuthenticated(false)
-  }
+const logout = () => {
+  sessionStorage.removeItem('token')
+  setUser(null)
+  setIsAuthenticated(false)
+}
 
   const register = async (userData) => {
     try {
@@ -104,7 +126,6 @@ export const AuthProvider = ({ children }) => {
           setIsAuthenticated(true)
           return true
         } else {
-          // Token is invalid
           localStorage.removeItem('token')
           setUser(null)
           setIsAuthenticated(false)
