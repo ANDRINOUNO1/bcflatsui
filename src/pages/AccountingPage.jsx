@@ -232,7 +232,6 @@ const AccountingPage = () => {
 
     return (
         <div className="accounting-page">
-            {/* Header with Gradient Background */}
             <div className="accounting-header-gradient">
                 <div className="accounting-header-container">
                     <div className="accounting-header-content">
@@ -309,163 +308,151 @@ const AccountingPage = () => {
                     </div>
                 )}
 
-                {/* Tenant Billing Overview Table */}
                 <div className="billing-table-container">
                     <div className="billing-table-header">
-                        <div className="billing-table-header-content">
-                            <div>
-                                <h3 className="billing-table-title">Tenant Billing Overview</h3>
-                                <p className="billing-table-subtitle">Manage payments and track balances</p>
-                            </div>
-                            <div className="billing-table-actions">
+                        <div>
+                            <h3 className="billing-table-title">Tenant Billing Overview</h3>
+                            <p className="billing-table-subtitle">
+                                Manage payments and track balances for {filteredTenants.length} tenants
+                            </p>
+                        </div>
+                        <div className="billing-table-actions">
+                            <button
+                                className="btn-primary" // Use unified button style
+                                onClick={() => {
+                                    setShowQuickPay(true);
+                                    setQuickPaySearch('');
+                                    setQuickPayTenant(null);
+                                    setQuickPay({ amount: '', paymentMethod: 'Cash', description: '' });
+                                }}
+                            >
+                                <span>💳</span>
+                                Pay Bill
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Table Controls: Filters, Search, and Sort */}
+                    <div className="billing-table-controls">
+                        <div className="filter-group">
+                            <label>Status:</label>
+                            {[
+                                { id: 'all', label: 'All' },
+                                { id: 'withBalance', label: 'Outstanding' },
+                                { id: 'zero', label: 'Paid' }
+                            ].map(tab => (
                                 <button
-                                    className="pay-bill-button"
-                                    onClick={() => {
-                                        setShowQuickPay(true);
-                                        setQuickPaySearch('');
-                                        setQuickPayTenant(null);
-                                        setQuickPay({ amount: '', paymentMethod: 'Cash', description: '' });
-                                    }}
+                                    key={tab.id}
+                                    onClick={() => setBalanceFilter(tab.id)}
+                                    className={`btn-filter ${balanceFilter === tab.id ? 'active' : ''}`}
                                 >
-                                    <span>💳</span>
-                                    Pay Bill
+                                    {tab.label}
                                 </button>
-                            </div>
+                            ))}
                         </div>
-                        
-                        {/* Quick Tabs and Filters */}
-                        <div className="quick-filters-container">
-                            <div className="quick-filters-title">Quick Filters</div>
-                            <div className="quick-filters" role="tablist" aria-label="Quick Filters">
-                                {[
-                                    { id: 'all', label: 'All' },
-                                    { id: 'withBalance', label: 'Outstanding' },
-                                    { id: 'zero', label: 'Paid' }
-                                ].map(tab => (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setBalanceFilter(tab.id)}
-                                        aria-selected={balanceFilter === tab.id}
-                                        className={`quick-tab ${balanceFilter === tab.id ? 'active' : ''}`}
-                                    >
-                                        {tab.label}
-                                    </button>
-                                ))}
-                            </div>
-                            <div className="filters-row">
-                                <div className="filters-row-item">
-                                    <input
-                                        className="table-search"
-                                        type="text"
-                                        placeholder="Search name, email, or room..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                    />
-                                </div>
-                                <select 
-                                    className="table-filter"
-                                    value={balanceFilter} 
-                                    onChange={(e) => setBalanceFilter(e.target.value)}
-                                >
-                                    <option value="all">All Tenants</option>
-                                    <option value="withBalance">With Balance</option>
-                                    <option value="zero">Zero Balance</option>
-                                </select>
-                                <select 
-                                    className="table-sort"
-                                    value={sortKey} 
-                                    onChange={(e) => setSortKey(e.target.value)}
-                                >
-                                    <option value="balanceDesc">Balance: High → Low</option>
-                                    <option value="balanceAsc">Balance: Low → High</option>
-                                    <option value="name">Sort by Name</option>
-                                    <option value="room">Sort by Room</option>
-                                </select>
-                            </div>
+
+                        <div className="filter-group">
+                            <input
+                                className="control-input"
+                                type="text"
+                                placeholder="Search name, email, room..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
                         </div>
-                        
-                        {/* Summary Bar */}
-                        <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                            <div className="text-sm text-gray-700 font-medium">
-                                Showing <strong className="text-blue-600">{filteredTenants.length}</strong> tenants
-                            </div>
-                            <div className="text-sm font-semibold text-gray-900">
-                                Total Outstanding: <span className="text-red-600 font-bold text-lg">{formatCurrency(totalOutstanding)}</span>
-                            </div>
+
+                        <div className="filter-group">
+                            <label>Sort by:</label>
+                            <select
+                                className="control-input"
+                                value={sortKey}
+                                onChange={(e) => setSortKey(e.target.value)}
+                            >
+                                <option value="balanceDesc">Balance: High → Low</option>
+                                <option value="balanceAsc">Balance: Low → High</option>
+                                <option value="name">Name (A-Z)</option>
+                                <option value="room">Room Number</option>
+                            </select>
                         </div>
                     </div>
                     
-                    <div className="overflow-x-auto">
+                    {/* Summary Bar */}
+                    <div className="billing-table-summary">
+                        <div>
+                            Showing <strong>{filteredTenants.length}</strong> of <strong>{tenants.length}</strong> tenants
+                        </div>
+                        <div>
+                            Total Outstanding: <span className="summary-amount">{formatCurrency(totalOutstanding)}</span>
+                        </div>
+                    </div>
+                    
+                    <div className="table-wrapper">
                         {filteredTenants.length === 0 ? (
-                            <div className="text-center py-12">
-                                <div className="text-6xl mb-4">📊</div>
-                                <h3 className="text-lg font-medium text-gray-900 mb-2">No tenants found</h3>
-                                <p className="text-gray-500">No tenants match your current search or filter criteria.</p>
+                            <div className="empty-state">
+                                <div className="empty-state-icon">📊</div>
+                                <h3 className="empty-state-title">No Tenants Found</h3>
+                                <p className="empty-state-message">No tenants match your current search or filter criteria.</p>
                             </div>
                         ) : (
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-100">
+                            <table className="accounting-table">
+                                <thead>
                                     <tr>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Tenant</th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Room</th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Monthly Rent</th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Outstanding Balance</th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Last Payment</th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Next Due</th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+                                        <th>Tenant</th>
+                                        <th>Room</th>
+                                        <th>Monthly Rent</th>
+                                        <th>Outstanding Balance</th>
+                                        <th>Last Payment</th>
+                                        <th>Next Due</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {filteredTenants.map((tenant, idx) => {
-                                        const balanceStatus = getBalanceStatus(tenant.outstandingBalance);
+                                <tbody>
+                                    {filteredTenants.map((tenant) => {
                                         const dueDateStatus = getDueDateStatus(tenant.nextDueDate);
                                         
                                         return (
                                             <tr key={tenant.id}>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div>
-                                                        <div className="text-sm font-medium text-gray-900">{tenant.name}</div>
-                                                        <div className="text-sm text-gray-500">{tenant.email}</div>
-                                                    </div>
+                                                <td>
+                                                    <div className="cell-text-strong">{tenant.name}</div>
+                                                    <div>{tenant.email}</div>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div>
-                                                        <div className="text-sm font-medium text-gray-900">Room {tenant.roomNumber}</div>
-                                                        <div className="text-sm text-gray-500">Floor {tenant.floor}</div>
-                                                    </div>
+                                                <td>
+                                                    <div className="cell-text-strong">Room {tenant.roomNumber}</div>
+                                                    <div>Floor {tenant.floor}</div>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div>
-                                                        <div className="text-sm font-medium text-gray-900">{formatCurrency(tenant.monthlyRent)}</div>
-                                                        <div className="text-sm text-gray-500">+ {formatCurrency(tenant.utilities)} utilities</div>
-                                                    </div>
+                                                <td>
+                                                    <div className="cell-text-strong">{formatCurrency(tenant.monthlyRent)}</div>
+                                                    <div>+ {formatCurrency(tenant.utilities)} utilities</div>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className="badge badge-red">
-                                                        {formatCurrency(tenant.outstandingBalance)}
-                                                    </span>
+                                                <td>
+                                                    {parseFloat(tenant.outstandingBalance) > 0 ? (
+                                                        <span className="status-badge status-badge--red">
+                                                            {formatCurrency(tenant.outstandingBalance)}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="status-badge status-badge--green">
+                                                            Paid
+                                                        </span>
+                                                    )}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                <td>
                                                     {tenant.lastPaymentDate ? formatDate(tenant.lastPaymentDate) : 'No payments yet'}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                <td>
                                                     {tenant.nextDueDate ? (
-                                                        <div 
-                                                            className="text-sm font-medium"
-                                                            style={{ color: dueDateStatus.color }}
-                                                        >
+                                                        <div style={{ color: dueDateStatus.color, fontWeight: 600 }}>
                                                             {formatDate(tenant.nextDueDate)}
                                                         </div>
                                                     ) : (
-                                                        <div className="text-sm text-gray-500">Not set</div>
+                                                        <div>Not set</div>
                                                     )}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                <td>
                                                     <button
-                                                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg"
+                                                        className="btn-action btn-action--primary"
                                                         onClick={() => handlePayButtonClick(tenant)}
                                                     >
-                                                        <span>💳</span>
+                                                        <span className="btn-action-icon">💳</span>
                                                         <span>Pay</span>
                                                     </button>
                                                 </td>
@@ -823,4 +810,3 @@ const AccountingPage = () => {
 };
 
 export default AccountingPage;
-

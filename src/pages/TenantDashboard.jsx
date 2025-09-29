@@ -15,68 +15,60 @@ const TenantDashboard = () => {
   const [maintenanceRequests, setMaintenanceRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [billingError, setBillingError] = useState(false);
+  const [roomError, setRoomError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [errorModal, setErrorModal] = useState({ open: false, title: '', message: '', details: '' });
 
   const fetchTenantData = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      
-      // Fetch tenant information
-      try {
+        setLoading(true);
+        setError(null);
+        setBillingError(false);
+        setRoomError(false);
+
+        // 1. Fetch the primary tenant data first
         const tenantResponse = await tenantService.getTenantByAccountId(user?.id);
+
         if (tenantResponse) {
-          setTenantData(tenantResponse);
-          
-          // Fetch comprehensive billing information
-          try {
-            const billingResponse = await tenantService.getTenantBillingInfo(tenantResponse.id);
-            setBillingInfo(billingResponse);
-          } catch (billingError) {
-            console.error('Error fetching billing info:', billingError);
-          }
-          
-          // Fetch room information if tenant has a room
-          if (tenantResponse.roomId) {
-            try {
-              const roomResponse = await roomService.getRoomById(tenantResponse.roomId);
-              setRoomData(roomResponse);
-            } catch (roomError) {
-              console.error('Error fetching room data:', roomError);
-              // Continue without room data
-            }
-          }
-          
-          // Fetch maintenance requests
-          try {
-            const maintenanceResponse = await maintenanceService.listByTenant(tenantResponse.id);
-            setMaintenanceRequests(maintenanceResponse || []);
-          } catch (maintenanceError) {
-            console.error('Error fetching maintenance requests:', maintenanceError);
-            setMaintenanceRequests([]);
-          }
-        } else {
-          console.log('No tenant record found for user:', user?.id);
-          // Continue without tenant data
+            setTenantData(tenantResponse);
+
+            // 2. Run all subsequent, independent fetches in parallel
+            await Promise.all([
+                tenantService.getTenantBillingInfo(tenantResponse.id)
+                    .then(setBillingInfo)
+                    .catch(error => {
+                        console.error('Error fetching billing info:', error);
+                        setBillingError(true);
+                    }),
+
+                tenantResponse.roomId ? roomService.getRoomById(tenantResponse.roomId)
+                    .then(setRoomData)
+                    .catch(error => {
+                        console.error('Error fetching room data:', error);
+                        setRoomError(true);
+                    }) : Promise.resolve(),
+
+                maintenanceService.listByTenant(tenantResponse.id)
+                    .then(response => setMaintenanceRequests(response || []))
+                    .catch(maintenanceError => {
+                        console.error('Error fetching maintenance requests:', maintenanceError);
+                        setMaintenanceRequests([]);
+                    })
+            ]);
         }
-      } catch (tenantError) {
-        console.error('Error fetching tenant data:', tenantError);
-        // Continue without tenant data
-      }
-      
     } catch (error) {
-      console.error('Error fetching tenant data:', error);
-      setError('Failed to load dashboard data. Please try again later.');
-      setErrorModal({
-        open: true,
-        title: 'Failed to load your dashboard',
-        message: 'Please try again in a moment.',
-        details: error?.response?.data?.message || error.message || 'Unknown error'
-      });
+        console.error('Error fetching primary tenant data:', error);
+        setError('Failed to load dashboard data. Please try again later.');
+        setErrorModal({
+            open: true,
+            title: 'Failed to load your dashboard',
+            message: 'Please try again in a moment.',
+            details: error?.response?.data?.message || error.message || 'Unknown error'
+        });
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+        setLoading(false);
+        setRefreshing(false);
     }
   };
 
@@ -91,7 +83,6 @@ const TenantDashboard = () => {
     await fetchTenantData();
   };
 
-  // Helper function to get floor suffix
   const getFloorSuffix = (floor) => {
     const n = Number(floor);
     if (!Number.isFinite(n)) return '';
@@ -102,7 +93,6 @@ const TenantDashboard = () => {
     return 'th';
   };
 
-  // Helper function to format currency
   const toNumber = (value) => {
     const n = Number(value);
     return Number.isFinite(n) ? n : 0;
@@ -134,7 +124,6 @@ const TenantDashboard = () => {
             <div className="welcome-icon">🏠</div>
             <h1 className="welcome-title">Welcome to BCFlats!</h1>
             <p className="welcome-subtitle">Your tenant dashboard will be available once your account is set up.</p>
-            
             <div className="welcome-getting-started">
               <h3 className="welcome-getting-started-title">Getting Started</h3>
               <p className="welcome-getting-started-text">Please contact the property management to complete your tenant registration and room assignment.</p>
@@ -208,7 +197,7 @@ const TenantDashboard = () => {
               <div>
                 <p className="stats-card-label">Current Balance</p>
                 <p className="stats-card-value">
-                  {formatCurrency(billingInfo?.outstandingBalance || 0)}
+                  {billingError ? 'Unavailable' : formatCurrency(billingInfo?.outstandingBalance || 0)}
                 </p>
               </div>
               <div className="stats-card-icon-wrapper stats-card-icon-wrapper--red">
@@ -222,7 +211,7 @@ const TenantDashboard = () => {
               <div>
                 <p className="stats-card-label">Next Due Date</p>
                 <p className="stats-card-value">
-                  {billingInfo?.nextDueDate 
+                  {billingError ? 'Unavailable' : billingInfo?.nextDueDate 
                     ? new Date(billingInfo.nextDueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                     : 'N/A'
                   }
@@ -239,7 +228,7 @@ const TenantDashboard = () => {
               <div>
                 <p className="stats-card-label">Deposit Balance</p>
                 <p className="stats-card-value">
-                  {formatCurrency(billingInfo?.deposit || 0)}
+                  {billingError ? 'Unavailable' : formatCurrency(billingInfo?.deposit || 0)}
                 </p>
               </div>
               <div className="stats-card-icon-wrapper stats-card-icon-wrapper--green">
@@ -253,7 +242,7 @@ const TenantDashboard = () => {
               <div>
                 <p className="stats-card-label">Payment History</p>
                 <p className="stats-card-value">
-                  {billingInfo?.paymentHistory?.length || 0}
+                  {billingError ? 'N/A' : (billingInfo?.paymentHistory?.length || 0)}
                 </p>
               </div>
               <div className="stats-card-icon-wrapper stats-card-icon-wrapper--purple">
@@ -274,25 +263,25 @@ const TenantDashboard = () => {
               <div className="info-row">
                 <span className="info-label">Monthly Rent:</span>
                 <span className="info-value info-value--strong">
-                  {formatCurrency(billingInfo?.monthlyRent || 0)}
+                  {billingError ? 'Unavailable' : formatCurrency(billingInfo?.monthlyRent || 0)}
                 </span>
               </div>
               <div className="info-row">
                 <span className="info-label">Utilities:</span>
                 <span className="info-value info-value--strong">
-                  {formatCurrency(billingInfo?.utilities || 0)}
+                  {billingError ? 'Unavailable' : formatCurrency(billingInfo?.utilities || 0)}
                 </span>
               </div>
               <div className="info-row">
                 <span className="info-label">Deposit Paid:</span>
                 <span className="info-value info-value--strong">
-                  {formatCurrency(billingInfo?.deposit || 0)}
+                  {billingError ? 'Unavailable' : formatCurrency(billingInfo?.deposit || 0)}
                 </span>
               </div>
               <div className="info-row info-row--no-border">
                 <span className="info-label">Last Payment:</span>
                 <span className="info-value info-value--strong">
-                  {billingInfo?.lastPaymentDate 
+                  {billingError ? 'Unavailable' : billingInfo?.lastPaymentDate 
                     ? new Date(billingInfo.lastPaymentDate).toLocaleDateString()
                     : 'No payments yet'
                   }
@@ -308,19 +297,19 @@ const TenantDashboard = () => {
                     ? 'status-badge--green' 
                     : 'status-badge--yellow'
                 }`}>
-                  {billingInfo?.status || 'Unknown'}
+                  {billingError ? 'Unknown' : (billingInfo?.status || 'Unknown')}
                 </span>
               </div>
               <div className="info-row">
                 <span className="info-label">Next Due Date:</span>
                 <span className="info-value info-value--strong">
-                  {billingInfo?.nextDueDate 
+                  {billingError ? 'Unavailable' : billingInfo?.nextDueDate 
                     ? new Date(billingInfo.nextDueDate).toLocaleDateString()
                     : 'Not set'
                   }
                 </span>
               </div>
-              {billingInfo?.nextDueDate && (
+              {billingInfo?.nextDueDate && !billingError && (
                 <div className="progress-bar-container">
                   {(() => {
                     const now = new Date();
@@ -347,13 +336,13 @@ const TenantDashboard = () => {
               <div className="info-row">
                 <span className="info-label">Total Monthly:</span>
                 <span className="info-value info-value--blue">
-                  {formatCurrency(billingInfo?.totalMonthlyCost || 0)}
+                  {billingError ? 'Unavailable' : formatCurrency(billingInfo?.totalMonthlyCost || 0)}
                 </span>
               </div>
               <div className="info-row info-row--no-border">
                 <span className="info-label">Outstanding Balance:</span>
                 <span className="info-value info-value--red">
-                  {formatCurrency(billingInfo?.outstandingBalance || 0)}
+                  {billingError ? 'Unavailable' : formatCurrency(billingInfo?.outstandingBalance || 0)}
                 </span>
               </div>
             </div>
@@ -379,16 +368,16 @@ const TenantDashboard = () => {
           <div className="info-list">
             <div className="info-row info-row--light-border">
               <span className="info-label">Building:</span>
-              <span className="info-value">{roomData?.building || 'Main Building'}</span>
+              <span className="info-value">{roomError ? 'Unavailable' : (roomData?.building || 'Main Building')}</span>
             </div>
             <div className="info-row info-row--light-border">
               <span className="info-label">Room:</span>
-              <span className="info-value">{roomData?.roomNumber || 'N/A'}</span>
+              <span className="info-value">{roomError ? 'Unavailable' : (roomData?.roomNumber || 'N/A')}</span>
             </div>
             <div className="info-row info-row--light-border">
               <span className="info-label">Floor:</span>
               <span className="info-value">
-                {roomData?.floor ? `${roomData.floor}${getFloorSuffix(roomData.floor)}` : 'N/A'}
+                {roomError ? 'Unavailable' : roomData?.floor ? `${roomData.floor}${getFloorSuffix(roomData.floor)}` : 'N/A'}
               </span>
             </div>
             <div className="info-row info-row--light-border">
@@ -404,7 +393,7 @@ const TenantDashboard = () => {
           </div>
         </div>
 
-        {billingInfo?.paymentHistory && billingInfo.paymentHistory.length > 0 && (
+        {!billingError && billingInfo?.paymentHistory && billingInfo.paymentHistory.length > 0 && (
           <div className="content-card">
             <h3 className="card-title card-title-with-icon">
               <span className="card-title-icon">💳</span>

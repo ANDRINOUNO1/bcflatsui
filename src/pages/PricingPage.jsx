@@ -217,10 +217,10 @@ const PricingPage = () => {
                     )}
                   </td>
                   <td className="price-cell total-cell">
-                    {formatCurrency((room.monthlyRent || 0) + (room.utilities || 0))}
-                  </td>
-                  <td className="price-cell room-total-cell">
-                    {formatCurrency(((room.monthlyRent || 0) + (room.utilities || 0)) * 4)}
+                   {formatCurrency(parseFloat(room.monthlyRent || 0) + parseFloat(room.utilities || 0))}
+                    </td>
+                 <td className="price-cell room-total-cell">
+                    {formatCurrency((parseFloat(room.monthlyRent || 0) + parseFloat(room.utilities || 0)) * 4)}
                   </td>
                   <td className="actions-cell">
                     {editingRoom?.id === room.id ? (
