@@ -1,157 +1,81 @@
-/* Pricing Page Styles */
-.pricing-page {
-  min-height: 100vh;
-  padding: 40px;
-  background: linear-gradient(135deg, #f0f2f5, #e0e5ec, #d5dde6);
-  font-family: "Inter", sans-serif;
-  color: #2c3e50;
+/* Sidebar stays fixed size */
+.dashboard-sidebar {
+  width: 260px !important;
+  min-width: 260px !important;
 }
 
-
-.dashboard-main-content .pricing-page {
-  min-height: auto;
-  background: transparent;
-  padding: 0;
+/* Pricing Page */
+.pricing-page {
+  min-height: 100vh;
+  padding: 30px;
+  background: #f7f9fc;
+  font-family: "Inter", sans-serif;
+  color: #2c3e50;
 }
 
 /* Page Header */
 .page-header {
   text-align: center;
-  margin-bottom: 40px;
-  color: #2980b9;
+  margin-bottom: 25px;
 }
 
 .page-header h1 {
-  font-size: 2.5rem;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  margin-bottom: 10px;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 8px;
 }
 
 .page-subtitle {
-  font-size: 1.1rem;
-  color: #3498db;
-  margin-top: 10px;
-}
-
-/* Alert Messages */
-.alert-message {
-  padding: 15px 20px;
-  margin-bottom: 25px;
-  border-radius: 8px;
-  font-weight: 600;
-  animation: fadeIn 0.4s ease-in-out;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.alert-message.success {
-  background: #d1f2eb;
-  border-left: 6px solid #27ae60;
-  color: #00b894;
-}
-
-.alert-message.error {
-  background: #ffebee;
-  border-left: 6px solid #e74c3c;
-  color: #c62828;
-}
-
-/* Loading and Error States */
-.loading, .error-message {
-  text-align: center;
-  padding: 60px 20px;
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.loading {
-  color: #3498db;
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-
-.error-message h2 {
-  color: #e74c3c;
-  margin-bottom: 15px;
-}
-
-.error-message p {
+  font-size: 1rem;
   color: #7f8c8d;
-  margin-bottom: 20px;
 }
 
 /* Pricing Section */
 .pricing-section {
   background: #ffffff;
-  padding: 30px;
-  border-radius: 16px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e0e5ec;
-  margin-bottom: 30px;
-  animation: fadeInUp 0.5s ease-out;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  margin-bottom: 25px;
 }
 
-/* Table Wrapper */
+/* Table */
 .table-wrapper {
   overflow-x: auto;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid #e9ecef;
 }
 
-/* Pricing Table */
 .pricing-table {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  background: #ffffff;
+  border-collapse: collapse;
+  font-size: 0.9rem;
 }
 
 .pricing-table th,
 .pricing-table td {
-  padding: 15px 20px;
-  border-bottom: 1px solid #e9edf2;
+  padding: 12px 16px;
+  border-bottom: 1px solid #eaecee;
   text-align: left;
 }
 
 .pricing-table th {
   background: #3498db;
-  color: white;
-  font-weight: 700;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
   text-transform: uppercase;
-  font-size: 0.9rem;
-  letter-spacing: 0.5px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.pricing-table th:first-child {
-  border-top-left-radius: 12px;
-}
-
-.pricing-table th:last-child {
-  border-top-right-radius: 12px;
-}
-
-.pricing-table tr:last-child td:first-child {
-  border-bottom-left-radius: 12px;
-}
-
-.pricing-table tr:last-child td:last-child {
-  border-bottom-right-radius: 12px;
 }
 
 .pricing-table tr:hover {
-  background: #f5f9fc;
+  background: #f9fbfd;
 }
 
-/* Table Cell Styles */
+/* Table Cells */
 .room-cell {
   font-weight: 600;
-  color: #2c3e50;
 }
 
 .price-cell {
@@ -176,265 +100,206 @@
 
 /* Status Badges */
 .status-badge {
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .status-available {
-  background: #d1f2eb;
-  color: #00b894;
-  border: 1px solid #55efc4;
+  background: #eafaf1;
+  color: #27ae60;
 }
 
 .status-occupied {
-  background: #ffebee;
+  background: #fdecea;
   color: #e74c3c;
-  border: 1px solid #ffcdd2;
 }
 
 .status-maintenance {
-  background: #e2e3f1;
+  background: #f4f3fd;
   color: #6c5ce7;
-  border: 1px solid #a29bfe;
 }
 
-.status-unknown {
-  background: #f8f9fa;
-  color: #6c757d;
-  border: 1px solid #e9ecef;
-}
-
-/* Price Input */
-.price-input {
-  width: 100px;
-  padding: 8px 12px;
-  border: 1px solid #ccd6e0;
-  border-radius: 6px;
-  outline: none;
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-align: right;
-  color: #27ae60;
-  background-color: #f8fbfd;
-  transition: all 0.3s ease;
-}
-
-.price-input:focus {
-  border-color: #3498db;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
-  background-color: #ffffff;
-}
-
-/* Action Buttons */
+/* Buttons */
 .action-btn {
-  padding: 8px 16px;
+  padding: 6px 12px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.action-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  transition: all 0.2s ease;
 }
 
 .edit-btn {
   background: #3498db;
-  color: #ffffff;
+  color: #fff;
 }
-
-.edit-btn:hover:not(:disabled) {
-  background: #2980b9;
-  transform: translateY(-2px);
-}
+.edit-btn:hover { background: #2980b9; }
 
 .save-btn {
   background: #27ae60;
-  color: #ffffff;
-  margin-right: 8px;
+  color: #fff;
 }
-
-.save-btn:hover:not(:disabled) {
-  background: #229954;
-  transform: translateY(-2px);
-}
+.save-btn:hover { background: #229954; }
 
 .cancel-btn {
   background: #95a5a6;
-  color: #ffffff;
+  color: #fff;
 }
-
-.cancel-btn:hover:not(:disabled) {
-  background: #7f8c8d;
-  transform: translateY(-2px);
-}
-
-.edit-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-}
-
-/* Button Primary */
-.btn-primary {
-  background: linear-gradient(180deg, #3498db, #2980b9);
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 1rem;
-}
-
-.btn-primary:hover {
-  background: linear-gradient(180deg, #2980b9, #3498db);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
-}
+.cancel-btn:hover { background: #7f8c8d; }
 
 /* Summary Section */
 .summary-section {
   background: #ffffff;
-  padding: 30px;
-  border-radius: 16px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e0e5ec;
-  animation: fadeInUp 0.5s ease-out;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .summary-section h3 {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  color: #34495e;
-  margin-bottom: 25px;
+  margin-bottom: 20px;
   text-align: center;
 }
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
 }
 
 .summary-card {
   background: #f8f9fa;
-  padding: 20px;
-  border-radius: 12px;
+  padding: 16px;
+  border-radius: 8px;
   border: 1px solid #e9ecef;
   text-align: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.summary-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
 .summary-card h4 {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: #7f8c8d;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .summary-value {
-  font-size: 1.5rem;
-  font-weight: 800;
+  font-size: 1.3rem;
+  font-weight: 700;
   color: #2c3e50;
-  margin: 0;
 }
 
-/* Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
+/* --- Responsive Styles --- */
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
+/* Medium Devices (Tablets, less than 992px) */
+@media (max-width: 992px) {
   .pricing-page {
     padding: 20px;
   }
   
-  .table-wrapper {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  .pricing-table {
-    min-width: 800px;
-  }
-  
-  .pricing-table th,
-  .pricing-table td {
-    padding: 10px 12px;
-    font-size: 0.85rem;
-    white-space: nowrap;
-  }
-  
-  .price-input {
-    width: 80px;
-    font-size: 0.8rem;
-  }
-  
-  .action-btn {
-    padding: 6px 12px;
-    font-size: 0.75rem;
-  }
-  
-  .edit-actions {
-    flex-direction: column;
-    gap: 4px;
-  }
-  
   .summary-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
+
+
+/* Small Devices (Mobile, less than 768px) */
+@media (max-width: 768px) {
+  /* Adjust main page padding for smaller screens */
+  .pricing-page {
+    padding: 15px;
+    min-height: unset; /* Allow page height to be natural */
+  }
+
+  /* Reduce header size */
+  .page-header h1 {
+    font-size: 1.75rem;
+  }
+  
+  .page-subtitle {
+    font-size: 0.95rem;
+  }
+  
+  /* Make sections full-width */
+  .pricing-section, .summary-section {
+    padding: 15px;
+  }
+
+  /* Responsive Table: 
+    Transforms the table into a "card" format on small screens.
+    This requires adding `data-label` attributes to your <td> tags in HTML.
+  */
+  .pricing-table thead {
+    display: none; /* Hide the table headers */
+  }
+
+  .pricing-table, .pricing-table tbody, .pricing-table tr, .pricing-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .pricing-table tr {
+    margin-bottom: 15px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .pricing-table tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .pricing-table td {
+    text-align: right !important; /* Force alignment for all cells */
+    padding-left: 50%; /* Create space for the label */
+    position: relative;
+    border-bottom: 1px solid #e9ecef;
+  }
+  
+  .pricing-table td:last-child {
+    border-bottom: 0;
+  }
+
+  /* Add the headers back as labels using the data-label attribute */
+  .pricing-table td::before {
+    content: attr(data-label); /* The magic happens here */
+    position: absolute;
+    left: 16px;
+    font-weight: 600;
+    color: #34495e;
+    text-align: left;
+  }
+  
+  /* Center the actions cell content again */
+  .actions-cell {
+    padding-left: 16px; /* Reset padding for this cell */
+  }
+  
+  /* Make buttons more touch-friendly */
+  .action-btn {
+    width: 100%;
+    padding: 10px 12px;
+  }
+  
+  /* Adjust summary section for mobile */
+  .summary-section h3 {
+    font-size: 1.1rem;
   }
   
   .summary-value {
     font-size: 1.2rem;
   }
-  
-  .page-header h1 {
-    font-size: 2rem;
-  }
-  
-  .page-subtitle {
-    font-size: 1rem;
-  }
 }
 
+/* Very Small Devices (less than 480px) */
 @media (max-width: 480px) {
   .pricing-page {
-    padding: 15px;
+    padding: 10px;
   }
   
   .page-header h1 {
@@ -442,51 +307,6 @@
   }
   
   .page-subtitle {
-    font-size: 0.9rem;
-  }
-  
-  .pricing-table {
-    font-size: 0.75rem;
-    min-width: 700px;
-  }
-  
-  .pricing-table th,
-  .pricing-table td {
-    padding: 6px 8px;
-    font-size: 0.75rem;
-  }
-  
-  .price-input {
-    width: 60px;
-    font-size: 0.7rem;
-    padding: 6px 8px;
-  }
-  
-  .action-btn {
-    padding: 6px 10px;
-    font-size: 0.7rem;
-  }
-  
-  .edit-actions {
-    flex-direction: column;
-    gap: 3px;
-  }
-  
-  .summary-grid {
-    grid-template-columns: 1fr;
-    gap: 15px;
-  }
-  
-  .summary-card {
-    padding: 15px;
-  }
-  
-  .summary-value {
-    font-size: 1.1rem;
-  }
-  
-  .alert-message {
-    padding: 12px 15px;
     font-size: 0.9rem;
   }
 }
