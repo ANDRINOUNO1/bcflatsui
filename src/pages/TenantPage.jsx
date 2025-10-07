@@ -141,13 +141,18 @@ const TenantPage = () => {
             const payload = {
                 ...newTenant,
                 accountId: newTenant.accountId ? parseInt(newTenant.accountId) : undefined,
-                roomId: newTenant.roomId ? parseInt(newTenant.roomId) : undefined,
-                bedNumber: newTenant.bedNumber ? parseInt(newTenant.bedNumber) : 1,
+                roomId: parseInt(newTenant.roomId) || undefined,
+                bedNumber: parseInt(newTenant.bedNumber) || 1,
+                monthlyRent: parseFloat(newTenant.monthlyRent) || 0,
+                utilities: parseFloat(newTenant.utilities) || 0,
+                deposit: parseFloat(newTenant.deposit) || 0,
             };
             
             if (hasCreds) {
                 delete payload.accountId;
             }
+            
+            console.log('Creating tenant with payload:', payload);
             const result = await tenantService.createTenant(payload);
             
            

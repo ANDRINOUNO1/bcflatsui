@@ -293,6 +293,10 @@
     margin-bottom: 25px;
 }
 
+.room-stats * {
+    color: #000 !important;
+}
+
 .stat-item {
     background: #f8f9fa;
     padding: 15px;
@@ -300,25 +304,25 @@
     text-align: center;
 }
 
-.stat-label {
+.stat-item .stat-label {
     display: block;
     font-size: 12px;
-    color: #666;
+    color: #000 !important;
     margin-bottom: 5px;
     text-transform: uppercase;
     font-weight: 600;
 }
 
-.stat-value {
+.stat-item .stat-value {
     display: block;
     font-size: 18px;
     font-weight: 700;
-    color: #333;
+    color: #000 !important;
 }
 
 .bed-status h4 {
     margin-bottom: 20px;
-    color: #333;
+    color: #000;
     font-size: 18px;
 }
 
@@ -363,7 +367,7 @@
 .bed-number {
     font-size: 20px;
     font-weight: 700;
-    color: #333;
+    color: #000;
     margin-bottom: 8px;
     text-align: center;
     padding: 8px 16px;
@@ -374,7 +378,7 @@
 
 .bed-status {
     font-size: 16px;
-    color: #666;
+    color: #000;
     margin-bottom: 20px;
     text-transform: capitalize;
     font-weight: 600;
@@ -395,12 +399,12 @@
 .tenant-info p {
     margin: 8px 0;
     font-size: 14px;
-    color: #333;
+    color: #000;
     line-height: 1.4;
 }
 
 .tenant-info strong {
-    color: #1a1a1a;
+    color: #000;
     font-weight: 600;
 }
 
@@ -435,7 +439,7 @@
 
 .pricing-summary h4 {
     margin: 0 0 1rem 0;
-    color: #1a1a1a;
+    color: #000;
     font-size: 1.1rem;
     font-weight: 700;
     display: flex;
@@ -466,12 +470,12 @@
 }
 
 .summary-item span:first-child {
-    color: #4a5568;
+    color: #000;
     font-weight: 600;
 }
 
 .summary-item span:last-child {
-    color: #1a1a1a;
+    color: #000;
     font-weight: 700;
 }
 
@@ -493,9 +497,11 @@
     background: white;
     border-radius: 12px;
     width: 90%;
-    max-width: 500px;
+    max-width: 600px;
     max-height: 90vh;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .modal-large {
@@ -515,7 +521,7 @@
 
 .modal-header h3 {
     margin: 0;
-    color: #333;
+    color: #000;
 }
 
 .close-btn {
@@ -539,9 +545,10 @@
 .modal-body {
     padding: 25px;
     overflow-y: auto;
-    height: calc(90vh - 120px);
+    flex: 1;
     display: flex;
     flex-direction: column;
+    min-height: 200px;
 }
 
 .form-group {
@@ -552,7 +559,7 @@
     display: block;
     margin-bottom: 8px;
     font-weight: 600;
-    color: #333;
+    color: #000;
 }
 
 .form-group input,
@@ -590,10 +597,14 @@
     cursor: pointer;
     font-weight: 600;
     transition: background 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
 }
 
 .btn-secondary:hover {
     background: #5a6268;
+    color: white;
 }
 
 .btn-primary {
@@ -605,10 +616,14 @@
     cursor: pointer;
     font-weight: 600;
     transition: background 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
 }
 
 .btn-primary:hover {
     background: #1976D2;
+    color: white;
 }
 
 .rooms-loading {
