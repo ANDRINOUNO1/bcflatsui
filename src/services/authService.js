@@ -37,7 +37,7 @@ export const authService = {
   // Login user
   async login(email, password) {
     try {
-      const response = await api.post('/accounts/authenticate', { email, password });
+      const response = await api.post('/accounts/authenticate', { email, password , ipAddress: '127.0.0.1' });
       const { jwtToken, refreshToken, ...user } = response.data;
 
       // Store token and user data

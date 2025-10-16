@@ -37,6 +37,14 @@ const RoomPage = () => {
         fetchRooms();
     }, []);
 
+    // Debug modal state
+    useEffect(() => {
+        if (showAddTenant) {
+            console.log('Add Tenant modal opened, selectedRoom:', selectedRoom);
+            console.log('New tenant state:', newTenant);
+        }
+    }, [showAddTenant, selectedRoom, newTenant]);
+
     // Recompute visible rooms whenever filter or allRooms changes
     useEffect(() => {
         if (floorFilter === 'all') {
@@ -45,7 +53,31 @@ const RoomPage = () => {
             setRooms(allRooms.filter(r => String(r.floor) === String(floorFilter)));
         }
     }, [floorFilter, allRooms]);
-
+const handleOpenAddTenantModal = () => {
+    console.log('Opening Add Tenant modal for room:', selectedRoom?.room?.id);
+    
+    // Reset tenant form
+    const resetTenant = {
+        accountId: '',
+        email: '',
+        password: '',
+        bedNumber: 1,
+        monthlyRent: '',
+        utilities: '',
+        deposit: '',
+        emergencyContact: { name: '', phone: '', relationship: '' },
+        specialRequirements: ''
+    };
+    
+    setNewTenant(resetTenant);
+    loadRoomPricing();
+    
+    // Add a small delay to ensure state updates
+    setTimeout(() => {
+        setShowAddTenant(true);
+        console.log('Modal state set to true, showAddTenant:', true);
+    }, 100);
+};
     const fetchRooms = async () => {
         try {
             setLoading(true);
@@ -111,18 +143,6 @@ const RoomPage = () => {
         }
     };
 
-    const loadAvailableBeds = async (roomId) => {
-        try {
-            const bedStatus = await roomService.getRoomBedStatus(roomId);
-            const freeBeds = bedStatus.bedStatus
-                .filter(b => b.status === 'Available')
-                .map(b => b.bedNumber);
-            return freeBeds;
-        } catch (error) {
-            console.error('Error loading bed options:', error);
-            return [1, 2, 3, 4];
-        }
-    };
 
     const handleAddTenant = async () => {
         const hasAccountId = !!newTenant.accountId;
@@ -137,13 +157,17 @@ const RoomPage = () => {
                 ...newTenant,
                 roomId: selectedRoom.room.id,
                 accountId: newTenant.accountId ? parseInt(newTenant.accountId) : undefined,
-                bedNumber: newTenant.bedNumber ? parseInt(newTenant.bedNumber) : 1,
+                bedNumber: parseInt(newTenant.bedNumber) || 1,
+                monthlyRent: parseFloat(newTenant.monthlyRent) || 0,
+                utilities: parseFloat(newTenant.utilities) || 0,
+                deposit: parseFloat(newTenant.deposit) || 0,
             };
             // If creating via email/password, ensure accountId is not sent
             if (hasCreds) {
                 delete payload.accountId;
             }
             
+            console.log('Creating tenant with payload:', payload);
             const result = await tenantService.createTenant(payload);
             
             // Store the created tenant's accountId for navigation if needed
@@ -177,8 +201,8 @@ const RoomPage = () => {
         if (selectedRoom?.room) {
             setNewTenant(prev => ({
                 ...prev,
-                monthlyRent: selectedRoom.room.monthlyRent.toString(),
-                utilities: selectedRoom.room.utilities.toString()
+                monthlyRent: (selectedRoom.room.monthlyRent || 0).toString(),
+                utilities: (selectedRoom.room.utilities || 0).toString()
             }));
         }
     };
@@ -381,11 +405,13 @@ const RoomPage = () => {
                                 )}
                                 <button
                                     className="btn-primary"
-                                    onClick={() => { 
-                                        setShowAddTenant(true); 
-                                        loadRoomPricing();
-                                    }}
-                                    disabled={selectedRoom.room.availableBeds === 0}
+                                    onClick={() => {
+                                        console.log('Add Tenant button clicked');
+                                        console.log('selectedRoom:', selectedRoom);
+                                        console.log('availableBeds:', selectedRoom?.room?.availableBeds);
+                                        handleOpenAddTenantModal();
+                                    }} 
+                                    disabled={selectedRoom?.room?.availableBeds === 0}
                                 >
                                     + Add Tenant
                                 </button>
@@ -439,6 +465,7 @@ const RoomPage = () => {
                 </div>
             )}
 
+            {/* Add Tenant Modal */}
             {showAddTenant && (
                 <div className="modal-overlay">
                     <div className="modal">
@@ -455,47 +482,6 @@ const RoomPage = () => {
                                     onChange={(e) => setNewTenant({...newTenant, accountId: e.target.value})}
                                     placeholder="Enter account ID"
                                 />
-                            </div>
-                            <div className="form-group">
-                                <label>Account Email:</label>
-                                <input
-                                    type="email"
-                                    value={newTenant.email || ''}
-                                    onChange={(e) => setNewTenant({ ...newTenant, email: e.target.value })}
-                                    placeholder="Enter tenant email (e.g., tenant@example.com)"
-                                    pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
-                                    title="Please enter a valid email address"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Account Password:</label>
-                                <input
-                                    type="password"
-                                    value={newTenant.password || ''}
-                                    onChange={(e) => setNewTenant({ ...newTenant, password: e.target.value })}
-                                    placeholder="Set tenant password"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Bed Number:</label>
-                                <select
-                                    value={newTenant.bedNumber}
-                                    onChange={(e) => setNewTenant({...newTenant, bedNumber: parseInt(e.target.value)})}
-                                >
-                                    {selectedRoom && selectedRoom.bedStatus ? (
-                                        selectedRoom.bedStatus
-                                            .filter(b => b.status === 'Available')
-                                            .map(b => (
-                                                <option key={b.bedNumber} value={b.bedNumber}>
-                                                    Bed {b.bedNumber}
-                                                </option>
-                                            ))
-                                    ) : (
-                                        [1, 2, 3, 4].map(num => (
-                                            <option key={num} value={num}>Bed {num}</option>
-                                        ))
-                                    )}
-                                </select>
                             </div>
                             <div className="form-group">
                                 <label>Monthly Rent per Bed (₱):</label>

@@ -212,26 +212,26 @@ const Dashboard = () => {
                       <div className="flex justify-between items-center py-2 border-b border-gray-100">
                         <span className="text-gray-600">Total Outstanding:</span>
                         <span className="font-bold text-red-600">
-                          ₱{dashboardStats.totalOutstandingAmount?.toLocaleString() || '0'}
-                        </span>
+                           ₱{dashboardStats?.totalOutstandingAmount?.toLocaleString() || '0'}
+                      </span>
                       </div>
                       <div className="flex justify-between items-center py-2 border-b border-gray-100">
                         <span className="text-gray-600">Total Collected:</span>
                         <span className="font-bold text-green-600">
-                          ₱{dashboardStats.totalAmountCollected?.toLocaleString() || '0'}
+                          ₱{dashboardStats?.totalAmountCollected?.toLocaleString() || '0'}
                         </span>
                       </div>
                       <div className="flex justify-between items-center py-2">
                         <span className="text-gray-600">Unpaid Bills:</span>
                         <span className="font-bold text-orange-600">
-                          {dashboardStats.totalUnpaidBills || 0}
+                         {dashboardStats?.totalUnpaidBills || 0}
                         </span>
                       </div>
                       {/* Inline progress bar (no deps) */}
                       <div className="mt-4">
                         {(() => {
-                          const collected = Number(dashboardStats.totalAmountCollected || 0)
-                          const outstanding = Number(dashboardStats.totalOutstandingAmount || 0)
+                          const collected = Number(dashboardStats?.totalAmountCollected || 0)
+                          const outstanding = Number(dashboardStats?.totalOutstandingAmount || 0)
                           const total = collected + outstanding || 1
                           const collectedPct = Math.round((collected / total) * 100)
                           const outstandingPct = 100 - collectedPct
@@ -256,8 +256,8 @@ const Dashboard = () => {
                       Recent Payments
                     </h3>
                     <div className="space-y-3">
-                      {dashboardStats.recentPayments?.length > 0 ? (
-                        dashboardStats.recentPayments.slice(0, 3).map((payment) => (
+                      {dashboardStats?.recentPayments?.length > 0 ? (
+                         dashboardStats.recentPayments.slice(0, 3).map((payment) => (
                           <div key={payment.id} className="flex justify-between items-center py-2 border-b border-gray-100">
                             <div>
                               <p className="text-sm font-medium text-gray-900">{payment.tenantName}</p>
@@ -281,8 +281,8 @@ const Dashboard = () => {
                       Top Outstanding
                     </h3>
                     <div className="space-y-3">
-                      {dashboardStats.topOutstandingTenants?.length > 0 ? (
-                        dashboardStats.topOutstandingTenants.slice(0, 3).map((tenant) => (
+                     {dashboardStats?.topOutstandingTenants?.length > 0 ? (
+                          dashboardStats.topOutstandingTenants.slice(0, 3).map((tenant) => (
                           <div key={tenant.id} className="flex justify-between items-center py-2 border-b border-gray-100">
                             <div>
                               <p className="text-sm font-medium text-gray-900">{tenant.name}</p>
