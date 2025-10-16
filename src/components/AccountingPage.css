@@ -1,19 +1,20 @@
 /* =========================
-   Global Styles (Unified)
+   Global Styles (Refined)
    ========================= */
 .accounting-page {
   min-height: 100vh;
-  background-color: #f9fafb; /* Consistent background */
+  background-color: #f3f4f6;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   color: #1a1a1a;
+  line-height: 1.5;
 }
 
 /* =========================
-   Header Styles (Consistent with Tenant Dashboard)
+   Header
    ========================= */
 .accounting-header-gradient {
-  background: linear-gradient(to right, #2563eb, #1e40af);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 .accounting-header-container {
@@ -23,135 +24,198 @@
 }
 
 @media (min-width: 640px) {
-  .accounting-header-container {
-    padding: 0 1.5rem;
-  }
+  .accounting-header-container { padding: 0 1.5rem; }
 }
-
 @media (min-width: 1024px) {
-  .accounting-header-container {
-    padding: 0 2rem;
-  }
+  .accounting-header-container { padding: 0 2rem; }
 }
 
 .accounting-header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 2rem 0;
+  padding: 1.4rem 0;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .accounting-title, .accounting-welcome-title {
-  font-size: 2.25rem;
-  font-weight: 700;
-  color: white;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #fff;
   margin: 0;
 }
 
-.accounting-subtitle, .accounting-welcome-subtitle {
-  color: #dbeafe;
-  margin-top: 0.5rem;
-  font-size: 1.125rem;
-  margin: 0.5rem 0 0 0;
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
+.logout-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #ef4444;
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+  &:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  }
+}
+
+
+.accounting-subtitle, .accounting-welcome-subtitle {
+  color: #dbeafe;
+  margin-top: 0.25rem;
+  font-size: 1rem;
+}
+
+/* =========================
+   Refresh Button
+   ========================= */
 .refresh-button {
-  background: white;
+  background: #fff;
   color: #2563eb;
   font-weight: 600;
   padding: 0.75rem 1.5rem;
   border-radius: 9999px;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   border: none;
   cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
-
 .refresh-button:hover:not(:disabled) {
   background: #f9fafb;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
 /* =========================
-   Stat Cards Grid (Updated Style)
+   Stat Cards
    ========================= */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-@media (min-width: 640px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1024px) {
-  .stats-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
+  margin-top: 1.5rem;
+  padding: 0 1rem;
 }
 
 .stat-card {
-  background-color: #ffffff;
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.07);
-  transition: all 0.2s;
-  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  padding: 1.25rem 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  }
+
+  .stat-card-content {
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;
+  }
+
+  .stat-text {
+    padding-left: 1rem;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin: 0;
+  }
+
+  .stat-value {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #111827;
+    margin-top: 0.25rem;
+  }
+
+  .stat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .stat-icon-emoji {
+    font-size: 1.8rem;
+    line-height: 1;
+  }
 }
 
-.stat-card:hover {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-  transform: translateY(-4px);
+/* Color Variants */
+.stat-card-green {
+  border-left: 6px solid #10b981;
+  .stat-icon-green { background: #10b981;}
+}
+.stat-card-blue {
+  border-left: 6px solid #3b82f6;
+  .stat-icon-blue { background: #3b82f6; }
+}
+.stat-card-purple {
+  border-left: 6px solid #8b5cf6;
+  .stat-icon-purple { background: #8b5cf6; }
+}
+.stat-card-red {
+  border-left: 6px solid #ef4444;
+  .stat-icon-red { background: #ef4444; }
 }
 
-.stat-card-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .stat-card {
+    padding: 1rem;
+    .stat-value {
+      font-size: 1.5rem;
+    }
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      font-size: 1.2rem;
+    }
+  }
 }
-
-.stat-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #4b5563;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.stat-value {
-  font-size: 1.875rem;
-  font-weight: 700;
-  color: #111827;
-  margin-top: 0.5rem;
-}
-
-.stat-icon-emoji {
-  font-size: 1.75rem;
-  padding: 0.75rem;
-  border-radius: 9999px;
-  background-color: #f3f4f6;
-}
-
 
 /* =========================
-   Main Content Card (For Billing Table - Updated Style)
+   Billing Table Container
    ========================= */
 .billing-table-container {
   background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-radius: 20px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  position: relative;
+  backdrop-filter: blur(16px);
+  border-radius: 1rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   margin-bottom: 2rem;
+  border: 1px solid rgba(229, 231, 235, 0.7);
+  transition: all 0.3s ease;
+}
+.billing-table-container:hover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
 }
 
 .billing-table-container::before {
@@ -162,22 +226,23 @@
   right: 0;
   height: 4px;
   background: linear-gradient(90deg, #667eea, #764ba2);
-  border-radius: 20px 20px 0 0;
 }
 
 .billing-table-header {
-  padding: 1.5rem 2rem;
+  padding: 1.25rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid rgba(102, 126, 234, 0.15);
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .billing-table-title {
   font-size: 1.5rem;
   font-weight: 700;
+  margin: 0;
   color: #1a1a1a;
-  margin: 0 0 0.25rem 0;
 }
 
 .billing-table-subtitle {
@@ -187,7 +252,7 @@
 }
 
 /* =========================
-   Unified Button Styles
+   Buttons (Unified)
    ========================= */
 .btn-primary,
 .btn-secondary,
@@ -206,41 +271,36 @@
   min-height: 48px;
 }
 
-.btn-primary, .btn-action--primary {
+.btn-primary {
   background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
+  color: #fff;
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
-
-.btn-primary:hover, .btn-action--primary:hover {
+.btn-primary:hover {
   transform: translateY(-3px);
   box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
 }
 
-.btn-secondary, .btn-action--secondary {
+.btn-secondary {
   background: rgba(255, 255, 255, 0.9);
   color: #4a5568;
   border: 2px solid rgba(102, 126, 234, 0.2);
-  backdrop-filter: blur(10px);
 }
-
-.btn-secondary:hover, .btn-action--secondary:hover {
-  background: rgba(255, 255, 255, 1);
+.btn-secondary:hover {
+  background: #fff;
   border-color: #667eea;
   transform: translateY(-3px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
 .btn-action-icon {
-    font-size: 1.25rem;
+  font-size: 1.25rem;
 }
 
 /* =========================
-   Unified Table Styles
+   Table
    ========================= */
-.table-wrapper {
-  overflow-x: auto;
-}
+.table-wrapper { overflow-x: auto; }
 
 .accounting-table {
   width: 100%;
@@ -263,12 +323,11 @@
 .accounting-table td {
   padding: 1rem 1.5rem;
   border-bottom: 1px solid #e5e7eb;
-  vertical-align: middle;
   color: #111827;
 }
 
 .accounting-table tbody tr:hover {
-  background-color: #f9fafb;
+  background-color: #f3f4f6;
 }
 
 .accounting-table tbody tr:last-child td {
@@ -281,24 +340,21 @@
 }
 
 /* =========================
-   Unified Status Badges (Pill Style)
+   Status Badges
    ========================= */
 .status-badge {
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
   font-size: 0.875rem;
   font-weight: 500;
-  display: inline-block;
 }
-
-.status-badge--green { background-color: #d1fae5; color: #065f46; }
-.status-badge--red { background-color: #fee2e2; color: #991b1b; }
-.status-badge--yellow { background-color: #fef9c3; color: #854d0e; }
-.status-badge--blue { background-color: #dbeafe; color: #1e40af; }
-
+.status-badge--green { background: #d1fae5; color: #065f46; }
+.status-badge--red { background: #fee2e2; color: #991b1b; }
+.status-badge--yellow { background: #fef9c3; color: #854d0e; }
+.status-badge--blue { background: #dbeafe; color: #1e40af; }
 
 /* =========================
-   Filters and Controls (Styled to Match)
+   Filters & Controls
    ========================= */
 .billing-table-controls {
   padding: 1rem 2rem;
@@ -307,7 +363,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 .filter-group {
@@ -328,20 +384,18 @@
   font-weight: 600;
   font-size: 0.85rem;
   border: 1px solid #d1d5db;
-  background-color: #ffffff;
+  background-color: #fff;
   color: #374151;
   cursor: pointer;
   transition: all 0.2s ease;
 }
-
 .btn-filter:hover {
   border-color: #a5b4fc;
   background-color: #eef2ff;
 }
-
 .btn-filter.active {
   background: #4f46e5;
-  color: white;
+  color: #fff;
   border-color: #4f46e5;
 }
 
@@ -349,20 +403,21 @@
   padding: 0.6rem 1rem;
   border-radius: 8px;
   border: 1px solid #d1d5db;
-  background-color: #ffffff;
+  background-color: #fff;
   color: #111827;
   font-size: 0.9rem;
   min-width: 220px;
   transition: all 0.2s ease;
 }
-
 .control-input:focus {
   outline: none;
   border-color: #4f46e5;
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
 }
 
-/* Summary Bar */
+/* =========================
+   Summary Bar
+   ========================= */
 .billing-table-summary {
   padding: 1rem 2rem;
   background: #eef2ff;
@@ -380,27 +435,24 @@
   color: #dc2626;
 }
 
-/* Empty State */
+/* =========================
+   Empty State
+   ========================= */
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
   color: #6b7280;
 }
-
 .empty-state-icon { font-size: 3rem; margin-bottom: 1rem; }
 .empty-state-title { font-size: 1.25rem; font-weight: 600; color: #111827; margin-bottom: 0.5rem; }
 .empty-state-message { font-size: 0.95rem; }
 
-
 /* =========================
-   Modal Styles (Unified with Tenant Dashboard)
+   Modal
    ========================= */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
@@ -416,7 +468,6 @@
   max-width: 90vw;
   max-height: 90vh;
   overflow: hidden;
-  position: relative;
 }
 
 .payment-modal {
@@ -424,8 +475,8 @@
   width: 90%;
   max-height: 90vh;
   overflow-y: auto;
-  border-radius: 16px;
   background: #fff;
+  border-radius: 16px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
 }
 
@@ -458,11 +509,54 @@
   border-radius: 50%;
   transition: background 0.2s ease;
 }
-
 .close-btn:hover {
   background: rgba(255, 255, 255, 0.1);
 }
 
 .modal-body {
   padding: 24px;
+}
+
+.app-footer {
+  width: 100%;
+  padding: 0.3rem 1.5rem;
+  background: #0d60e6;
+  color: #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.9rem;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
+
+  .footer-left {
+    p {
+      margin: 0;
+      opacity: 0.8;
+    }
+  }
+
+  .footer-right {
+    display: flex;
+    align-items: center;
+
+    .version-badge {
+      background: #0ea4e967;
+      color: #ffffff;
+      padding: 0.25rem 0.6rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      transition: background 0.3s ease;
+
+      &:hover {
+        background: #0284c7;
+      }
+    }
+  }
 }

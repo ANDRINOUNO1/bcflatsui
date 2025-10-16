@@ -408,33 +408,29 @@ export default function SuperAdminPage() {
       </header>
 
       <div className="superadmin-body">
-        {/* Sidebar Overlay for Mobile */}
+        <main className="superadmin-main-content">
         {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>}
         
-        {/* Sidebar */}
-        <aside className="superadmin-sidebar">
-          <nav className="sidebar-nav">
-            {Object.entries(groupedItems).map(([section, items]) => (
-              <SidebarSection key={section} title={section}>
-                {items.map(item => (
-                  <SidebarItem
-                    key={item.id}
-                    icon={item.icon}
-                    label={item.label}
-                    isActive={activeTab === item.id}
-                    onClick={() => {
-                      setActiveTab(item.id)
-                      setSidebarOpen(false)
-                    }}
-                  />
-                ))}
-              </SidebarSection>
-            ))}
-          </nav>
-        </aside>
-
-        {/* Main Content */}
-        <main className="superadmin-main-content">
+          <aside className={`superadmin-sidebar ${sidebarOpen ? 'open' : ''}`}>
+            <nav className="sidebar-nav">
+              {Object.entries(groupedItems).map(([section, items]) => (
+                <SidebarSection key={section} title={section}>
+                  {items.map(item => (
+                    <SidebarItem
+                      key={item.id}
+                      icon={item.icon}
+                      label={item.label}
+                      isActive={activeTab === item.id}
+                      onClick={() => {
+                        setActiveTab(item.id)
+                        setSidebarOpen(false)
+                      }}
+                    />
+                  ))}
+                </SidebarSection>
+              ))}
+            </nav>
+          </aside>
           {renderContent()}
         </main>
       </div>

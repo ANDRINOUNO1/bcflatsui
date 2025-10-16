@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { paymentService } from '../services/paymentService';
 import '../components/AccountingPage.css';
+import { useAuth } from '../context/AuthContext'
+
 
 const AccountingPage = () => {
+    const { user, logout, isAuthenticated } = useAuth()
     const [tenants, setTenants] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedTenant, setSelectedTenant] = useState(null);
@@ -184,6 +187,10 @@ const AccountingPage = () => {
         }
     };
 
+    const handleLogout = () => {
+        logout()
+    }
+
     // Formatting helpers with guards
     const toNumber = (value) => {
         const n = Number(value);
@@ -237,19 +244,30 @@ const AccountingPage = () => {
                     <div className="accounting-header-content">
                         <div>
                             <h1 className="accounting-title">
-                                <span className="accounting-icon">💰</span>
-                                Accounting & Payments
+                            <span className="accounting-icon">💰</span>
+                            Accounting & Payments
                             </h1>
-                            <p className="accounting-subtitle">Manage tenant payments and track outstanding balances</p>
+                            <p className="accounting-subtitle">
+                            Manage tenant payments and track outstanding balances
+                            </p>
                         </div>
-                        <button
+
+                        <div className="header-actions">
+                            <button
                             onClick={fetchTenantsWithBillingInfo}
                             className="refresh-button"
-                        >
+                            >
                             <span>🔄</span>
                             Refresh Data
-                        </button>
-                        <span className="version-badge">UI vA1</span>
+                            </button>
+
+                            <button
+                            onClick={handleLogout}
+                            className="logout-button"
+                            >
+                            🚪 Logout
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -261,47 +279,50 @@ const AccountingPage = () => {
                     <div className="stats-grid">
                         <div className="stat-card stat-card-green">
                             <div className="stat-card-content">
-                                <div>
-                                    <p className="stat-label">Total Payments</p>
-                                    <p className="stat-value">{formatCurrency(stats.totalAmount)}</p>
-                                </div>
                                 <div className="stat-icon stat-icon-green">
                                     <div className="stat-icon-emoji">💰</div>
                                 </div>
+                                <div class="stat-text">
+                                    <p className="stat-label">Total Payments</p>
+                                    <p className="stat-value">{formatCurrency(stats.totalAmount)}</p>
+                                </div>
                             </div>
                         </div>
+
                         <div className="stat-card stat-card-blue">
                             <div className="stat-card-content">
-                                <div>
-                                    <p className="stat-label">Payment Count</p>
-                                    <p className="stat-value">{stats.totalPayments}</p>
-                                </div>
                                 <div className="stat-icon stat-icon-blue">
                                     <div className="stat-icon-emoji">📊</div>
                                 </div>
+                                <div class="stat-text">
+                                    <p className="stat-label">Payment Count</p>
+                                    <p className="stat-value">{stats.totalPayments}</p>
+                                </div>
                             </div>
                         </div>
+
                         <div className="stat-card stat-card-purple">
                             <div className="stat-card-content">
-                                <div>
-                                    <p className="stat-label">Active Tenants</p>
-                                    <p className="stat-value">{tenants.length}</p>
-                                </div>
                                 <div className="stat-icon stat-icon-purple">
                                     <div className="stat-icon-emoji">👥</div>
                                 </div>
+                                <div class="stat-text">
+                                    <p className="stat-label">Active Tenants</p>
+                                    <p className="stat-value">{tenants.length}</p>
+                                </div>
                             </div>
                         </div>
+
                         <div className="stat-card stat-card-red">
                             <div className="stat-card-content">
-                                <div>
-                                    <p className="stat-label">Outstanding Balances</p>
-                                    <p className="stat-value">
-                                        {tenants.filter(t => parseFloat(t.outstandingBalance) > 0).length}
-                                    </p>
-                                </div>
                                 <div className="stat-icon stat-icon-red">
                                     <div className="stat-icon-emoji">⚠️</div>
+                                </div>
+                                <div class="stat-text">
+                                    <p className="stat-label">Outstanding Balances</p>
+                                    <p className="stat-value">
+                                    {tenants.filter(t => parseFloat(t.outstandingBalance) > 0).length}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -805,6 +826,14 @@ const AccountingPage = () => {
                     </div>
                 </div>
             )}
+            <footer className="app-footer">
+                <div className="footer-left">
+                    <p>© 2025 BC Flats. All rights reserved.</p>
+                </div>
+                <div className="footer-right">
+                    <span className="version-badge">UI vA1</span>
+                </div>
+            </footer>
         </div>
     );
 };
