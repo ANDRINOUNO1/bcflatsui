@@ -93,11 +93,6 @@ const LoginPage = () => {
   return (
     <div className="login-page">
       <div className="login-container">
-        {/* Back to Home Link */}
-        <Link to="/" className="back-link">
-          ← Back to Home
-        </Link>
-
         {/* Login Form */}
         <div className="login-form-container">
           <div className="login-header">
@@ -195,6 +190,9 @@ const LoginPage = () => {
               </Link>
             </p>
           </div>
+          <Link to="/" className="back-link">
+            ← Back to Home
+          </Link>
         </div>
 
         {/* Decorative Side */}
