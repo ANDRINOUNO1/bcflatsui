@@ -395,7 +395,7 @@ export default function SuperAdminPage() {
             >
               <span className="hamburger-icon">☰</span>
             </button>
-            <div className="logo">
+            <div className="logoo">
               <span className="logo-icon">👑</span>
               <span className="logo-text">Super Admin Dashboard</span>
             </div>

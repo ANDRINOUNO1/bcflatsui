@@ -129,215 +129,198 @@ const Dashboard = () => {
       default:
         return (
           <div className="dashboard-screen">
-            {/* Header with Blue Gradient */}
-            <div className="dashboard-header-gradient">
-              <div className="dash-container">
-                <div className="dash-header-row">
-                  <div>
-                    <h1 className="dash-title">Admin Dashboard</h1>
-                    <p className="dash-subtitle">Manage your student housing efficiently with real-time data.</p>
-                  </div>
-                  <button
-                    onClick={handleRefresh}
-                    disabled={refreshing}
-                    className="btn-primary"
-                  >
-                    {refreshing ? (
-                      'Refreshing...'
-                    ) : (
-                      'Refresh Data 🔄'
-                    )}
-                  </button>
+          {/* Header Section */}
+          <div className="dashboard-header-gradient">
+            <div className="dash-container">
+              <div className="dash-header-row">
+                <div>
+                  <h1 className="dash-title">Admin Dashboard</h1>
+                  <p className="dash-subtitle">
+                    Manage your student housing efficiently with real-time data.
+                  </p>
                 </div>
-              </div>
-            </div>
-
-            <div className="dash-container dash-content">
-              {/* Stats Overview Grid */}
-              <div className="dash-grid">
-                <div className="card">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="dash-label">Total Tenants</p>
-                      <p className="dash-number">{stats.totalStudents}</p>
-                    </div>
-                    <div className="dash-icon">👥</div>
-                  </div>
-                </div>
-
-                <div className="card">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="dash-label">Occupancy Rate</p>
-                      <p className="dash-number">
-                        {stats.totalRooms > 0 ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100) : 0}%
-                      </p>
-                    </div>
-                    <div className="dash-icon">📊</div>
-                  </div>
-                </div>
-
-                <div className="card">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="dash-label">Unpaid Bills</p>
-                      <p className="dash-number">{dashboardStats?.totalUnpaidBills || 0}</p>
-                    </div>
-                    <div className="dash-icon">⚠️</div>
-                  </div>
-                </div>
-
-                <div className="card">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="dash-label">Total Collected</p>
-                      <p className="dash-number">
-                        ₱{dashboardStats?.totalAmountCollected?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                    <div className="dash-icon">💰</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Financial Overview */}
-              {dashboardStats && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                  <div className="bg-white rounded-lg shadow-sm p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <span className="mr-2">💰</span>
-                      Financial Overview
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                        <span className="text-gray-600">Total Outstanding:</span>
-                        <span className="font-bold text-red-600">
-                           ₱{dashboardStats?.totalOutstandingAmount?.toLocaleString() || '0'}
-                      </span>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                        <span className="text-gray-600">Total Collected:</span>
-                        <span className="font-bold text-green-600">
-                          ₱{dashboardStats?.totalAmountCollected?.toLocaleString() || '0'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center py-2">
-                        <span className="text-gray-600">Unpaid Bills:</span>
-                        <span className="font-bold text-orange-600">
-                         {dashboardStats?.totalUnpaidBills || 0}
-                        </span>
-                      </div>
-                      {/* Inline progress bar (no deps) */}
-                      <div className="mt-4">
-                        {(() => {
-                          const collected = Number(dashboardStats?.totalAmountCollected || 0)
-                          const outstanding = Number(dashboardStats?.totalOutstandingAmount || 0)
-                          const total = collected + outstanding || 1
-                          const collectedPct = Math.round((collected / total) * 100)
-                          const outstandingPct = 100 - collectedPct
-                          return (
-                            <div className="w-full h-3 rounded-full bg-gray-100 overflow-hidden flex">
-                              <div className="h-3 bg-green-500" style={{ width: collectedPct + '%' }}></div>
-                              <div className="h-3 bg-red-400" style={{ width: outstandingPct + '%' }}></div>
-                            </div>
-                          )
-                        })()}
-                        <div className="flex justify-between text-xs text-gray-500 mt-2">
-                          <span>Collected</span>
-                          <span>Outstanding</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-lg shadow-sm p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <span className="mr-2">📊</span>
-                      Recent Payments
-                    </h3>
-                    <div className="space-y-3">
-                      {dashboardStats?.recentPayments?.length > 0 ? (
-                         dashboardStats.recentPayments.slice(0, 3).map((payment) => (
-                          <div key={payment.id} className="flex justify-between items-center py-2 border-b border-gray-100">
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">{payment.tenantName}</p>
-                              <p className="text-xs text-gray-500">Room {payment.roomNumber}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm font-medium text-green-600">₱{payment.amount.toLocaleString()}</p>
-                              <p className="text-xs text-gray-500">{new Date(payment.paymentDate).toLocaleDateString()}</p>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-gray-500 text-sm">No recent payments</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-lg shadow-sm p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <span className="mr-2">⚠️</span>
-                      Top Outstanding
-                    </h3>
-                    <div className="space-y-3">
-                     {dashboardStats?.topOutstandingTenants?.length > 0 ? (
-                          dashboardStats.topOutstandingTenants.slice(0, 3).map((tenant) => (
-                          <div key={tenant.id} className="flex justify-between items-center py-2 border-b border-gray-100">
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">{tenant.name}</p>
-                              <p className="text-xs text-gray-500">Room {tenant.roomNumber}</p>
-                            </div>
-                            <div className="text-right">
-                              <span className="inline-block px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">₱{tenant.outstandingBalance.toLocaleString()}</span>
-                              <p className="text-xs text-gray-500">{new Date(tenant.nextDueDate).toLocaleDateString()}</p>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-gray-500 text-sm">All tenants are up to date</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Quick Actions */}
-              <div className="bg-white rounded-xl shadow-lg p-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-6">Quick Actions</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <button 
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-3 shadow-md hover:shadow-xl transform hover:-translate-y-1"
-                    onClick={() => setActiveTab('rooms')}
-                  >
-                    <span className="text-xl">🏠</span>
-                    <span>Manage Rooms</span>
-                  </button>
-                  <button 
-                    className="bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-3 shadow-md hover:shadow-xl transform hover:-translate-y-1"
-                    onClick={() => setActiveTab('tenants')}
-                  >
-                    <span className="text-xl">👥</span>
-                    <span>Manage Tenants</span>
-                  </button>
-                  <button 
-                    className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-3 shadow-md hover:shadow-xl transform hover:-translate-y-1"
-                    onClick={() => setActiveTab('accounting')}
-                  >
-                    <span className="text-xl">💰</span>
-                    <span>View Accounting</span>
-                  </button>
-                  <button 
-                    className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-3 shadow-md hover:shadow-xl transform hover:-translate-y-1"
-                    onClick={() => setActiveTab('maintenance')}
-                  >
-                    <span className="text-xl">🔧</span>
-                    <span>Maintenance</span>
-                  </button>
-                </div>
+                <button
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="btn-primary refresh-btn"
+                >
+                  {refreshing ? 'Refreshing...' : 'Refresh Data 🔄'}
+                </button>
               </div>
             </div>
           </div>
+
+          <div className="dash-container dash-content">
+            {/* 📊 Stats Overview */}
+            <div className="stats-grid">
+              <div className="stat-card">
+                <div className="stat-info">
+                  <p className="stat-label">Total Tenants</p>
+                  <p className="stat-number">{stats.totalStudents}</p>
+                </div>
+                <div className="stat-icon">👥</div>
+              </div>
+
+              <div className="stat-card">
+                <div className="stat-info">
+                  <p className="stat-label">Occupancy Rate</p>
+                  <p className="stat-number">
+                    {stats.totalRooms > 0
+                      ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100)
+                      : 0}%
+                  </p>
+                </div>
+                <div className="stat-icon">📊</div>
+              </div>
+
+              <div className="stat-card">
+                <div className="stat-info">
+                  <p className="stat-label">Unpaid Bills</p>
+                  <p className="stat-number">{dashboardStats?.totalUnpaidBills || 0}</p>
+                </div>
+                <div className="stat-icon">⚠️</div>
+              </div>
+
+              <div className="stat-card">
+                <div className="stat-info">
+                  <p className="stat-label">Total Collected</p>
+                  <p className="stat-number">
+                    ₱{dashboardStats?.totalAmountCollected?.toLocaleString() || '0'}
+                  </p>
+                </div>
+                <div className="stat-icon">💰</div>
+              </div>
+            </div>
+
+            {/* 💰 Financial Overview & Lists */}
+            {dashboardStats && (
+              <div className="overview-grid">
+                {/* Financial Overview Card */}
+                <div className="overview-card">
+                  <h3 className="overview-title">
+                    <span>💰</span> Financial Overview
+                  </h3>
+                  <div className="overview-list">
+                    <div className="overview-item">
+                      <span>Total Outstanding:</span>
+                      <span className="text-red">
+                        ₱{dashboardStats?.totalOutstandingAmount?.toLocaleString() || '0'}
+                      </span>
+                    </div>
+                    <div className="overview-item">
+                      <span>Total Collected:</span>
+                      <span className="text-green">
+                        ₱{dashboardStats?.totalAmountCollected?.toLocaleString() || '0'}
+                      </span>
+                    </div>
+                    <div className="overview-item">
+                      <span>Unpaid Bills:</span>
+                      <span className="text-orange">
+                        {dashboardStats?.totalUnpaidBills || 0}
+                      </span>
+                    </div>
+
+                    {/* Inline Progress Bar */}
+                    <div className="progress-bar">
+                      {(() => {
+                        const collected = Number(dashboardStats?.totalAmountCollected || 0);
+                        const outstanding = Number(dashboardStats?.totalOutstandingAmount || 0);
+                        const total = collected + outstanding || 1;
+                        const collectedPct = Math.round((collected / total) * 100);
+                        const outstandingPct = 100 - collectedPct;
+                        return (
+                          <>
+                            <div className="bar-container">
+                              <div className="bar-collected" style={{ width: collectedPct + '%' }} />
+                              <div className="bar-outstanding" style={{ width: outstandingPct + '%' }} />
+                            </div>
+                            <div className="bar-labels">
+                              <span>Collected</span>
+                              <span>Outstanding</span>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recent Payments Card */}
+                <div className="overview-card">
+                  <h3 className="overview-title"><span>📊</span> Recent Payments</h3>
+                  <div className="overview-list">
+                    {dashboardStats?.recentPayments?.length > 0 ? (
+                      dashboardStats.recentPayments.slice(0, 3).map(payment => (
+                        <div key={payment.id} className="list-item">
+                          <div>
+                            <p className="item-name">{payment.tenantName}</p>
+                            <p className="item-sub">Room {payment.roomNumber}</p>
+                          </div>
+                          <div className="item-right">
+                            <p className="text-green">
+                              ₱{payment.amount.toLocaleString()}
+                            </p>
+                            <p className="item-sub">
+                              {new Date(payment.paymentDate).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="no-data">No recent payments</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Top Outstanding Card */}
+                <div className="overview-card">
+                  <h3 className="overview-title"><span>⚠️</span> Top Outstanding</h3>
+                  <div className="overview-list">
+                    {dashboardStats?.topOutstandingTenants?.length > 0 ? (
+                      dashboardStats.topOutstandingTenants.slice(0, 3).map(tenant => (
+                        <div key={tenant.id} className="list-item">
+                          <div>
+                            <p className="item-name">{tenant.name}</p>
+                            <p className="item-sub">Room {tenant.roomNumber}</p>
+                          </div>
+                          <div className="item-right">
+                            <span className="badge-red">
+                              ₱{tenant.outstandingBalance.toLocaleString()}
+                            </span>
+                            <p className="item-sub">
+                              {new Date(tenant.nextDueDate).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="no-data">All tenants are up to date</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 🚀 Quick Actions */}
+            <div className="quick-actions-card">
+              <h3 className="quick-title">Quick Actions</h3>
+              <div className="quick-grid">
+                <button className="quick-btn blue" onClick={() => setActiveTab('rooms')}>
+                  🏠 Manage Rooms
+                </button>
+                <button className="quick-btn green" onClick={() => setActiveTab('tenants')}>
+                  👥 Manage Tenants
+                </button>
+                <button className="quick-btn purple" onClick={() => setActiveTab('accounting')}>
+                  💰 View Accounting
+                </button>
+                <button className="quick-btn orange" onClick={() => setActiveTab('maintenance')}>
+                  🔧 Maintenance
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
         )
     }
   }
@@ -398,7 +381,7 @@ const Dashboard = () => {
             >
               <span className="hamburger-icon">☰</span>
             </button>
-            <div className="logo">
+            <div className="logoo">
               <span className="logo-icon">🏢</span>
               <span className="logo-text">BCFlats Management</span>
             </div>
