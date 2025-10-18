@@ -46,6 +46,39 @@ export const paymentService = {
         }
     },
 
+    // Create pending payment (for tenant submission)
+    createPendingPayment: async (tenantId, paymentData) => {
+        try {
+            const response = await apiService.post(`/payments/pending/${tenantId}`, paymentData);
+            return response.data;
+        } catch (error) {
+            console.error('Error creating pending payment:', error);
+            throw error;
+        }
+    },
+
+    // Confirm pending payment (for accounting)
+    confirmPayment: async (paymentId) => {
+        try {
+            const response = await apiService.post(`/payments/confirm/${paymentId}`);
+            return response.data;
+        } catch (error) {
+            console.error('Error confirming payment:', error);
+            throw error;
+        }
+    },
+
+    // Get pending payments for accounting
+    getPendingPayments: async () => {
+        try {
+            const response = await apiService.get('/payments/pending');
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching pending payments:', error);
+            throw error;
+        }
+    },
+
     // Get payment statistics
     getPaymentStats: async (tenantId = null) => {
         try {

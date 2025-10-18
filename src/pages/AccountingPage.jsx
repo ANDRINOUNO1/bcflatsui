@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 
 
 const AccountingPage = () => {
-    const { user, logout, isAuthenticated } = useAuth()
+    const { logout } = useAuth()
     const [tenants, setTenants] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedTenant, setSelectedTenant] = useState(null);
@@ -24,6 +24,11 @@ const AccountingPage = () => {
         description: ''
     });
 
+    // Pending payments state
+    const [pendingPayments, setPendingPayments] = useState([]);
+    const [confirming, setConfirming] = useState({});
+    const [activeTab, setActiveTab] = useState('overview'); // overview | pending
+
     // Quick Pay modal state
     const [showQuickPay, setShowQuickPay] = useState(false);
     const [quickPaySearch, setQuickPaySearch] = useState('');
@@ -37,6 +42,7 @@ const AccountingPage = () => {
     useEffect(() => {
         fetchTenantsWithBillingInfo();
         fetchPaymentStats();
+        fetchPendingPayments();
     }, []);
 
     const fetchTenantsWithBillingInfo = async () => {
@@ -72,6 +78,21 @@ const AccountingPage = () => {
             setErrorModal({
                 open: true,
                 title: 'Failed to load payment statistics',
+                message: 'Please try refreshing the page.',
+                details: error?.response?.data?.message || error.message || 'Unknown error'
+            });
+        }
+    };
+
+    const fetchPendingPayments = async () => {
+        try {
+            const payments = await paymentService.getPendingPayments();
+            setPendingPayments(payments || []);
+        } catch (error) {
+            console.error('Error fetching pending payments:', error);
+            setErrorModal({
+                open: true,
+                title: 'Failed to load pending payments',
                 message: 'Please try refreshing the page.',
                 details: error?.response?.data?.message || error.message || 'Unknown error'
             });
@@ -187,6 +208,39 @@ const AccountingPage = () => {
         }
     };
 
+    const handleConfirmPayment = async (paymentId) => {
+        try {
+            setConfirming(prev => ({ ...prev, [paymentId]: true }));
+            
+            await paymentService.confirmPayment(paymentId);
+            
+            // Remove confirmed payment from list
+            setPendingPayments(prev => prev.filter(payment => payment.id !== paymentId));
+            
+            // Refresh tenant data to update balances
+            await fetchTenantsWithBillingInfo();
+            await fetchPaymentStats();
+            
+            setErrorModal({
+                open: true,
+                title: 'Payment Confirmed',
+                message: 'Payment has been confirmed and tenant balance has been updated.',
+                details: ''
+            });
+            
+        } catch (error) {
+            console.error('Error confirming payment:', error);
+            setErrorModal({
+                open: true,
+                title: 'Failed to confirm payment',
+                message: 'Please try again.',
+                details: error?.response?.data?.message || error.message || 'Unknown error'
+            });
+        } finally {
+            setConfirming(prev => ({ ...prev, [paymentId]: false }));
+        }
+    };
+
     const handleLogout = () => {
         logout()
     }
@@ -207,12 +261,6 @@ const AccountingPage = () => {
         return isNaN(d.getTime()) ? 'Invalid date' : d.toLocaleDateString();
     };
 
-    const getBalanceStatus = (balance) => {
-        const amount = parseFloat(balance);
-        if (amount === 0) return { status: 'paid', color: '#4CAF50' };
-        if (amount <= 1000) return { status: 'low', color: '#FF9800' };
-        return { status: 'high', color: '#F44336' };
-    };
 
     const getDueDateStatus = (dueDate) => {
         if (!dueDate) return { status: 'unknown', color: '#9E9E9E' };
@@ -254,7 +302,11 @@ const AccountingPage = () => {
 
                         <div className="header-actions">
                             <button
-                            onClick={fetchTenantsWithBillingInfo}
+                            onClick={() => {
+                                fetchTenantsWithBillingInfo();
+                                fetchPaymentStats();
+                                fetchPendingPayments();
+                            }}
                             className="refresh-button"
                             >
                             <span>🔄</span>
@@ -273,9 +325,66 @@ const AccountingPage = () => {
             </div>
 
             <div className="accounting-content-container">
+                {/* Tab Navigation */}
+                <div className="tab-navigation">
+                    <button 
+                        className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('overview')}
+                    >
+                        <span>📊</span>
+                        Overview
+                    </button>
+                    <button 
+                        className={`tab-button ${activeTab === 'pending' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('pending')}
+                    >
+                        <span>⏳</span>
+                        Pending Payments
+                        {pendingPayments.length > 0 && (
+                            <span className="pending-badge">{pendingPayments.length}</span>
+                        )}
+                    </button>
+                </div>
 
-                {/* Stats Summary */}
-                {stats && (
+                {/* Error Modal */}
+                {errorModal.open && (
+                    <div className="modal-overlay" onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}>
+                        <div className="error-modal" onClick={(e) => e.stopPropagation()}>
+                            <div className="error-modal-header">
+                                <div className="error-modal-title-content">
+                                    <span className="error-modal-icon">⚠️</span>
+                                    <h3 className="error-modal-title">{errorModal.title || 'Something went wrong'}</h3>
+                                </div>
+                                <button 
+                                    className="error-modal-close"
+                                    onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}
+                                >
+                                    ×
+                                </button>
+                            </div>
+                            <div className="error-modal-body">
+                                <p className="error-modal-message">{errorModal.message}</p>
+                                {errorModal.details && (
+                                    <div className="error-modal-details">{errorModal.details}</div>
+                                )}
+                                <div className="error-modal-actions">
+                                    <button 
+                                        className="error-modal-button"
+                                        onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}
+                                    >
+                                        OK
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Overview Tab Content */}
+                {activeTab === 'overview' && (
+                    <>
+                        {/* Stats Summary */}
+                        {stats && (
                     <div className="stats-grid">
                         <div className="stat-card stat-card-green">
                             <div className="stat-card-content">
@@ -485,6 +594,131 @@ const AccountingPage = () => {
                         )}
                     </div>
                 </div>
+                    </>
+                )}
+
+                {/* Pending Payments Tab Content */}
+                {activeTab === 'pending' && (
+                    <div className="pending-payments-section">
+                        <div className="pending-payments-header">
+                            <h3 className="pending-payments-title">Pending Payment Confirmations</h3>
+                            <p className="pending-payments-subtitle">
+                                Review and confirm payments submitted by tenants
+                            </p>
+                        </div>
+
+                        {pendingPayments.length === 0 ? (
+                            <div className="empty-state">
+                                <div className="empty-state-icon">✅</div>
+                                <h3 className="empty-state-title">No Pending Payments</h3>
+                                <p className="empty-state-text">
+                                    All payments have been confirmed. Check back later for new payment submissions.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="pending-payments-grid">
+                                {pendingPayments.map((payment) => (
+                                    <div key={payment.id} className="payment-card">
+                                        <div className="payment-card-header">
+                                            <div className="payment-amount">
+                                                {formatCurrency(payment.amount)}
+                                            </div>
+                                            <div className={`payment-method payment-method--${payment.paymentMethod.toLowerCase()}`}>
+                                                {payment.paymentMethod}
+                                            </div>
+                                        </div>
+
+                                        <div className="payment-card-body">
+                                            <div className="payment-info">
+                                                <div className="info-row">
+                                                    <span className="info-label">Tenant:</span>
+                                                    <span className="info-value">{payment.tenant.name}</span>
+                                                </div>
+                                                <div className="info-row">
+                                                    <span className="info-label">Room:</span>
+                                                    <span className="info-value">
+                                                        {payment.tenant.roomNumber} - {payment.tenant.floor}{payment.tenant.floor === 1 ? 'st' : payment.tenant.floor === 2 ? 'nd' : payment.tenant.floor === 3 ? 'rd' : 'th'} Floor
+                                                    </span>
+                                                </div>
+                                                <div className="info-row">
+                                                    <span className="info-label">Email:</span>
+                                                    <span className="info-value">{payment.tenant.email}</span>
+                                                </div>
+                                                <div className="info-row">
+                                                    <span className="info-label">Current Balance:</span>
+                                                    <span className="info-value info-value--red">
+                                                        {formatCurrency(payment.balanceBefore)}
+                                                    </span>
+                                                </div>
+                                                {payment.reference && (
+                                                    <div className="info-row">
+                                                        <span className="info-label">Reference:</span>
+                                                        <span className="info-value">{payment.reference}</span>
+                                                    </div>
+                                                )}
+                                                {payment.description && (
+                                                    <div className="info-row">
+                                                        <span className="info-label">Description:</span>
+                                                        <span className="info-value">{payment.description}</span>
+                                                    </div>
+                                                )}
+                                                <div className="info-row">
+                                                    <span className="info-label">Submitted:</span>
+                                                    <span className="info-value">{formatDate(payment.createdAt)}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="payment-actions">
+                                                <button
+                                                    className="btn-confirm"
+                                                    onClick={() => handleConfirmPayment(payment.id)}
+                                                    disabled={confirming[payment.id]}
+                                                >
+                                                    {confirming[payment.id] ? (
+                                                        <>
+                                                            <div className="btn-spinner"></div>
+                                                            Confirming...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <span>✅</span>
+                                                            Confirm Payment
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="payment-card-footer">
+                                            <div className="balance-preview">
+                                                <span className="balance-label">Balance After Payment:</span>
+                                                <span className="balance-value">
+                                                    {formatCurrency(payment.balanceBefore - payment.amount)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <div className="pending-summary-card">
+                            <h3 className="summary-title">Summary</h3>
+                            <div className="summary-stats">
+                                <div className="summary-stat">
+                                    <span className="summary-label">Pending Payments:</span>
+                                    <span className="summary-value">{pendingPayments.length}</span>
+                                </div>
+                                <div className="summary-stat">
+                                    <span className="summary-label">Total Amount:</span>
+                                    <span className="summary-value">
+                                        {formatCurrency(pendingPayments.reduce((sum, payment) => sum + payment.amount, 0))}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Payment Form Modal */}
