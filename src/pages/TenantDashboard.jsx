@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { maintenanceService } from '../services/maintenanceService';
@@ -14,16 +14,26 @@ const TenantDashboard = () => {
   const [billingInfo, setBillingInfo] = useState(null);
   const [maintenanceRequests, setMaintenanceRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [billingError, setBillingError] = useState(false);
   const [roomError, setRoomError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [errorModal, setErrorModal] = useState({ open: false, title: '', message: '', details: '' });
+  
+  // Payment modal states
+  const [paymentModal, setPaymentModal] = useState({ open: false, loading: false });
+  const [paymentForm, setPaymentForm] = useState({
+    amount: '',
+    paymentMethod: 'gcash',
+    description: '',
+    referenceNumber: ''
+  });
+  const [paymentHistory, setPaymentHistory] = useState([]);
+  const [paymentHistoryLoading, setPaymentHistoryLoading] = useState(false);
+  const [showPaymentHistory, setShowPaymentHistory] = useState(false);
 
-  const fetchTenantData = async () => {
+  const fetchTenantData = useCallback(async () => {
     try {
         setLoading(true);
-        setError(null);
         setBillingError(false);
         setRoomError(false);
 
@@ -59,7 +69,6 @@ const TenantDashboard = () => {
         }
     } catch (error) {
         console.error('Error fetching primary tenant data:', error);
-        setError('Failed to load dashboard data. Please try again later.');
         setErrorModal({
             open: true,
             title: 'Failed to load your dashboard',
@@ -70,13 +79,119 @@ const TenantDashboard = () => {
         setLoading(false);
         setRefreshing(false);
     }
+  }, [user?.id]);
+
+  // Payment functions
+  const fetchPaymentHistory = useCallback(async () => {
+    if (!tenantData?.id) return;
+    
+    try {
+      setPaymentHistoryLoading(true);
+      const history = await paymentService.getPaymentsByTenant(tenantData.id, 20);
+      setPaymentHistory(history || []);
+    } catch (error) {
+      console.error('Error fetching payment history:', error);
+      setPaymentHistory([]);
+    } finally {
+      setPaymentHistoryLoading(false);
+    }
+  }, [tenantData?.id]);
+
+  const handlePaymentSubmit = async (e) => {
+    e.preventDefault();
+    if (!tenantData?.id) return;
+
+    try {
+      setPaymentModal(prev => ({ ...prev, loading: true }));
+      
+      const paymentData = {
+        tenantId: tenantData.id,
+        amount: parseFloat(paymentForm.amount),
+        paymentMethod: paymentForm.paymentMethod,
+        description: paymentForm.description || 'Rent payment',
+        referenceNumber: paymentForm.referenceNumber || null,
+        status: 'Pending' // Create as pending payment
+      };
+
+      await paymentService.createPendingPayment(tenantData.id, paymentData);
+      
+      // Refresh data after successful payment submission
+      await fetchTenantData();
+      await fetchPaymentHistory();
+      
+      // Reset form and close modal
+      setPaymentForm({
+        amount: '',
+        paymentMethod: 'gcash',
+        description: '',
+        referenceNumber: ''
+      });
+      setPaymentModal({ open: false, loading: false });
+      
+      // Show success message
+      setErrorModal({
+        open: true,
+        title: 'Payment Submitted',
+        message: 'Your payment has been submitted and is pending confirmation from accounting.',
+        details: 'You will be notified once the payment is confirmed and your balance is updated.'
+      });
+      
+    } catch (error) {
+      console.error('Error submitting payment:', error);
+      setErrorModal({
+        open: true,
+        title: 'Payment Submission Failed',
+        message: 'Unable to submit your payment. Please try again.',
+        details: error?.response?.data?.message || error.message || 'Unknown error'
+      });
+    } finally {
+      setPaymentModal(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  const openPaymentModal = () => {
+    setPaymentForm(prev => ({
+      ...prev,
+      amount: billingInfo?.outstandingBalance || ''
+    }));
+    setPaymentModal({ open: true, loading: false });
+  };
+
+  const closePaymentModal = () => {
+    setPaymentModal({ open: false, loading: false });
+    setPaymentForm({
+      amount: '',
+      paymentMethod: 'gcash',
+      description: '',
+      referenceNumber: ''
+    });
   };
 
   useEffect(() => {
     if (user?.id) {
       fetchTenantData();
     }
-  }, [user]);
+  }, [user, fetchTenantData]);
+
+  useEffect(() => {
+    if (showPaymentHistory && tenantData?.id) {
+      fetchPaymentHistory();
+    }
+  }, [showPaymentHistory, tenantData?.id, fetchPaymentHistory]);
+
+  // Handle body scroll when modals are open
+  useEffect(() => {
+    if (paymentModal.open || errorModal.open) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [paymentModal.open, errorModal.open]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -140,9 +255,12 @@ const TenantDashboard = () => {
   return (
     <div className="tenant-dashboard">
       {errorModal.open && (
-        <div className="modal-overlay">
-          <div className="modal-backdrop" onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}></div>
-          <div className="error-modal">
+        <div className="modal-overlay" onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setErrorModal({ open: false, title: '', message: '', details: '' });
+          }
+        }}>
+          <div className="error-modal" onClick={(e) => e.stopPropagation()}>
             <div className="error-modal-header">
               <div className="error-modal-title-content">
                 <span className="error-modal-icon">⚠️</span>
@@ -349,13 +467,20 @@ const TenantDashboard = () => {
           </div>
           
           <div className="card-actions-footer">
-            <button className="btn-action btn-action--primary">
+            <button 
+              className="btn-action btn-action--primary"
+              onClick={openPaymentModal}
+              disabled={billingError || !billingInfo?.outstandingBalance}
+            >
               <span className="btn-action-icon">💳</span>
               <span>Pay Now</span>
             </button>
-            <button className="btn-action btn-action--secondary">
+            <button 
+              className="btn-action btn-action--secondary"
+              onClick={() => setShowPaymentHistory(!showPaymentHistory)}
+            >
               <span className="btn-action-icon">📊</span>
-              <span>Billing History</span>
+              <span>{showPaymentHistory ? 'Hide' : 'View'} Payment History</span>
             </button>
           </div>
         </div>
@@ -393,49 +518,59 @@ const TenantDashboard = () => {
           </div>
         </div>
 
-        {!billingError && billingInfo?.paymentHistory && billingInfo.paymentHistory.length > 0 && (
+        {showPaymentHistory && (
           <div className="content-card">
             <h3 className="card-title card-title-with-icon">
               <span className="card-title-icon">💳</span>
-              Recent Payment History
+              Payment History
             </h3>
-            <div className="table-container">
-              <table className="payment-table">
-                <thead className="payment-table-header">
-                  <tr>
-                    <th>Date</th>
-                    <th>Amount</th>
-                    <th>Method</th>
-                    <th>Balance After</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody className="payment-table-body">
-                  {billingInfo.paymentHistory.slice(0, 5).map((payment) => (
-                    <tr key={payment.id}>
-                      <td className="cell-text-strong">{new Date(payment.paymentDate).toLocaleDateString()}</td>
-                      <td className="cell-text-green">{formatCurrency(payment.amount)}</td>
-                      <td>{payment.paymentMethod}</td>
-                      <td>{formatCurrency(payment.balanceAfter)}</td>
-                      <td>
-                        <span className={`status-badge ${
-                          payment.status === 'Completed' 
-                            ? 'status-badge--green' 
-                            : 'status-badge--yellow'
-                        }`}>
-                          {payment.status}
-                        </span>
-                      </td>
+            {paymentHistoryLoading ? (
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p className="loading-text">Loading payment history...</p>
+              </div>
+            ) : paymentHistory.length > 0 ? (
+              <div className="table-container">
+                <table className="payment-table">
+                  <thead className="payment-table-header">
+                    <tr>
+                      <th>Date</th>
+                      <th>Amount</th>
+                      <th>Method</th>
+                      <th>Description</th>
+                      <th>Reference</th>
+                      <th>Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {billingInfo.paymentHistory.length > 5 && (
-              <div className="view-all-container">
-                <button className="btn-view-all">
-                  View All Payments
-                </button>
+                  </thead>
+                  <tbody className="payment-table-body">
+                    {paymentHistory.map((payment) => (
+                      <tr key={payment.id}>
+                        <td className="cell-text-strong">{new Date(payment.paymentDate).toLocaleDateString()}</td>
+                        <td className="cell-text-green">{formatCurrency(payment.amount)}</td>
+                        <td className="payment-method-badge">{payment.paymentMethod}</td>
+                        <td>{payment.description || 'Rent payment'}</td>
+                        <td>{payment.referenceNumber || 'N/A'}</td>
+                        <td>
+                          <span className={`status-badge ${
+                            payment.status === 'Completed' 
+                              ? 'status-badge--green' 
+                              : payment.status === 'Pending'
+                              ? 'status-badge--yellow'
+                              : 'status-badge--red'
+                          }`}>
+                            {payment.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="empty-state">
+                <div className="empty-state-icon">💳</div>
+                <h4 className="empty-state-title">No Payment History</h4>
+                <p className="empty-state-text">You haven't made any payments yet.</p>
               </div>
             )}
           </div>
@@ -575,6 +710,136 @@ const TenantDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Payment Modal */}
+      {paymentModal.open && (
+        <div className="modal-overlay" onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            closePaymentModal();
+          }
+        }}>
+          <div className="payment-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="payment-modal-header">
+              <div className="payment-modal-title-content">
+                <span className="payment-modal-icon">💳</span>
+                <h3 className="payment-modal-title">Make Payment</h3>
+              </div>
+              <button 
+                aria-label="Close" 
+                className="payment-modal-close" 
+                onClick={closePaymentModal}
+                disabled={paymentModal.loading}
+              >
+                ×
+              </button>
+            </div>
+            
+            <form onSubmit={handlePaymentSubmit} className="payment-form">
+              <div className="payment-form-body">
+                <div className="payment-summary">
+                  <div className="payment-summary-item">
+                    <span className="payment-summary-label">Outstanding Balance:</span>
+                    <span className="payment-summary-value payment-summary-value--red">
+                      {formatCurrency(billingInfo?.outstandingBalance || 0)}
+                    </span>
+                  </div>
+                  <div className="payment-summary-item">
+                    <span className="payment-summary-label">Monthly Rent:</span>
+                    <span className="payment-summary-value">
+                      {formatCurrency(billingInfo?.monthlyRent || 0)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="amount" className="form-label">
+                    Payment Amount <span className="required">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    id="amount"
+                    className="form-input"
+                    value={paymentForm.amount}
+                    onChange={(e) => setPaymentForm(prev => ({ ...prev, amount: e.target.value }))}
+                    placeholder="Enter amount"
+                    min="0"
+                    step="0.01"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="paymentMethod" className="form-label">
+                    Payment Method <span className="required">*</span>
+                  </label>
+                  <select
+                    id="paymentMethod"
+                    className="form-select"
+                    value={paymentForm.paymentMethod}
+                    onChange={(e) => setPaymentForm(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                    required
+                  >
+                    <option value="gcash">GCash</option>
+                    <option value="paymaya">PayMaya</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="description" className="form-label">Description</label>
+                  <textarea
+                    id="description"
+                    className="form-textarea"
+                    value={paymentForm.description}
+                    onChange={(e) => setPaymentForm(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Optional description (e.g., Rent for January 2024)"
+                    rows="3"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="referenceNumber" className="form-label">Reference Number</label>
+                  <input
+                    type="text"
+                    id="referenceNumber"
+                    className="form-input"
+                    value={paymentForm.referenceNumber}
+                    onChange={(e) => setPaymentForm(prev => ({ ...prev, referenceNumber: e.target.value }))}
+                    placeholder="Transaction reference (optional)"
+                  />
+                </div>
+              </div>
+              
+              <div className="payment-form-footer">
+                <button 
+                  type="button" 
+                  className="btn-cancel"
+                  onClick={closePaymentModal}
+                  disabled={paymentModal.loading}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn-submit"
+                  disabled={paymentModal.loading || !paymentForm.amount}
+                >
+                  {paymentModal.loading ? (
+                    <>
+                      <div className="btn-spinner"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <span>💳</span>
+                      Process Payment
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
