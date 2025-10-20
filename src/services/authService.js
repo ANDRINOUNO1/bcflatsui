@@ -26,8 +26,17 @@ export const authService = {
   // Login user (stores token per-tab in sessionStorage)
   async login(email, password) {
     try {
+      console.log('🔐 Attempting login for:', email);
       const response = await api.post('/accounts/authenticate', { email, password , ipAddress: '127.0.0.1' });
+      console.log('📥 Login response:', response.data);
+      
       const { jwtToken, refreshToken, ...user } = response.data;
+      console.log('🎫 Extracted jwtToken:', jwtToken ? 'Present' : 'Missing');
+      console.log('👤 Extracted user:', user);
+
+      if (!jwtToken) {
+        throw new Error('No token received from server');
+      }
 
       // Store token and user data in sessionStorage (per-tab)
       sessionStorage.setItem('token', jwtToken);
@@ -36,8 +45,10 @@ export const authService = {
         sessionStorage.setItem('refreshToken', refreshToken);
       }
 
+      console.log('✅ Login successful, token stored');
       return { token: jwtToken, user };
     } catch (error) {
+      console.error('❌ Login error:', error.response?.data || error.message);
       throw new Error(error.response?.data || 'Login failed');
     }
   },
