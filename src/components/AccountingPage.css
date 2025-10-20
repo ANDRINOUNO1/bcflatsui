@@ -655,12 +655,15 @@
 .accounting-header-gradient {
   background: linear-gradient(to right, #2563eb, #1e40af);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  overflow: visible;
 }
 
 .accounting-header-container {
-  max-width: 80rem;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   padding: 0 1rem;
+  width: 100%;
 }
 
 @media (min-width: 640px) {
@@ -678,18 +681,30 @@
 .accounting-header-content {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   padding: 2rem 0;
+  flex-wrap: wrap;
+  gap: 1rem;
+  width: 100%;
 }
 
 .accounting-title {
-  font-size: 2.25rem;
-  font-weight: 700;
-  color: white;
+  color: #ffffff;
+  font-size: 2rem;
+  font-weight: 800;
   margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: unset;
+}
+
+.accounting-subtitle {
+  color: #dbeafe;
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: unset;
 }
 
 .accounting-icon {
@@ -982,6 +997,7 @@
   width: 100%;
   border-collapse: collapse;
   background: white;
+  table-layout: fixed;
 }
 
 .accounting-table th {
@@ -994,6 +1010,8 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+  overflow: visible;
 }
 
 .accounting-table td {
@@ -1001,6 +1019,52 @@
   border-bottom: 1px solid #e5e7eb;
   font-size: 0.875rem;
   color: #111827;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: unset;
+}
+
+/* Specific column widths */
+.accounting-table th:nth-child(1),
+.accounting-table td:nth-child(1) {
+  width: 20%;
+  min-width: 120px;
+}
+
+.accounting-table th:nth-child(2),
+.accounting-table td:nth-child(2) {
+  width: 12%;
+  min-width: 80px;
+}
+
+.accounting-table th:nth-child(3),
+.accounting-table td:nth-child(3) {
+  width: 15%;
+  min-width: 100px;
+}
+
+.accounting-table th:nth-child(4),
+.accounting-table td:nth-child(4) {
+  width: 15%;
+  min-width: 100px;
+}
+
+.accounting-table th:nth-child(5),
+.accounting-table td:nth-child(5) {
+  width: 15%;
+  min-width: 100px;
+}
+
+.accounting-table th:nth-child(6),
+.accounting-table td:nth-child(6) {
+  width: 15%;
+  min-width: 100px;
+}
+
+.accounting-table th:nth-child(7),
+.accounting-table td:nth-child(7) {
+  width: 8%;
+  min-width: 80px;
 }
 
 .accounting-table tr:hover {

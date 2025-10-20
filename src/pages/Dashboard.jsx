@@ -3,12 +3,14 @@ import { useAuth } from '../context/AuthContext'
 import { roomService } from '../services/roomService'
 import { tenantService } from '../services/tenantService'
 import { paymentService } from '../services/paymentService'
+import { notificationService } from '../services/notificationService'
 import RoomPage from './RoomPage'
 import TenantPage from './TenantPage'
 import PricingPage from './PricingPage'
 import AdminMaintenancePage from './AdminMaintenancePage'
 import AccountingPage from './AccountingPage'
 import AddAccountPage from './AddAccountPage'
+import ArchivedTenantsPage from './ArchivedTenantsPage'
 import '../components/Dashboard.css'
 
 
@@ -26,12 +28,15 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard')
   const [errorModal, setErrorModal] = useState({ open: false, title: '', message: '', details: '' })
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [notifications, setNotifications] = useState([])
+  const [unread, setUnread] = useState(0)
+  const [showNotif, setShowNotif] = useState(false)
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true)
       console.log('🔐 Dashboard: Authentication status:', isAuthenticated)
-      console.log('🔐 Dashboard: Token in localStorage:', !!localStorage.getItem('token'))
+      console.log('🔐 Dashboard: Token in sessionStorage:', !!sessionStorage.getItem('token'))
       
 
       if (!isAuthenticated) {
@@ -85,6 +90,25 @@ const Dashboard = () => {
     } else {
       setLoading(false)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated])
+
+  useEffect(() => {
+    let id
+    const loadNotifs = async () => {
+      try {
+        const data = await notificationService.fetchMyNotifications(25)
+        setNotifications(data)
+        setUnread((data || []).filter(n => !n.isRead).length)
+      } catch {
+        // Silently fail - notifications are not critical
+      }
+    }
+    if (isAuthenticated) {
+      loadNotifs()
+      id = setInterval(loadNotifs, 15000)
+    }
+    return () => id && clearInterval(id)
   }, [isAuthenticated])
 
   const handleRefresh = async () => {
@@ -103,12 +127,8 @@ const Dashboard = () => {
     { id: 'accounting', label: 'Accounting', icon: '💰' },
     { id: 'pricing', label: 'Pricing', icon: '💵' },
     { id: 'maintenance', label: 'Maintenance', icon: '🔧' },
-    { id: 'add-account', label: 'Add Account', icon: '👤' },
-    { id: 'account', label: 'Account', icon: '⚙️' },
-    { id: 'users', label: 'Users', icon: '👨‍👩‍👧‍👦' },
-    { id: 'reports', label: 'Reports', icon: '📈' },
-    { id: 'settings', label: 'Settings', icon: '⚙️' },
-    { id: 'help', label: 'Help', icon: '❓' }
+    { id: 'archives', label: 'Archives', icon: '📦' },
+    { id: 'add-account', label: 'Add Account', icon: '👤' }
   ]
 
   const renderContent = () => {
@@ -123,6 +143,8 @@ const Dashboard = () => {
         return <PricingPage />
       case 'maintenance':
         return <AdminMaintenancePage />
+      case 'archives':
+        return <ArchivedTenantsPage />
       case 'add-account':
         return <AddAccountPage />
       case 'dashboard':
@@ -317,6 +339,9 @@ const Dashboard = () => {
                 <button className="quick-btn orange" onClick={() => setActiveTab('maintenance')}>
                   🔧 Maintenance
                 </button>
+                <button className="quick-btn teal" onClick={() => setActiveTab('archives')}>
+                  📦 Archives
+                </button>
               </div>
             </div>
           </div>
@@ -327,10 +352,10 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
+      <div className="loading-screen">
+        <div className="loading-content">
+          <div className="loading-spinner"></div>
+          <p className="loading-text">Loading dashboard...</p>
         </div>
       </div>
     )
@@ -338,10 +363,10 @@ const Dashboard = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Redirecting to login...</p>
+      <div className="loading-screen">
+        <div className="loading-content">
+          <div className="loading-spinner"></div>
+          <p className="loading-text">Redirecting to login...</p>
         </div>
       </div>
     )
@@ -350,28 +375,43 @@ const Dashboard = () => {
   return (
     <div className="dashboard-layout">
       {errorModal.open && (
-        <div className="modal-overlay">
-          <div className="modal-backdrop" onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}></div>
-          <div className="error-modal">
-            <div className="error-modal-header">
-              <div className="error-modal-title-content">
-                <span className="error-modal-icon">⚠️</span>
-                <h3 className="error-modal-title">{errorModal.title || 'Something went wrong'}</h3>
+        <div className="modal-overlay" onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setErrorModal({ open: false, title: '', message: '', details: '' });
+          }
+        }}>
+          <div className="modal-container error-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header error-modal-header">
+              <div className="modal-title-content error-modal-title-content">
+                <span className="modal-icon error-modal-icon">⚠️</span>
+                <h3 className="modal-title error-modal-title">{errorModal.title || 'Something went wrong'}</h3>
               </div>
-              <button aria-label="Close" className="error-modal-close" onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}>×</button>
+              <button 
+                aria-label="Close" 
+                className="modal-close error-modal-close" 
+                onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}
+              >
+                ×
+              </button>
             </div>
-            <div className="error-modal-body">
+            <div className="modal-body error-modal-body">
               {errorModal.message && <p className="error-modal-message">{errorModal.message}</p>}
               {errorModal.details && <pre className="error-modal-details">{errorModal.details}</pre>}
-              <div className="error-modal-actions">
-                <button onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })} className="error-modal-button">Close</button>
-              </div>
+            </div>
+            <div className="modal-footer error-modal-actions">
+              <button 
+                onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })} 
+                className="modal-btn modal-btn-primary"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
       )}
+      
       {/* Header */}
-      <header className="dashboard-header">
+      <header className="dashboard-header-top">
         <div className="header-content">
           <div className="header-left">
             <button 
@@ -383,11 +423,54 @@ const Dashboard = () => {
             </button>
             <div className="logoo">
               <span className="logo-icon">🏢</span>
-              <span className="logo-text">BCFlats Management</span>
+              <span className="logo-text">Admin Dashboard</span>
             </div>
           </div>
           <div className="profile-meta">
+            <div style={{ position: 'relative', marginRight: 12 }}>
+              <button className="refresh-btn" onClick={() => setShowNotif(p => !p)} aria-label="Notifications">
+                🔔{unread > 0 && <span className="pending-badge">{unread}</span>}
+              </button>
+              {showNotif && (
+                <>
+                  <div 
+                    style={{ 
+                      position: 'fixed', 
+                      inset: 0, 
+                      zIndex: 10 
+                    }}
+                    onClick={() => setShowNotif(false)}
+                  />
+                  <div style={{ 
+                    position: 'absolute', 
+                    right: 0, 
+                    top: '100%', 
+                    width: 380, 
+                    background: '#fff', 
+                    border: '1px solid #ddd', 
+                    borderRadius: 8, 
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.1)', 
+                    zIndex: 20,
+                    marginTop: 8
+                  }}>
+                    <div style={{ padding: 12, borderBottom: '1px solid #eee', fontWeight: 700 }}>Notifications</div>
+                    <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+                      {notifications.length === 0 ? (
+                        <div style={{ padding: 12, color: '#777' }}>No notifications</div>
+                      ) : notifications.map(n => (
+                        <div key={n.id} style={{ padding: 12, borderBottom: '1px solid #f0f0f0', background: n.isRead ? '#fff' : '#f9fbff' }}>
+                          <div style={{ fontWeight: 600, marginBottom: 4 }}>{n.title}</div>
+                          <div style={{ fontSize: 13, color: '#444' }}>{n.message}</div>
+                          <div style={{ fontSize: 12, color: '#999', marginTop: 6 }}>{new Date(n.createdAt).toLocaleString()}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
             <div className="email">{user?.email}</div>
+            <button className="logout-btn" onClick={handleLogout}>Logout</button>
           </div>
         </div>
       </header>
@@ -398,6 +481,12 @@ const Dashboard = () => {
         
         {/* Sidebar */}
         <aside className="dashboard-sidebar">
+          {/* BCFLATS Branding */}
+          <div className="sidebar-brand">
+            <div className="brand-logo">BCFLATS</div>
+          </div>
+
+          {/* Navigation */}
           <nav className="sidebar-nav">
             {navigationItems.map((item) => (
               <button
@@ -410,7 +499,27 @@ const Dashboard = () => {
               </button>
             ))}
           </nav>
+
+          {/* User Profile */}
+          <div className="sidebar-profile">
+            <div className="profile-avatar">
+              <div className="avatar-icon">👤</div>
+              <div className="avatar-status"></div>
+            </div>
+            <div className="profile-info">
+              <div className="profile-name">Admin User</div>
+              <div className="profile-role">ADMIN</div>
+              <div className="profile-email">{user?.email}</div>
+            </div>
+            <div className="profile-dropdown">▼</div>
+          </div>
+
+          {/* Footer Actions */}
           <div className="sidebar-footer">
+            <button className="theme-toggle-btn">
+              <span className="nav-icon">🌙</span>
+              <span className="nav-label">Light</span>
+            </button>
             <button className="logout-btn" onClick={handleLogout}>
               <span className="nav-icon">🚪</span>
               <span className="nav-label">Logout</span>

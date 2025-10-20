@@ -9,10 +9,10 @@ const apiService = axios.create({
     },
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token (per-tab using sessionStorage)
 apiService.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
             console.log(' Adding token to request:', config.url);
@@ -38,9 +38,9 @@ apiService.interceptors.response.use(
         
         if (error.response?.status === 401) {
             console.log(' Authentication failed, clearing token');
-            // Token expired or invalid, clear local storage
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
+            // Token expired or invalid, clear session storage (per-tab)
+            sessionStorage.removeItem('token');
+            sessionStorage.removeItem('user');
             
             // Don't redirect automatically - let components handle it
             console.log(' Token cleared, but not redirecting');
