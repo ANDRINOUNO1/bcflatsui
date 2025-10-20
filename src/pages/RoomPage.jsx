@@ -39,11 +39,13 @@ const RoomPage = () => {
 
     // Debug modal state
     useEffect(() => {
-        if (showAddTenant) {
-            console.log('Add Tenant modal opened, selectedRoom:', selectedRoom);
-            console.log('New tenant state:', newTenant);
-        }
-    }, [showAddTenant, selectedRoom, newTenant]);
+        console.log('Modal states changed:', {
+            showRoomDetails,
+            showAddTenant,
+            showPricingModal,
+            selectedRoom: selectedRoom?.room?.id
+        });
+    }, [showRoomDetails, showAddTenant, showPricingModal, selectedRoom]);
 
     // Recompute visible rooms whenever filter or allRooms changes
     useEffect(() => {
@@ -75,7 +77,7 @@ const handleOpenAddTenantModal = () => {
     // Add a small delay to ensure state updates
     setTimeout(() => {
         setShowAddTenant(true);
-        console.log('Modal state set to true, showAddTenant:', true);
+        console.log('Add Tenant modal state set to true, showAddTenant:', true);
     }, 100);
 };
     const fetchRooms = async () => {
@@ -107,22 +109,27 @@ const handleOpenAddTenantModal = () => {
     const filteredRooms = floorFilter === 'all' ? rooms : rooms; // rooms already filtered via effect
 
     const handleRoomClick = async (room) => {
+        console.log('Room clicked:', room);
         try {
             const bedStatus = await roomService.getRoomBedStatus(room.id);
+            console.log('Bed status fetched:', bedStatus);
             setSelectedRoom(bedStatus);
             setShowRoomDetails(true);
+            console.log('Modal should be open now');
         } catch (error) {
             console.error('Error fetching room details:', error);
         }
     };
 
     const handlePricingClick = (room) => {
+        console.log('Pricing clicked for room:', room);
         setPricingData({
             monthlyRent: (room.monthlyRent || 0).toString(),
             utilities: (room.utilities || 0).toString()
         });
         setSelectedRoom({ room });
         setShowPricingModal(true);
+        console.log('Pricing modal should be open now');
     };
 
     const handleUpdatePricing = async () => {
@@ -314,11 +321,24 @@ const handleOpenAddTenantModal = () => {
                 </div>
 
                 {selectedRoom && showRoomDetails && (
-                    <div className="modal-overlay">
-                        <div className="modal modal-large">
-                            <div className="modal-header">
-                                <h3>Room {selectedRoom.room.roomNumber} Details</h3>
-                                <button className="close-btn" onClick={() => setShowRoomDetails(false)}>×</button>
+                    <div className="modal-overlay" onClick={(e) => {
+                        if (e.target === e.currentTarget) {
+                            setShowRoomDetails(false);
+                        }
+                    }}>
+                        <div className="modal-container details-modal" onClick={(e) => e.stopPropagation()}>
+                            <div className="modal-header details-modal-header">
+                                <div className="modal-title-content">
+                                    <span className="modal-icon">🏠</span>
+                                    <h3 className="modal-title">Room {selectedRoom.room.roomNumber} Details</h3>
+                                </div>
+                                <button 
+                                    aria-label="Close" 
+                                    className="modal-close" 
+                                    onClick={() => setShowRoomDetails(false)}
+                                >
+                                    ×
+                                </button>
                             </div>
                             <div className="modal-body">
                                 <div className="room-stats">
@@ -366,7 +386,7 @@ const handleOpenAddTenantModal = () => {
                                         {selectedRoom.bedStatus.map((bed) => (
                                             <div key={bed.bedNumber} className={`bed-status-card ${bed.status.toLowerCase()}`}>
                                                 <div className="bed-number">Bed {bed.bedNumber}</div>
-                                                <div className="bed-status">{bed.status}</div>
+                                                <div className="bed-status-text">{bed.status}</div>
                                                 {bed.tenant ? (
                                                     <div className="tenant-info">
                                                         <p><strong>Name:</strong> {bed.tenant.firstName} {bed.tenant.lastName}</p>
@@ -391,10 +411,15 @@ const handleOpenAddTenantModal = () => {
                                 </div>
                             </div>
                             <div className="modal-footer">
-                                <button className="btn-secondary" onClick={() => setShowRoomDetails(false)}>Close</button>
+                                <button 
+                                    className="modal-btn modal-btn-secondary" 
+                                    onClick={() => setShowRoomDetails(false)}
+                                >
+                                    Close
+                                </button>
                                 {isAdmin && (
                                     <button 
-                                        className="btn-secondary"
+                                        className="modal-btn modal-btn-secondary"
                                         onClick={() => {
                                             setShowRoomDetails(false);
                                             handlePricingClick(selectedRoom.room);
@@ -404,7 +429,7 @@ const handleOpenAddTenantModal = () => {
                                     </button>
                                 )}
                                 <button
-                                    className="btn-primary"
+                                    className="modal-btn modal-btn-primary"
                                     onClick={() => {
                                         console.log('Add Tenant button clicked');
                                         console.log('selectedRoom:', selectedRoom);
@@ -423,43 +448,70 @@ const handleOpenAddTenantModal = () => {
 
             {/* Pricing Update Modal */}
             {showPricingModal && (
-                <div className="modal-overlay">
-                    <div className="modal">
-                        <div className="modal-header">
-                            <h3>Update Room Pricing</h3>
-                            <button className="close-btn" onClick={() => setShowPricingModal(false)}>×</button>
+                <div className="modal-overlay" onClick={(e) => {
+                    if (e.target === e.currentTarget) {
+                        setShowPricingModal(false);
+                    }
+                }}>
+                    <div className="modal-container pricing-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header pricing-modal-header">
+                            <div className="modal-title-content">
+                                <span className="modal-icon">💰</span>
+                                <h3 className="modal-title">Room Pricing</h3>
+                            </div>
+                            <button 
+                                aria-label="Close" 
+                                className="modal-close" 
+                                onClick={() => setShowPricingModal(false)}
+                            >
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
-                            <div className="form-group">
-                                <label>Monthly Rent per Bed (₱):</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={pricingData.monthlyRent}
-                                    onChange={(e) => setPricingData({...pricingData, monthlyRent: e.target.value})}
-                                    placeholder="Enter monthly rent per bed"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Utilities per Bed (₱):</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={pricingData.utilities}
-                                    onChange={(e) => setPricingData({...pricingData, utilities: e.target.value})}
-                                    placeholder="Enter utilities cost per bed"
-                                />
-                            </div>
-                            <div className="pricing-summary">
-                                <p><strong>Total per Bed:</strong> ₱{((parseFloat(pricingData.monthlyRent) || 0) + (parseFloat(pricingData.utilities) || 0)).toLocaleString()}</p>
-                                <p><strong>Room Total (4 beds):</strong> ₱{(((parseFloat(pricingData.monthlyRent) || 0) + (parseFloat(pricingData.utilities) || 0)) * 4).toLocaleString()}</p>
-                            </div>
+                            <form className="modal-form">
+                                <div className="modal-form-group">
+                                    <label className="modal-form-label">Monthly Rent per Bed (₱):</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        className="modal-form-input"
+                                        value={pricingData.monthlyRent}
+                                        onChange={(e) => setPricingData({...pricingData, monthlyRent: e.target.value})}
+                                        placeholder="Enter monthly rent per bed"
+                                    />
+                                </div>
+                                <div className="modal-form-group">
+                                    <label className="modal-form-label">Utilities per Bed (₱):</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        className="modal-form-input"
+                                        value={pricingData.utilities}
+                                        onChange={(e) => setPricingData({...pricingData, utilities: e.target.value})}
+                                        placeholder="Enter utilities cost per bed"
+                                    />
+                                </div>
+                                <div className="pricing-summary">
+                                    <p><strong>Total per Bed:</strong> ₱{((parseFloat(pricingData.monthlyRent) || 0) + (parseFloat(pricingData.utilities) || 0)).toLocaleString()}</p>
+                                    <p><strong>Room Total (4 beds):</strong> ₱{(((parseFloat(pricingData.monthlyRent) || 0) + (parseFloat(pricingData.utilities) || 0)) * 4).toLocaleString()}</p>
+                                </div>
+                            </form>
                         </div>
                         <div className="modal-footer">
-                            <button className="btn-secondary" onClick={() => setShowPricingModal(false)}>Cancel</button>
-                            <button className="btn-primary" onClick={handleUpdatePricing}>Update Pricing</button>
+                            <button 
+                                className="modal-btn modal-btn-secondary" 
+                                onClick={() => setShowPricingModal(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                className="modal-btn modal-btn-primary" 
+                                onClick={handleUpdatePricing}
+                            >
+                                Update Pricing
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -467,120 +519,153 @@ const handleOpenAddTenantModal = () => {
 
             {/* Add Tenant Modal */}
             {showAddTenant && (
-                <div className="modal-overlay">
-                    <div className="modal">
-                        <div className="modal-header">
-                            <h3>Add New Tenant</h3>
-                            <button className="close-btn" onClick={() => setShowAddTenant(false)}>×</button>
+                <div className="modal-overlay" onClick={(e) => {
+                    if (e.target === e.currentTarget) {
+                        setShowAddTenant(false);
+                    }
+                }}>
+                    <div className="modal-container form-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header form-modal-header">
+                            <div className="modal-title-content">
+                                <span className="modal-icon">👤</span>
+                                <h3 className="modal-title">Add Tenant</h3>
+                            </div>
+                            <button 
+                                aria-label="Close" 
+                                className="modal-close" 
+                                onClick={() => setShowAddTenant(false)}
+                            >
+                                ×
+                            </button>
                         </div>
                         <div className="modal-body">
-                            <div className="form-group">
-                                <label>Account ID (optional):</label>
-                                <input
-                                    type="number"
-                                    value={newTenant.accountId}
-                                    onChange={(e) => setNewTenant({...newTenant, accountId: e.target.value})}
-                                    placeholder="Enter account ID"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Monthly Rent per Bed (₱):</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    value={newTenant.monthlyRent}
-                                    onChange={(e) => setNewTenant({...newTenant, monthlyRent: e.target.value})}
-                                    placeholder="Enter monthly rent per bed"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Utilities per Bed (₱):</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    value={newTenant.utilities}
-                                    onChange={(e) => setNewTenant({...newTenant, utilities: e.target.value})}
-                                    placeholder="Enter utilities cost per bed"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Deposit (₱):</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    value={newTenant.deposit}
-                                    onChange={(e) => setNewTenant({...newTenant, deposit: e.target.value})}
-                                    placeholder="Enter deposit amount"
-                                />
-                            </div>
-                            <div className="pricing-summary">
-                                <h4>💰 Pricing Summary (Per Bed)</h4>
-                                <div className="summary-item">
-                                    <span>Monthly Rent per Bed:</span>
-                                    <span>₱{parseFloat(newTenant.monthlyRent || 0).toLocaleString()}</span>
+                            <form className="modal-form">
+                                <div className="modal-form-group">
+                                    <label className="modal-form-label">Account ID (optional):</label>
+                                    <input
+                                        type="number"
+                                        className="modal-form-input"
+                                        value={newTenant.accountId}
+                                        onChange={(e) => setNewTenant({...newTenant, accountId: e.target.value})}
+                                        placeholder="Enter account ID"
+                                    />
                                 </div>
-                                <div className="summary-item">
-                                    <span>Utilities per Bed:</span>
-                                    <span>₱{parseFloat(newTenant.utilities || 0).toLocaleString()}</span>
+                                <div className="modal-form-group">
+                                    <label className="modal-form-label">Monthly Rent per Bed (₱):</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        className="modal-form-input"
+                                        value={newTenant.monthlyRent}
+                                        onChange={(e) => setNewTenant({...newTenant, monthlyRent: e.target.value})}
+                                        placeholder="Enter monthly rent per bed"
+                                    />
                                 </div>
-                                <div className="summary-item total">
-                                    <span>Total per Bed:</span>
-                                    <span>₱{(parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)).toLocaleString()}</span>
+                                <div className="modal-form-group">
+                                    <label className="modal-form-label">Utilities per Bed (₱):</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        className="modal-form-input"
+                                        value={newTenant.utilities}
+                                        onChange={(e) => setNewTenant({...newTenant, utilities: e.target.value})}
+                                        placeholder="Enter utilities cost per bed"
+                                    />
                                 </div>
-                                <div className="summary-item">
-                                    <span>Room Total (4 beds):</span>
-                                    <span>₱{(((parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)) * 4)).toFixed(2)}</span>
+                                <div className="modal-form-group">
+                                    <label className="modal-form-label">Deposit (₱):</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        className="modal-form-input"
+                                        value={newTenant.deposit}
+                                        onChange={(e) => setNewTenant({...newTenant, deposit: e.target.value})}
+                                        placeholder="Enter deposit amount"
+                                    />
                                 </div>
-                            </div>
-                            <div className="form-group">
-                                <label>Emergency Contact Name:</label>
-                                <input
-                                    type="text"
-                                    value={newTenant.emergencyContact.name}
-                                    onChange={(e) => setNewTenant({
-                                        ...newTenant,
-                                        emergencyContact: {...newTenant.emergencyContact, name: e.target.value}
-                                    })}
-                                    placeholder="Enter emergency contact name"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Emergency Contact Phone:</label>
-                                <input
-                                    type="text"
-                                    value={newTenant.emergencyContact.phone}
-                                    onChange={(e) => setNewTenant({
-                                        ...newTenant,
-                                        emergencyContact: {...newTenant.emergencyContact, phone: e.target.value}
-                                    })}
-                                    placeholder="Enter emergency contact phone"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Emergency Contact Relationship:</label>
-                                <input
-                                    type="text"
-                                    value={newTenant.emergencyContact.relationship}
-                                    onChange={(e) => setNewTenant({
-                                        ...newTenant,
-                                        emergencyContact: {...newTenant.emergencyContact, relationship: e.target.value}
-                                    })}
-                                    placeholder="Enter relationship (e.g., Parent, Sibling, Friend)"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Special Requirements:</label>
-                                <textarea
-                                    value={newTenant.specialRequirements}
-                                    onChange={(e) => setNewTenant({...newTenant, specialRequirements: e.target.value})}
-                                    placeholder="Enter any special requirements"
-                                    rows="3"
-                                />
-                            </div>
+                                <div className="pricing-summary">
+                                    <h4>💰 Pricing Summary (Per Bed)</h4>
+                                    <div className="summary-item">
+                                        <span>Monthly Rent per Bed:</span>
+                                        <span>₱{parseFloat(newTenant.monthlyRent || 0).toLocaleString()}</span>
+                                    </div>
+                                    <div className="summary-item">
+                                        <span>Utilities per Bed:</span>
+                                        <span>₱{parseFloat(newTenant.utilities || 0).toLocaleString()}</span>
+                                    </div>
+                                    <div className="summary-item total">
+                                        <span>Total per Bed:</span>
+                                        <span>₱{(parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)).toLocaleString()}</span>
+                                    </div>
+                                    <div className="summary-item">
+                                        <span>Room Total (4 beds):</span>
+                                        <span>₱{(((parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)) * 4)).toFixed(2)}</span>
+                                    </div>
+                                </div>
+                                <div className="modal-form-group">
+                                    <label className="modal-form-label">Emergency Contact Name:</label>
+                                    <input
+                                        type="text"
+                                        className="modal-form-input"
+                                        value={newTenant.emergencyContact.name}
+                                        onChange={(e) => setNewTenant({
+                                            ...newTenant,
+                                            emergencyContact: {...newTenant.emergencyContact, name: e.target.value}
+                                        })}
+                                        placeholder="Enter emergency contact name"
+                                    />
+                                </div>
+                                <div className="modal-form-group">
+                                    <label className="modal-form-label">Emergency Contact Phone:</label>
+                                    <input
+                                        type="text"
+                                        className="modal-form-input"
+                                        value={newTenant.emergencyContact.phone}
+                                        onChange={(e) => setNewTenant({
+                                            ...newTenant,
+                                            emergencyContact: {...newTenant.emergencyContact, phone: e.target.value}
+                                        })}
+                                        placeholder="Enter emergency contact phone"
+                                    />
+                                </div>
+                                <div className="modal-form-group">
+                                    <label className="modal-form-label">Emergency Contact Relationship:</label>
+                                    <input
+                                        type="text"
+                                        className="modal-form-input"
+                                        value={newTenant.emergencyContact.relationship}
+                                        onChange={(e) => setNewTenant({
+                                            ...newTenant,
+                                            emergencyContact: {...newTenant.emergencyContact, relationship: e.target.value}
+                                        })}
+                                        placeholder="Enter relationship (e.g., Parent, Sibling, Friend)"
+                                    />
+                                </div>
+                                <div className="modal-form-group">
+                                    <label className="modal-form-label">Special Requirements:</label>
+                                    <textarea
+                                        className="modal-form-textarea"
+                                        value={newTenant.specialRequirements}
+                                        onChange={(e) => setNewTenant({...newTenant, specialRequirements: e.target.value})}
+                                        placeholder="Enter any special requirements"
+                                        rows="3"
+                                    />
+                                </div>
+                            </form>
                         </div>
                         <div className="modal-footer">
-                            <button className="btn-secondary" onClick={() => setShowAddTenant(false)}>Cancel</button>
-                            <button className="btn-primary" onClick={handleAddTenant}>Add Tenant</button>
+                            <button 
+                                className="modal-btn modal-btn-secondary" 
+                                onClick={() => setShowAddTenant(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                className="modal-btn modal-btn-primary" 
+                                onClick={handleAddTenant}
+                            >
+                                Add Tenant
+                            </button>
                         </div>
                     </div>
                 </div>

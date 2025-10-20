@@ -8,6 +8,7 @@ import AdminMaintenancePage from '../pages/AdminMaintenancePage'
 import PricingPage from '../pages/PricingPage'
 import AccountingPage from '../pages/AccountingPage'
 import SuperAdminPage from '../pages/SuperAdminPage'
+import ArchivedTenantsPage from '../pages/ArchivedTenantsPage'
 import { useAuth } from '../context/AuthContext'
 
 const AppRoutes = () => {
@@ -73,6 +74,16 @@ const AppRoutes = () => {
       <Route 
         path="/admin/pricing" 
         element={isAuthenticated ? <PricingPage /> : <Navigate to="/login" replace />} 
+      />
+      <Route 
+        path="/archived-tenants" 
+        element={
+          isAuthenticated
+            ? (user?.role === 'Admin' || user?.role === 'SuperAdmin'
+                ? <ArchivedTenantsPage />
+                : <Navigate to="/" replace />)
+            : <Navigate to="/login" replace />
+        } 
       />
       
       {/* Fallback Route - Redirect to landing page instead of login */}

@@ -1,11 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { paymentService } from '../services/paymentService';
 import '../components/AccountingPage.css';
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/AuthContext';
+import { notificationService } from '../services/notificationService';
+import {
+    fetchTenantsWithBillingInfo,
+    fetchPaymentStats,
+    fetchPendingPayments,
+    getFilteredTenants,
+    handlePayButtonClick,
+    handlePaymentSubmit,
+    handleConfirmPayment,
+    handleQuickPaySubmit,
+    toNumber,
+    formatCurrency,
+    formatDate,
+    getDueDateStatus
+} from '../functions/accounting';
 
 
 const AccountingPage = () => {
     const { logout } = useAuth()
+    const [notifications, setNotifications] = useState([])
+    const [unread, setUnread] = useState(0)
+    const [showNotif, setShowNotif] = useState(false)
     const [tenants, setTenants] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedTenant, setSelectedTenant] = useState(null);
@@ -40,238 +57,53 @@ const AccountingPage = () => {
     });
 
     useEffect(() => {
-        fetchTenantsWithBillingInfo();
-        fetchPaymentStats();
-        fetchPendingPayments();
+        fetchTenantsWithBillingInfo(setLoading, setTenants, setErrorModal);
+        fetchPaymentStats(setStats, setErrorModal);
+        fetchPendingPayments(setPendingPayments, setErrorModal);
     }, []);
 
-    const fetchTenantsWithBillingInfo = async () => {
-        try {
-            setLoading(true);
-            console.log('💰 AccountingPage: Fetching tenants with billing info...');
-            const tenantsData = await paymentService.getTenantsWithBillingInfo();
-            console.log('💰 AccountingPage: Tenants fetched successfully:', tenantsData.length);
-            setTenants(tenantsData);
-        } catch (error) {
-            console.error('❌ AccountingPage: Error fetching tenants:', error);
-            if (error.response?.status === 401) {
-                console.log('💰 AccountingPage: Authentication error, showing empty state');
-                setTenants([]);
+    useEffect(() => {
+        let id
+        const loadNotifs = async () => {
+            try {
+                const data = await notificationService.fetchMyNotifications(25)
+                setNotifications(data)
+                setUnread((data || []).filter(n => !n.isRead).length)
+            } catch (e) {
+                console.warn('Failed to fetch notifications', e)
             }
-            setErrorModal({
-                open: true,
-                title: 'Failed to load tenants',
-                message: 'We could not load tenant billing information.',
-                details: error?.response?.data?.message || error.message || 'Unknown error'
-            });
-        } finally {
-            setLoading(false);
         }
-    };
-
-    const fetchPaymentStats = async () => {
-        try {
-            const statsData = await paymentService.getPaymentStats();
-            setStats(statsData);
-        } catch (error) {
-            console.error('Error fetching payment stats:', error);
-            setErrorModal({
-                open: true,
-                title: 'Failed to load payment statistics',
-                message: 'Please try refreshing the page.',
-                details: error?.response?.data?.message || error.message || 'Unknown error'
-            });
-        }
-    };
-
-    const fetchPendingPayments = async () => {
-        try {
-            const payments = await paymentService.getPendingPayments();
-            setPendingPayments(payments || []);
-        } catch (error) {
-            console.error('Error fetching pending payments:', error);
-            setErrorModal({
-                open: true,
-                title: 'Failed to load pending payments',
-                message: 'Please try refreshing the page.',
-                details: error?.response?.data?.message || error.message || 'Unknown error'
-            });
-        }
-    };
+        loadNotifs()
+        id = setInterval(loadNotifs, 15000)
+        return () => id && clearInterval(id)
+    }, [])
 
     // Derived view of tenants for UI (search, filter, sort)
-    const getFilteredTenants = () => {
-        const q = searchQuery.trim().toLowerCase();
-        let list = [...tenants];
-        if (q) {
-            list = list.filter(t => (
-                (t.name || '').toLowerCase().includes(q) ||
-                (t.email || '').toLowerCase().includes(q) ||
-                String(t.roomNumber || '').toLowerCase().includes(q)
-            ));
-        }
-        if (balanceFilter === 'withBalance') {
-            list = list.filter(t => parseFloat(t.outstandingBalance) > 0);
-        } else if (balanceFilter === 'zero') {
-            list = list.filter(t => parseFloat(t.outstandingBalance) === 0);
-        }
-        list.sort((a, b) => {
-            if (sortKey === 'balanceDesc') return parseFloat(b.outstandingBalance) - parseFloat(a.outstandingBalance);
-            if (sortKey === 'balanceAsc') return parseFloat(a.outstandingBalance) - parseFloat(b.outstandingBalance);
-            if (sortKey === 'name') return (a.name || '').localeCompare(b.name || '');
-            if (sortKey === 'room') return String(a.roomNumber || '').localeCompare(String(b.roomNumber || ''));
-            return 0;
-        });
-        return list;
-    };
-
-    const filteredTenants = getFilteredTenants();
+    const filteredTenants = getFilteredTenants(tenants, searchQuery, balanceFilter, sortKey);
     const totalOutstanding = filteredTenants.reduce((sum, t) => sum + parseFloat(t.outstandingBalance || 0), 0);
 
-    const handlePayButtonClick = async (tenant) => {
-        setSelectedTenant(tenant);
-        setShowPaymentForm(true);
-        
-        // Reset payment form
-        setNewPayment({
-            amount: '',
-            paymentMethod: 'Cash',
-            reference: '',
-            description: ''
-        });
-
-        // Fetch payment history for this tenant
-        try {
-            const history = await paymentService.getPaymentsByTenant(tenant.id);
-            setPaymentHistory(history);
-        } catch (error) {
-            console.error('Error fetching payment history:', error);
-            setPaymentHistory([]);
-            setErrorModal({
-                open: true,
-                title: 'Failed to load payment history',
-                message: 'Payment history could not be loaded for this tenant.',
-                details: error?.response?.data?.message || error.message || 'Unknown error'
-            });
-        }
+    const handlePayButtonClickWrapper = async (tenant) => {
+        await handlePayButtonClick(tenant, setSelectedTenant, setShowPaymentForm, setPaymentHistory);
     };
 
-    const handlePaymentSubmit = async (e) => {
-        e.preventDefault();
-        
-        if (!newPayment.amount || parseFloat(newPayment.amount) <= 0) {
-            setErrorModal({ open: true, title: 'Invalid amount', message: 'Please enter a valid payment amount.', details: '' });
-            return;
-        }
-
-        try {
-            const paymentData = {
-                amount: parseFloat(newPayment.amount),
-                paymentMethod: newPayment.paymentMethod,
-                reference: newPayment.reference || null,
-                description: newPayment.description || null
-            };
-
-            await paymentService.processPayment(selectedTenant.id, paymentData);
-            
-            // Refresh data
-            await fetchTenantsWithBillingInfo();
-            await fetchPaymentStats();
-            
-            // Refresh payment history
-            const history = await paymentService.getPaymentsByTenant(selectedTenant.id);
-            setPaymentHistory(history);
-            
-            // Reset form
-            setNewPayment({
-                amount: '',
-                paymentMethod: 'Cash',
-                reference: '',
-                description: ''
-            });
-            
-            setErrorModal({
-                open: true,
-                title: 'Payment recorded',
-                message: 'The payment was recorded successfully.',
-                details: ''
-            });
-        } catch (error) {
-            console.error('Error processing payment:', error);
-            const msg = error.response?.data?.message || error.message || 'Unknown error';
-            setErrorModal({
-                open: true,
-                title: 'Error processing payment',
-                message: 'There was a problem recording this payment.',
-                details: msg
-            });
-        }
+    const handlePaymentSubmitWrapper = async (e) => {
+        await handlePaymentSubmit(e, selectedTenant, newPayment, setNewPayment, setShowPaymentForm, setSelectedTenant, setPaymentHistory, setErrorModal);
     };
 
-    const handleConfirmPayment = async (paymentId) => {
-        try {
-            setConfirming(prev => ({ ...prev, [paymentId]: true }));
-            
-            await paymentService.confirmPayment(paymentId);
-            
-            // Remove confirmed payment from list
-            setPendingPayments(prev => prev.filter(payment => payment.id !== paymentId));
-            
-            // Refresh tenant data to update balances
-            await fetchTenantsWithBillingInfo();
-            await fetchPaymentStats();
-            
-            setErrorModal({
-                open: true,
-                title: 'Payment Confirmed',
-                message: 'Payment has been confirmed and tenant balance has been updated.',
-                details: ''
-            });
-            
-        } catch (error) {
-            console.error('Error confirming payment:', error);
-            setErrorModal({
-                open: true,
-                title: 'Failed to confirm payment',
-                message: 'Please try again.',
-                details: error?.response?.data?.message || error.message || 'Unknown error'
-            });
-        } finally {
-            setConfirming(prev => ({ ...prev, [paymentId]: false }));
-        }
+    const handleConfirmPaymentWrapper = async (paymentId) => {
+        await handleConfirmPayment(paymentId, setConfirming, setPendingPayments, 
+            () => fetchTenantsWithBillingInfo(setLoading, setTenants, setErrorModal),
+            () => fetchPaymentStats(setStats, setErrorModal),
+            setErrorModal
+        );
+    };
+
+    const handleQuickPaySubmitWrapper = async (e) => {
+        await handleQuickPaySubmit(e, quickPayTenant, quickPay, setQuickPay, setShowQuickPay, setQuickPayTenant, setQuickPaySearch, setErrorModal);
     };
 
     const handleLogout = () => {
-        logout()
-    }
-
-    // Formatting helpers with guards
-    const toNumber = (value) => {
-        const n = Number(value);
-        return Number.isFinite(n) ? n : 0;
-    };
-
-    const formatCurrency = (amount) => {
-        const n = toNumber(amount);
-        return `₱${n.toLocaleString()}`;
-    };
-
-    const formatDate = (dateString) => {
-        const d = new Date(dateString);
-        return isNaN(d.getTime()) ? 'Invalid date' : d.toLocaleDateString();
-    };
-
-
-    const getDueDateStatus = (dueDate) => {
-        if (!dueDate) return { status: 'unknown', color: '#9E9E9E' };
-        
-        const due = new Date(dueDate);
-        const now = new Date();
-        const diffDays = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
-        
-        if (diffDays < 0) return { status: 'overdue', color: '#F44336' };
-        if (diffDays <= 7) return { status: 'due-soon', color: '#FF9800' };
-        return { status: 'current', color: '#4CAF50' };
+        logout();
     };
 
     if (loading) {
@@ -301,11 +133,30 @@ const AccountingPage = () => {
                         </div>
 
                         <div className="header-actions">
+                            <div style={{ position: 'relative' }}>
+                                <button className="refresh-button" onClick={() => setShowNotif(p => !p)} aria-label="Notifications">🔔{unread > 0 && <span className="pending-badge">{unread}</span>}</button>
+                                {showNotif && (
+                                    <div style={{ position: 'absolute', right: 0, top: '100%', width: 360, background: '#fff', border: '1px solid #ddd', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', zIndex: 10 }}>
+                                        <div style={{ padding: 12, borderBottom: '1px solid #eee', fontWeight: 700 }}>Notifications</div>
+                                        <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                                            {notifications.length === 0 ? (
+                                                <div style={{ padding: 12, color: '#777' }}>No notifications</div>
+                                            ) : notifications.map(n => (
+                                                <div key={n.id} style={{ padding: 12, borderBottom: '1px solid #f0f0f0', background: n.isRead ? '#fff' : '#f9fbff' }}>
+                                                    <div style={{ fontWeight: 600, marginBottom: 4 }}>{n.title}</div>
+                                                    <div style={{ fontSize: 13, color: '#444' }}>{n.message}</div>
+                                                    <div style={{ fontSize: 12, color: '#999', marginTop: 6 }}>{new Date(n.createdAt).toLocaleString()}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                             <button
                             onClick={() => {
-                                fetchTenantsWithBillingInfo();
-                                fetchPaymentStats();
-                                fetchPendingPayments();
+                                fetchTenantsWithBillingInfo(setLoading, setTenants, setErrorModal);
+                                fetchPaymentStats(setStats, setErrorModal);
+                                fetchPendingPayments(setPendingPayments, setErrorModal);
                             }}
                             className="refresh-button"
                             >
@@ -580,7 +431,7 @@ const AccountingPage = () => {
                                                 <td>
                                                     <button
                                                         className="btn-action btn-action--primary"
-                                                        onClick={() => handlePayButtonClick(tenant)}
+                                                        onClick={() => handlePayButtonClickWrapper(tenant)}
                                                     >
                                                         <span className="btn-action-icon">💳</span>
                                                         <span>Pay</span>
@@ -671,7 +522,7 @@ const AccountingPage = () => {
                                             <div className="payment-actions">
                                                 <button
                                                     className="btn-confirm"
-                                                    onClick={() => handleConfirmPayment(payment.id)}
+                                                    onClick={() => handleConfirmPaymentWrapper(payment.id)}
                                                     disabled={confirming[payment.id]}
                                                 >
                                                     {confirming[payment.id] ? (
@@ -762,7 +613,7 @@ const AccountingPage = () => {
                             </div>
 
                             {/* Payment Form */}
-                            <form onSubmit={handlePaymentSubmit} className="payment-form">
+                            <form onSubmit={handlePaymentSubmitWrapper} className="payment-form">
                                 <h4>Payment Details</h4>
                                 
                                 <div className="form-group">
@@ -977,37 +828,7 @@ const AccountingPage = () => {
                             )}
 
                             {/* Payment Inputs */}
-                            <form
-                                onSubmit={async (e) => {
-                                    e.preventDefault();
-                                    if (!quickPayTenant) {
-                                        setErrorModal({ open: true, title: 'No tenant selected', message: 'Please select a tenant to proceed.', details: '' });
-                                        return;
-                                    }
-                                    const amount = parseFloat(quickPay.amount);
-                                    if (!amount || amount <= 0) {
-                                        setErrorModal({ open: true, title: 'Invalid amount', message: 'Please enter a valid payment amount.', details: '' });
-                                        return;
-                                    }
-                                    try {
-                                        await paymentService.processPayment(quickPayTenant.id, {
-                                            amount,
-                                            paymentMethod: quickPay.paymentMethod,
-                                            reference: null,
-                                            description: quickPay.description || null
-                                        });
-                                        await fetchTenantsWithBillingInfo();
-                                        await fetchPaymentStats();
-                                        setErrorModal({ open: true, title: 'Payment recorded', message: 'The payment was recorded successfully.', details: '' });
-                                        setShowQuickPay(false);
-                                    } catch (error) {
-                                        const msg = error.response?.data?.message || error.message || 'Unknown error';
-                                        setErrorModal({ open: true, title: 'Error processing payment', message: 'There was a problem recording this payment.', details: msg });
-                                    }
-                                }}
-                                className="payment-form"
-                                style={{ marginTop: 16 }}
-                            >
+                            <form onSubmit={handleQuickPaySubmitWrapper} className="payment-form" style={{ marginTop: 16 }}>
                                 <div className="form-group">
                                     <label htmlFor="qpAmount">Payment Amount (₱):</label>
                                     <input

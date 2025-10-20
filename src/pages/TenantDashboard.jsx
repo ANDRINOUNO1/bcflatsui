@@ -1,11 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { maintenanceService } from '../services/maintenanceService';
-import { tenantService } from '../services/tenantService';
-import { roomService } from '../services/roomService';
-import { paymentService } from '../services/paymentService';
+import { notificationService } from '../services/notificationService';
 import '../components/TenantDashboard.css';
+import {
+    fetchTenantData,
+    fetchPaymentHistory,
+    handlePaymentSubmit,
+    openPaymentModal,
+    closePaymentModal,
+    handleRefresh,
+    getFloorSuffix,
+    formatCurrency,
+    getCorrectedOutstanding
+} from '../functions/tenantDashboard';
 
 const TenantDashboard = () => {
   const { user } = useAuth();
@@ -30,154 +38,64 @@ const TenantDashboard = () => {
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [paymentHistoryLoading, setPaymentHistoryLoading] = useState(false);
   const [showPaymentHistory, setShowPaymentHistory] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
 
-  const fetchTenantData = useCallback(async () => {
-    try {
-        setLoading(true);
-        setBillingError(false);
-        setRoomError(false);
-
-        // 1. Fetch the primary tenant data first
-        const tenantResponse = await tenantService.getTenantByAccountId(user?.id);
-
-        if (tenantResponse) {
-            setTenantData(tenantResponse);
-
-            // 2. Run all subsequent, independent fetches in parallel
-            await Promise.all([
-                tenantService.getTenantBillingInfo(tenantResponse.id)
-                    .then(setBillingInfo)
-                    .catch(error => {
-                        console.error('Error fetching billing info:', error);
-                        setBillingError(true);
-                    }),
-
-                tenantResponse.roomId ? roomService.getRoomById(tenantResponse.roomId)
-                    .then(setRoomData)
-                    .catch(error => {
-                        console.error('Error fetching room data:', error);
-                        setRoomError(true);
-                    }) : Promise.resolve(),
-
-                maintenanceService.listByTenant(tenantResponse.id)
-                    .then(response => setMaintenanceRequests(response || []))
-                    .catch(maintenanceError => {
-                        console.error('Error fetching maintenance requests:', maintenanceError);
-                        setMaintenanceRequests([]);
-                    })
-            ]);
-        }
-    } catch (error) {
-        console.error('Error fetching primary tenant data:', error);
-        setErrorModal({
-            open: true,
-            title: 'Failed to load your dashboard',
-            message: 'Please try again in a moment.',
-            details: error?.response?.data?.message || error.message || 'Unknown error'
-        });
-    } finally {
-        setLoading(false);
-        setRefreshing(false);
-    }
+  const fetchTenantDataWrapper = useCallback(async () => {
+    await fetchTenantData(user?.id, setLoading, setBillingError, setRoomError, setTenantData, setBillingInfo, setRoomData, setMaintenanceRequests, setErrorModal, setRefreshing);
   }, [user?.id]);
 
-  // Payment functions
-  const fetchPaymentHistory = useCallback(async () => {
-    if (!tenantData?.id) return;
-    
-    try {
-      setPaymentHistoryLoading(true);
-      const history = await paymentService.getPaymentsByTenant(tenantData.id, 20);
-      setPaymentHistory(history || []);
-    } catch (error) {
-      console.error('Error fetching payment history:', error);
-      setPaymentHistory([]);
-    } finally {
-      setPaymentHistoryLoading(false);
-    }
+  const fetchPaymentHistoryWrapper = useCallback(async () => {
+    await fetchPaymentHistory(tenantData?.id, setPaymentHistoryLoading, setPaymentHistory);
   }, [tenantData?.id]);
 
-  const handlePaymentSubmit = async (e) => {
-    e.preventDefault();
-    if (!tenantData?.id) return;
-
-    try {
-      setPaymentModal(prev => ({ ...prev, loading: true }));
-      
-      const paymentData = {
-        tenantId: tenantData.id,
-        amount: parseFloat(paymentForm.amount),
-        paymentMethod: paymentForm.paymentMethod,
-        description: paymentForm.description || 'Rent payment',
-        referenceNumber: paymentForm.referenceNumber || null,
-        status: 'Pending' // Create as pending payment
-      };
-
-      await paymentService.createPendingPayment(tenantData.id, paymentData);
-      
-      // Refresh data after successful payment submission
-      await fetchTenantData();
-      await fetchPaymentHistory();
-      
-      // Reset form and close modal
-      setPaymentForm({
-        amount: '',
-        paymentMethod: 'gcash',
-        description: '',
-        referenceNumber: ''
-      });
-      setPaymentModal({ open: false, loading: false });
-      
-      // Show success message
-      setErrorModal({
-        open: true,
-        title: 'Payment Submitted',
-        message: 'Your payment has been submitted and is pending confirmation from accounting.',
-        details: 'You will be notified once the payment is confirmed and your balance is updated.'
-      });
-      
-    } catch (error) {
-      console.error('Error submitting payment:', error);
-      setErrorModal({
-        open: true,
-        title: 'Payment Submission Failed',
-        message: 'Unable to submit your payment. Please try again.',
-        details: error?.response?.data?.message || error.message || 'Unknown error'
-      });
-    } finally {
-      setPaymentModal(prev => ({ ...prev, loading: false }));
-    }
+  const handlePaymentSubmitWrapper = async (e) => {
+    await handlePaymentSubmit(e, tenantData, paymentForm, setPaymentModal, setPaymentForm, setErrorModal, fetchTenantDataWrapper, fetchPaymentHistoryWrapper);
   };
 
-  const openPaymentModal = () => {
-    setPaymentForm(prev => ({
-      ...prev,
-      amount: billingInfo?.outstandingBalance || ''
-    }));
-    setPaymentModal({ open: true, loading: false });
+  const openPaymentModalWrapper = () => {
+    openPaymentModal(setPaymentModal);
   };
 
-  const closePaymentModal = () => {
-    setPaymentModal({ open: false, loading: false });
-    setPaymentForm({
-      amount: '',
-      paymentMethod: 'gcash',
-      description: '',
-      referenceNumber: ''
-    });
+  const closePaymentModalWrapper = () => {
+    closePaymentModal(setPaymentModal, setPaymentForm);
+  };
+
+  const handleRefreshWrapper = async () => {
+    await handleRefresh(setRefreshing, fetchTenantDataWrapper, fetchPaymentHistoryWrapper);
   };
 
   useEffect(() => {
-    if (user?.id) {
-      fetchTenantData();
+    if (user) {
+      fetchTenantDataWrapper();
     }
-  }, [user, fetchTenantData]);
+  }, [user, fetchTenantDataWrapper]);
+
+  // Poll notifications
+  useEffect(() => {
+    let intervalId;
+    const load = async () => {
+      try {
+        const data = await notificationService.fetchMyNotifications(20);
+        setNotifications(data);
+        setUnreadCount(data.filter(n => !n.isRead).length);
+      } catch {
+        // ignore
+      }
+    };
+    if (user) {
+      load();
+      intervalId = setInterval(load, 15000);
+    }
+    return () => intervalId && clearInterval(intervalId);
+  }, [user]);
 
   useEffect(() => {
     if (showPaymentHistory && tenantData?.id) {
-      fetchPaymentHistory();
+      fetchPaymentHistoryWrapper();
     }
-  }, [showPaymentHistory, tenantData?.id, fetchPaymentHistory]);
+  }, [showPaymentHistory, tenantData?.id, fetchPaymentHistoryWrapper]);
 
   // Handle body scroll when modals are open
   useEffect(() => {
@@ -192,33 +110,6 @@ const TenantDashboard = () => {
       document.body.classList.remove('modal-open');
     };
   }, [paymentModal.open, errorModal.open]);
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchTenantData();
-  };
-
-  const getFloorSuffix = (floor) => {
-    const n = Number(floor);
-    if (!Number.isFinite(n)) return '';
-    const j = n % 10, k = n % 100;
-    if (j === 1 && k !== 11) return 'st';
-    if (j === 2 && k !== 12) return 'nd';
-    if (j === 3 && k !== 13) return 'rd';
-    return 'th';
-  };
-
-  const toNumber = (value) => {
-    const n = Number(value);
-    return Number.isFinite(n) ? n : 0;
-  };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: 'PHP'
-    }).format(toNumber(amount));
-  };
 
   if (loading) {
     return (
@@ -260,20 +151,31 @@ const TenantDashboard = () => {
             setErrorModal({ open: false, title: '', message: '', details: '' });
           }
         }}>
-          <div className="error-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="error-modal-header">
-              <div className="error-modal-title-content">
-                <span className="error-modal-icon">⚠️</span>
-                <h3 className="error-modal-title">{errorModal.title || 'Something went wrong'}</h3>
+          <div className="modal-container error-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header error-modal-header">
+              <div className="modal-title-content error-modal-title-content">
+                <span className="modal-icon error-modal-icon">⚠️</span>
+                <h3 className="modal-title error-modal-title">{errorModal.title || 'Something went wrong'}</h3>
               </div>
-              <button aria-label="Close" className="error-modal-close" onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}>×</button>
+              <button 
+                aria-label="Close" 
+                className="modal-close error-modal-close" 
+                onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })}
+              >
+                ×
+              </button>
             </div>
-            <div className="error-modal-body">
+            <div className="modal-body error-modal-body">
               {errorModal.message && <p className="error-modal-message">{errorModal.message}</p>}
               {errorModal.details && <pre className="error-modal-details">{errorModal.details}</pre>}
-              <div className="error-modal-actions">
-                <button onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })} className="error-modal-button">Close</button>
-              </div>
+            </div>
+            <div className="modal-footer error-modal-actions">
+              <button 
+                onClick={() => setErrorModal({ open: false, title: '', message: '', details: '' })} 
+                className="modal-btn modal-btn-primary"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
@@ -287,23 +189,62 @@ const TenantDashboard = () => {
               </h1>
               <p className="tenant-welcome-subtitle">Here's an overview of your home and account.</p>
             </div>
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="tenant-refresh-button"
-            >
-              {refreshing ? (
+            <div className="tenant-header-actions" style={{ position: 'relative', display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => setShowNotifications(prev => !prev)}
+                className="tenant-refresh-button"
+                aria-label="Notifications"
+                style={{ position: 'relative' }}
+              >
+                🔔 {unreadCount > 0 && <span className="notif-badge">{unreadCount}</span>}
+              </button>
+              {showNotifications && (
                 <>
-                  <div className="tenant-refresh-spinner"></div>
-                  Refreshing...
-                </>
-              ) : (
-                <>
-                  <span>🔄</span>
-                  Refresh
+                  <div 
+                    style={{ 
+                      position: 'fixed', 
+                      top: 0, 
+                      left: 0, 
+                      right: 0, 
+                      bottom: 0, 
+                      zIndex: 40 
+                    }}
+                    onClick={() => setShowNotifications(false)}
+                  />
+                  <div className="notif-dropdown">
+                    <div style={{ padding: 12, borderBottom: '1px solid #eee', fontWeight: 700 }}>Notifications</div>
+                    <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                      {notifications.length === 0 ? (
+                        <div style={{ padding: 12, color: '#777' }}>No notifications</div>
+                      ) : notifications.map(n => (
+                        <div key={n.id} style={{ padding: 12, borderBottom: '1px solid #f0f0f0', background: n.isRead ? '#fff' : '#f9fbff' }}>
+                          <div style={{ fontWeight: 600, marginBottom: 4 }}>{n.title}</div>
+                          <div style={{ fontSize: 13, color: '#444' }}>{n.message}</div>
+                          <div style={{ fontSize: 12, color: '#999', marginTop: 6 }}>{new Date(n.createdAt).toLocaleString()}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </>
               )}
-            </button>
+              <button
+                onClick={handleRefreshWrapper}
+                disabled={refreshing}
+                className="tenant-refresh-button"
+              >
+                {refreshing ? (
+                  <>
+                    <div className="tenant-refresh-spinner"></div>
+                    Refreshing...
+                  </>
+                ) : (
+                  <>
+                    <span>🔄</span>
+                    Refresh
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -315,7 +256,7 @@ const TenantDashboard = () => {
               <div>
                 <p className="stats-card-label">Current Balance</p>
                 <p className="stats-card-value">
-                  {billingError ? 'Unavailable' : formatCurrency(billingInfo?.outstandingBalance || 0)}
+                  {billingError ? 'Unavailable' : formatCurrency(getCorrectedOutstanding(billingInfo))}
                 </p>
               </div>
               <div className="stats-card-icon-wrapper stats-card-icon-wrapper--red">
@@ -460,7 +401,7 @@ const TenantDashboard = () => {
               <div className="info-row info-row--no-border">
                 <span className="info-label">Outstanding Balance:</span>
                 <span className="info-value info-value--red">
-                  {billingError ? 'Unavailable' : formatCurrency(billingInfo?.outstandingBalance || 0)}
+                  {billingError ? 'Unavailable' : formatCurrency(getCorrectedOutstanding(billingInfo))}
                 </span>
               </div>
             </div>
@@ -469,8 +410,8 @@ const TenantDashboard = () => {
           <div className="card-actions-footer">
             <button 
               className="btn-action btn-action--primary"
-              onClick={openPaymentModal}
-              disabled={billingError || !billingInfo?.outstandingBalance}
+              onClick={openPaymentModalWrapper}
+              disabled={billingError || getCorrectedOutstanding(billingInfo) <= 0}
             >
               <span className="btn-action-icon">💳</span>
               <span>Pay Now</span>
@@ -715,27 +656,27 @@ const TenantDashboard = () => {
       {paymentModal.open && (
         <div className="modal-overlay" onClick={(e) => {
           if (e.target === e.currentTarget) {
-            closePaymentModal();
+            closePaymentModalWrapper();
           }
         }}>
-          <div className="payment-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="payment-modal-header">
-              <div className="payment-modal-title-content">
-                <span className="payment-modal-icon">💳</span>
-                <h3 className="payment-modal-title">Make Payment</h3>
+          <div className="modal-container payment-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header payment-modal-header">
+              <div className="modal-title-content payment-modal-title-content">
+                <span className="modal-icon payment-modal-icon">💳</span>
+                <h3 className="modal-title payment-modal-title">Make Payment</h3>
               </div>
               <button 
                 aria-label="Close" 
-                className="payment-modal-close" 
-                onClick={closePaymentModal}
+                className="modal-close payment-modal-close" 
+                onClick={closePaymentModalWrapper}
                 disabled={paymentModal.loading}
               >
                 ×
               </button>
             </div>
             
-            <form onSubmit={handlePaymentSubmit} className="payment-form">
-              <div className="payment-form-body">
+            <div className="modal-body payment-modal-body">
+              <form onSubmit={handlePaymentSubmitWrapper} className="modal-form payment-form">
                 <div className="payment-summary">
                   <div className="payment-summary-item">
                     <span className="payment-summary-label">Outstanding Balance:</span>
@@ -807,36 +748,35 @@ const TenantDashboard = () => {
                     placeholder="Transaction reference (optional)"
                   />
                 </div>
-              </div>
-              
-              <div className="payment-form-footer">
-                <button 
-                  type="button" 
-                  className="btn-cancel"
-                  onClick={closePaymentModal}
-                  disabled={paymentModal.loading}
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  className="btn-submit"
-                  disabled={paymentModal.loading || !paymentForm.amount}
-                >
-                  {paymentModal.loading ? (
-                    <>
-                      <div className="btn-spinner"></div>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <span>💳</span>
-                      Process Payment
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
+            <div className="modal-footer payment-modal-footer">
+              <button 
+                type="button" 
+                className="modal-btn modal-btn-secondary"
+                onClick={closePaymentModalWrapper}
+                disabled={paymentModal.loading}
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                className="modal-btn modal-btn-primary"
+                onClick={handlePaymentSubmitWrapper}
+                disabled={paymentModal.loading || !paymentForm.amount}
+              >
+                {paymentModal.loading ? (
+                  <>
+                    <div className="modal-btn-loading"></div>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    💳 Process Payment
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

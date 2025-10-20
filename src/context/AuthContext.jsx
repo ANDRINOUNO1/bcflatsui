@@ -117,7 +117,7 @@ const logout = () => {
   }
 
   const refreshAuth = async () => {
-    const token = localStorage.getItem('token')
+    const token = sessionStorage.getItem('token')
     if (token) {
       try {
         const userData = await authService.validateToken(token)
@@ -126,14 +126,14 @@ const logout = () => {
           setIsAuthenticated(true)
           return true
         } else {
-          localStorage.removeItem('token')
+          sessionStorage.removeItem('token')
           setUser(null)
           setIsAuthenticated(false)
           return false
         }
       } catch (error) {
         console.error('Token refresh failed:', error)
-        localStorage.removeItem('token')
+        sessionStorage.removeItem('token')
         setUser(null)
         setIsAuthenticated(false)
         return false

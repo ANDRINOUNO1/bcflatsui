@@ -11,22 +11,22 @@ const api = axios.create({
   },
 });
 
-// Add token to requests if available
+// Add token to requests if available (per-tab using sessionStorage)
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = sessionStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// Handle token expiration
+// Handle token expiration (per-tab)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
       window.location.href = '/login';
     }
     return Promise.reject(error);
@@ -34,17 +34,17 @@ api.interceptors.response.use(
 );
 
 export const authService = {
-  // Login user
+  // Login user (stores token per-tab in sessionStorage)
   async login(email, password) {
     try {
       const response = await api.post('/accounts/authenticate', { email, password , ipAddress: '127.0.0.1' });
       const { jwtToken, refreshToken, ...user } = response.data;
 
-      // Store token and user data
-      localStorage.setItem('token', jwtToken);
-      localStorage.setItem('user', JSON.stringify(user));
+      // Store token and user data in sessionStorage (per-tab)
+      sessionStorage.setItem('token', jwtToken);
+      sessionStorage.setItem('user', JSON.stringify(user));
       if (refreshToken) {
-        localStorage.setItem('refreshToken', refreshToken);
+        sessionStorage.setItem('refreshToken', refreshToken);
       }
 
       return { token: jwtToken, user };
@@ -89,14 +89,14 @@ export const authService = {
   // Update user profile
   async updateProfile(profileData) {
     try {
-      const user = JSON.parse(localStorage.getItem('user'));
+      const user = JSON.parse(sessionStorage.getItem('user'));
       if (!user) throw new Error('User not authenticated');
       
       const response = await api.put(`/accounts/${user.id}`, profileData);
       
-      // Update stored user data
+      // Update stored user data in sessionStorage
       const updatedUser = { ...user, ...profileData };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      sessionStorage.setItem('user', JSON.stringify(updatedUser));
       
       return updatedUser;
     } catch (error) {
@@ -123,23 +123,23 @@ export const authService = {
     }
   },
 
-  // Logout user
+  // Logout user (only affects current tab)
   logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('refreshToken');
+    sessionStorage.removeItem('user');
     window.location.href = '/login';
   },
 
-  // Get current user
+  // Get current user from current tab
   getCurrentUser() {
-    const user = localStorage.getItem('user');
+    const user = sessionStorage.getItem('user');
     return user ? JSON.parse(user) : null;
   },
 
-  // Check if user is authenticated
+  // Check if user is authenticated in current tab
   isAuthenticated() {
-    return !!localStorage.getItem('token');
+    return !!sessionStorage.getItem('token');
   }
 };
 
