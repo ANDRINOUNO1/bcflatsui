@@ -1,10 +1,6 @@
 import axios from 'axios';
 
-// Resolve API base URL from environment with sensible fallbacks
-// Priority:
-// 1) Vite env var VITE_API_BASE_URL
-// 2) Same host as frontend with port 3000
-// 3) http://localhost:3000/api
+
 const ENV_BASE = import.meta?.env?.VITE_API_BASE_URL;
 const FALLBACK_BASE = `${window.location?.protocol || 'http:'}//${window.location?.hostname || 'localhost'}:${window.location?.port || '5173'}`;
 const DEFAULT_API = 'http://localhost:3000/api';
