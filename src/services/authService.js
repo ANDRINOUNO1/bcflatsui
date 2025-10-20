@@ -1,15 +1,4 @@
-import axios from 'axios';
-
-// Backend API configuration
-const API_BASE_URL = 'http://localhost:3000/api';
-
-// Create axios instance with default config
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+import { apiService as api } from './apiService';
 
 // Add token to requests if available (per-tab using sessionStorage)
 api.interceptors.request.use((config) => {

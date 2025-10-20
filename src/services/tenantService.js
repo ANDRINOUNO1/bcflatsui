@@ -1,7 +1,5 @@
 import { apiService } from './apiService';
 
-const API_BASE_URL = 'http://localhost:3000/api';
-
 // Helper function to format currency in Philippine Peso
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-PH', {
@@ -14,7 +12,7 @@ export const tenantService = {
     // Get tenant statistics
     getTenantStats: async () => {
         try {
-            const response = await apiService.get(`${API_BASE_URL}/tenants/stats`);
+            const response = await apiService.get(`/tenants/stats`);
             return response.data;
         } catch (error) {
             console.error('Error fetching tenant stats:', error);
@@ -26,7 +24,7 @@ export const tenantService = {
     getAllTenants: async (floor) => {
         try {
             const params = floor && floor !== 'all' ? `?floor=${encodeURIComponent(floor)}` : '';
-            const response = await apiService.get(`${API_BASE_URL}/tenants${params}`);
+            const response = await apiService.get(`/tenants${params}`);
             return response.data;
         } catch (error) {
             console.error('Error fetching all tenants:', error);
@@ -37,7 +35,7 @@ export const tenantService = {
     // Get active tenants
     getActiveTenants: async () => {
         try {
-            const response = await apiService.get(`${API_BASE_URL}/tenants/active`);
+            const response = await apiService.get(`/tenants/active`);
             return response.data;
         } catch (error) {
             console.error('Error fetching active tenants:', error);
@@ -48,7 +46,7 @@ export const tenantService = {
     // Get tenant by ID
     getTenantById: async (tenantId) => {
         try {
-            const response = await apiService.get(`${API_BASE_URL}/tenants/${tenantId}`);
+            const response = await apiService.get(`/tenants/${tenantId}`);
             return response.data;
         } catch (error) {
             console.error('Error fetching tenant:', error);
@@ -59,7 +57,7 @@ export const tenantService = {
     // Create new tenant
     createTenant: async (tenantData) => {
         try {
-            const response = await apiService.post(`${API_BASE_URL}/tenants`, tenantData);
+            const response = await apiService.post(`/tenants`, tenantData);
             return response.data;
         } catch (error) {
             console.error('Error creating tenant:', error);
@@ -70,7 +68,7 @@ export const tenantService = {
     // Update tenant
     updateTenant: async (tenantId, updateData) => {
         try {
-            const response = await apiService.put(`${API_BASE_URL}/tenants/${tenantId}`, updateData);
+            const response = await apiService.put(`/tenants/${tenantId}`, updateData);
             return response.data;
         } catch (error) {
             console.error('Error updating tenant:', error);
@@ -81,7 +79,7 @@ export const tenantService = {
     // Delete tenant (Admin only)
     deleteTenant: async (tenantId) => {
         try {
-            const response = await apiService.delete(`${API_BASE_URL}/tenants/${tenantId}`);
+            const response = await apiService.delete(`/tenants/${tenantId}`);
             return response.data;
         } catch (error) {
             console.error('Error deleting tenant:', error);
@@ -92,7 +90,7 @@ export const tenantService = {
     // Check in tenant
     checkInTenant: async (tenantId) => {
         try {
-            const response = await apiService.patch(`${API_BASE_URL}/tenants/${tenantId}/checkin`);
+            const response = await apiService.patch(`/tenants/${tenantId}/checkin`);
             return response.data;
         } catch (error) {
             console.error('Error checking in tenant:', error);
@@ -103,7 +101,7 @@ export const tenantService = {
     // Check out tenant
     checkOutTenant: async (tenantId) => {
         try {
-            const response = await apiService.patch(`${API_BASE_URL}/tenants/${tenantId}/checkout`);
+            const response = await apiService.patch(`/tenants/${tenantId}/checkout`);
             return response.data;
         } catch (error) {
             console.error('Error checking out tenant:', error);
@@ -114,7 +112,7 @@ export const tenantService = {
     // Update tenant status
     updateTenantStatus: async (tenantId, status) => {
         try {
-            const response = await apiService.patch(`${API_BASE_URL}/tenants/${tenantId}/status`, { status });
+            const response = await apiService.patch(`/tenants/${tenantId}/status`, { status });
             return response.data;
         } catch (error) {
             console.error('Error updating tenant status:', error);
@@ -125,7 +123,7 @@ export const tenantService = {
     // Get tenants by account
     getTenantsByAccount: async (accountId) => {
         try {
-            const response = await apiService.get(`${API_BASE_URL}/tenants/search/account/${accountId}`);
+            const response = await apiService.get(`/tenants/search/account/${accountId}`);
             return response.data;
         } catch (error) {
             console.error('Error fetching tenants by account:', error);
@@ -136,7 +134,7 @@ export const tenantService = {
     // Get tenants by room
     getTenantsByRoom: async (roomId) => {
         try {
-            const response = await apiService.get(`${API_BASE_URL}/tenants/search/room/${roomId}`);
+            const response = await apiService.get(`/tenants/search/room/${roomId}`);
             return response.data;
         } catch (error) {
             console.error('Error fetching tenants by room:', error);
@@ -147,7 +145,7 @@ export const tenantService = {
     // Get tenant by account ID
     getTenantByAccountId: async (accountId) => {
         try {
-            const response = await apiService.get(`${API_BASE_URL}/tenants/search/account/${accountId}`);
+            const response = await apiService.get(`/tenants/search/account/${accountId}`);
             return response.data.length > 0 ? response.data[0] : null;
         } catch (error) {
             console.error('Error fetching tenant by account ID:', error);
@@ -158,7 +156,7 @@ export const tenantService = {
     // Get comprehensive billing information for a specific tenant
     getTenantBillingInfo: async (tenantId) => {
         try {
-            const response = await apiService.get(`${API_BASE_URL}/tenants/${tenantId}/billing-info`);
+            const response = await apiService.get(`/tenants/${tenantId}/billing-info`);
             return response.data;
         } catch (error) {
             console.error('Error fetching tenant billing info:', error);

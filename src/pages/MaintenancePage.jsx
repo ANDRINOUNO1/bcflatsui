@@ -3,7 +3,7 @@ import { maintenanceService } from "../services/maintenanceService";
 import { roomService } from "../services/roomService";
 import { tenantService } from "../services/tenantService"; 
 import { useAuth } from "../context/AuthContext";
-import "../components/MaintenancePage.css";
+import "../components/Maintenancepage.css";
 
 const MaintenancePage = () => {
   const { user } = useAuth();
