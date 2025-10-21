@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/bclogo.jpg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BC Flats</title>
+    <script type="module" crossorigin src="/assets/index-GHf-V_lQ.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Bo7AUWTj.css">
+    <script>
+      // Handle routing for static sites
+      (function() {
+        const currentPath = window.location.pathname;
+        const validRoutes = [
+          '/', '/login', '/dashboard', '/tenant', '/accounting', 
+          '/super-admin', '/admin/maintenance', '/admin/pricing', 
+          '/archived-tenants', '/tenant/maintenance', '/404'
+        ];
+        
+        // Check if it's an asset file
+        const isAsset = currentPath.startsWith('/assets/') || 
+                       currentPath.includes('.') && 
+                       (currentPath.endsWith('.js') || 
+                        currentPath.endsWith('.css') || 
+                        currentPath.endsWith('.jpg') || 
+                        currentPath.endsWith('.png') || 
+                        currentPath.endsWith('.svg') || 
+                        currentPath.endsWith('.ico'));
+        
+        // If it's not a valid route and not an asset, redirect to 404
+        if (!validRoutes.includes(currentPath) && !isAsset) {
+          window.location.replace('/404');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

@@ -6,28 +6,43 @@ import './App.css'
 import './components/BootstrapOverrides.css'
 
 function App() {
-  // Handle routing for static sites
+  // Handle routing for static sites - more comprehensive approach
   React.useEffect(() => {
-    const handleRouteChange = () => {
-      // Check if the current path exists in our routes
-      const validRoutes = ['/', '/login', '/dashboard', '/tenant', '/accounting', '/super-admin', '/admin/maintenance', '/admin/pricing', '/archived-tenants', '/tenant/maintenance'];
+    const handleInvalidRoute = () => {
       const currentPath = window.location.pathname;
       
+      // List of all valid routes
+      const validRoutes = [
+        '/', '/login', '/dashboard', '/tenant', '/accounting', 
+        '/super-admin', '/admin/maintenance', '/admin/pricing', 
+        '/archived-tenants', '/tenant/maintenance', '/404'
+      ];
+      
+      // Check if it's an asset file
+      const isAsset = currentPath.startsWith('/assets/') || 
+                     currentPath.includes('.') && 
+                     (currentPath.endsWith('.js') || 
+                      currentPath.endsWith('.css') || 
+                      currentPath.endsWith('.jpg') || 
+                      currentPath.endsWith('.png') || 
+                      currentPath.endsWith('.svg') || 
+                      currentPath.endsWith('.ico'));
+      
       // If it's not a valid route and not an asset, redirect to 404
-      if (!validRoutes.includes(currentPath) && !currentPath.startsWith('/assets/') && !currentPath.startsWith('/bclogo.jpg') && !currentPath.startsWith('/samplepic.jpg') && !currentPath.startsWith('/vite.svg')) {
-        // Force React Router to show 404 page
-        window.history.replaceState(null, '', '/404');
+      if (!validRoutes.includes(currentPath) && !isAsset) {
+        // Use window.location.replace to avoid history issues
+        window.location.replace('/404');
       }
     };
 
-    // Check on initial load
-    handleRouteChange();
+    // Check immediately
+    handleInvalidRoute();
 
-    // Listen for route changes
-    window.addEventListener('popstate', handleRouteChange);
+    // Also check when the page loads
+    window.addEventListener('load', handleInvalidRoute);
     
     return () => {
-      window.removeEventListener('popstate', handleRouteChange);
+      window.removeEventListener('load', handleInvalidRoute);
     };
   }, []);
 
