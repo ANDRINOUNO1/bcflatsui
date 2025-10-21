@@ -9,6 +9,7 @@ import PricingPage from '../pages/PricingPage'
 import AccountingDashboard from '../pages/AccountingDashboard'
 import SuperAdminPage from '../pages/SuperAdminPage'
 import ArchivedTenantsPage from '../pages/ArchivedTenantsPage'
+import NotFoundPage from '../pages/NotFoundPage'
 import { useAuth } from '../context/AuthContext'
 
 const AppRoutes = () => {
@@ -86,8 +87,8 @@ const AppRoutes = () => {
         } 
       />
       
-      {/* Fallback Route - Redirect to landing page instead of login */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* 404 Not Found Route */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )
 }
