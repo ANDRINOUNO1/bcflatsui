@@ -6,7 +6,7 @@ import TenantDashboard from '../pages/TenantDashboard'
 import MaintenancePage from '../pages/MaintenancePage'
 import AdminMaintenancePage from '../pages/AdminMaintenancePage'
 import PricingPage from '../pages/PricingPage'
-import AccountingPage from '../pages/AccountingPage'
+import AccountingDashboard from '../pages/AccountingDashboard'
 import SuperAdminPage from '../pages/SuperAdminPage'
 import ArchivedTenantsPage from '../pages/ArchivedTenantsPage'
 import { useAuth } from '../context/AuthContext'
@@ -54,7 +54,7 @@ const AppRoutes = () => {
         element={
           isAuthenticated
             ? (user?.role === 'Accounting' || user?.role === 'Admin' || user?.role === 'SuperAdmin'
-                ? <AccountingPage />
+                ? <AccountingDashboard />
                 : <Navigate to="/tenant" replace />)
             : <Navigate to="/login" replace />
         } 

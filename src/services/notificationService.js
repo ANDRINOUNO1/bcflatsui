@@ -13,16 +13,16 @@ export const notificationService = {
     const res = await apiService.post('/notifications/broadcast', { title, message, roles });
     return res.data;
   },
-  async getAllAnnouncements() {
-    const res = await apiService.get('/notifications/announcements');
+  async getAllAnnouncements(limit = 50, offset = 0) {
+    const res = await apiService.get(`/notifications/announcements?limit=${limit}&offset=${offset}`);
     return res.data;
   },
   async deleteAnnouncement(id) {
     const res = await apiService.delete(`/notifications/announcements/${id}`);
     return res.data;
   },
-  async suspendAnnouncement(id, suspended) {
-    const res = await apiService.patch(`/notifications/announcements/${id}/suspend`, { suspended });
+  async suspendAnnouncement(id) {
+    const res = await apiService.post(`/notifications/announcements/${id}/suspend`);
     return res.data;
   }
 };

@@ -5,7 +5,9 @@ import '../components/PricingPage.css';
 
 const PricingPage = () => {
   const { user } = useAuth();
+  const [allRooms, setAllRooms] = useState([]);
   const [rooms, setRooms] = useState([]);
+  const [floorFilter, setFloorFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editingRoom, setEditingRoom] = useState(null);
@@ -21,7 +23,7 @@ const PricingPage = () => {
       setLoading(true);
       setError(null);
       const roomsData = await roomService.getAllRooms();
-      setRooms(roomsData || []);
+      setAllRooms(roomsData || []);
     } catch (err) {
       console.error('Error loading rooms:', err);
       setError('Failed to load rooms. Please try again.');
@@ -33,6 +35,15 @@ const PricingPage = () => {
   useEffect(() => {
     loadRooms();
   }, []);
+
+  // Recompute visible rooms whenever filter or allRooms changes
+  useEffect(() => {
+    if (floorFilter === 'all') {
+      setRooms(allRooms);
+    } else {
+      setRooms(allRooms.filter(r => String(r.floor) === String(floorFilter)));
+    }
+  }, [floorFilter, allRooms]);
 
   const handleEditClick = (room) => {
     setEditingRoom(room);
@@ -143,10 +154,23 @@ const PricingPage = () => {
     <div className="pricing-page">
       {/* Header */}
       <header className="page-header">
-        <h1>Room Pricing Management</h1>
+        <h1>💰 Room Pricing Management</h1>
         <p className="page-subtitle">
           Manage pricing for all rooms in the building.
         </p>
+        <div className="pricing-filters">
+          <label htmlFor="floorFilter">Floor:</label>
+          <select
+            id="floorFilter"
+            value={floorFilter}
+            onChange={(e) => setFloorFilter(e.target.value)}
+          >
+            <option value="all">All Floors (2nd-9th)</option>
+            {Array.from(new Set(allRooms.map(r => r.floor))).sort((a, b) => a - b).map(f => (
+              <option key={f} value={f}>{f}{f === 1 ? 'st' : f === 2 ? 'nd' : f === 3 ? 'rd' : 'th'} Floor</option>
+            ))}
+          </select>
+        </div>
       </header>
 
       {/* Message */}
@@ -258,13 +282,13 @@ const PricingPage = () => {
 
       {/* Summary Section */}
       <div className="summary-section">
-        <h3>Pricing Summary</h3>
+        <h3>Pricing Summary {floorFilter !== 'all' ? `- ${floorFilter}${floorFilter === 1 ? 'st' : floorFilter === 2 ? 'nd' : floorFilter === 3 ? 'rd' : 'th'} Floor` : '- All Floors'}</h3>
         <div className="summary-grid">
           <div className="summary-card">
             <h4>Average Rent per Bed</h4>
             <p className="summary-value">
               {formatCurrency(
-                rooms.reduce((sum, room) => sum + (room.monthlyRent || 0), 0) / rooms.length
+                rooms.length > 0 ? rooms.reduce((sum, room) => sum + (room.monthlyRent || 0), 0) / rooms.length : 0
               )}
             </p>
           </div>
@@ -272,7 +296,7 @@ const PricingPage = () => {
             <h4>Average Utilities per Bed</h4>
             <p className="summary-value">
               {formatCurrency(
-                rooms.reduce((sum, room) => sum + (room.utilities || 0), 0) / rooms.length
+                rooms.length > 0 ? rooms.reduce((sum, room) => sum + (room.utilities || 0), 0) / rooms.length : 0
               )}
             </p>
           </div>
@@ -280,7 +304,7 @@ const PricingPage = () => {
             <h4>Average Total per Bed</h4>
             <p className="summary-value">
               {formatCurrency(
-                rooms.reduce((sum, room) => sum + (room.monthlyRent || 0) + (room.utilities || 0), 0) / rooms.length
+                rooms.length > 0 ? rooms.reduce((sum, room) => sum + (room.monthlyRent || 0) + (room.utilities || 0), 0) / rooms.length : 0
               )}
             </p>
           </div>

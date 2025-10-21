@@ -284,3 +284,219 @@ export const getQuickPayFilteredTenants = (tenants, quickPaySearch) => {
         return matchesSearch && outstanding > 0;
     });
 };
+
+// UI Helper Functions
+export const getStatsCards = (billingStats, billingTenants) => {
+    if (!billingStats) return [];
+    
+    return [
+        {
+            icon: '💰',
+            color: '#10b981',
+            label: 'Total Payments',
+            value: formatCurrency(billingStats.totalAmount)
+        },
+        {
+            icon: '📊',
+            color: '#3b82f6',
+            label: 'Payment Count',
+            value: billingStats.totalPayments
+        },
+        {
+            icon: '👥',
+            color: '#8b5cf6',
+            label: 'Active Tenants',
+            value: billingTenants.length
+        },
+        {
+            icon: '⚠️',
+            color: '#ef4444',
+            label: 'Outstanding Balances',
+            value: billingTenants.filter(t => parseFloat(t.outstandingBalance) > 0).length
+        }
+    ];
+};
+
+export const getOutstandingStats = (billingTenants) => {
+    const tenantsWithBalances = billingTenants.filter(t => parseFloat(t.outstandingBalance || 0) > 0);
+    const totalOutstanding = tenantsWithBalances.reduce((sum, t) => sum + parseFloat(t.outstandingBalance || 0), 0);
+    
+    return {
+        tenantsWithBalances,
+        totalOutstanding,
+        stats: [
+            {
+                icon: '⚠️',
+                color: '#ef4444',
+                label: 'Tenants with Balances',
+                value: tenantsWithBalances.length
+            },
+            {
+                icon: '💰',
+                color: '#dc2626',
+                label: 'Total Outstanding',
+                value: formatCurrency(totalOutstanding)
+            }
+        ]
+    };
+};
+
+export const getPaymentHistoryFilteredTenants = (billingTenants, searchQuery) => {
+    const q = searchQuery.trim().toLowerCase();
+    return billingTenants.filter(tenant => 
+        !q || 
+        tenant.name.toLowerCase().includes(q) ||
+        tenant.email.toLowerCase().includes(q) ||
+        tenant.roomNumber.toString().includes(q)
+    );
+};
+
+export const getTableHeaders = (type) => {
+    const commonStyles = {
+        background: '#f8fafc',
+        color: '#374151',
+        fontWeight: 600,
+        textAlign: 'left',
+        padding: '0.75rem 1rem',
+        borderBottom: '1px solid #e5e7eb',
+        fontSize: '0.875rem',
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em'
+    };
+
+    switch (type) {
+        case 'tenant-billing':
+            return [
+                { label: 'Tenant', style: commonStyles },
+                { label: 'Room', style: commonStyles },
+                { label: 'Monthly Rent', style: commonStyles },
+                { label: 'Outstanding Balance', style: commonStyles },
+                { label: 'Last Payment', style: commonStyles },
+                { label: 'Next Due', style: commonStyles },
+                { label: 'Actions', style: commonStyles }
+            ];
+        case 'outstanding-balances':
+            return [
+                { label: 'Tenant', style: commonStyles },
+                { label: 'Room', style: commonStyles },
+                { label: 'Outstanding Balance', style: commonStyles },
+                { label: 'Last Payment', style: commonStyles },
+                { label: 'Next Due', style: commonStyles },
+                { label: 'Actions', style: commonStyles }
+            ];
+        case 'payment-history':
+            return [
+                { label: 'Date', style: commonStyles },
+                { label: 'Amount', style: commonStyles },
+                { label: 'Method', style: commonStyles },
+                { label: 'Reference', style: commonStyles },
+                { label: 'Description', style: commonStyles },
+                { label: 'Balance After', style: commonStyles }
+            ];
+        default:
+            return [];
+    }
+};
+
+export const getStatusFilterOptions = () => [
+    { id: 'all', label: 'All', icon: '📊' },
+    { id: 'withBalance', label: 'Outstanding', icon: '⚠️' },
+    { id: 'zero', label: 'Paid', icon: '✅' }
+];
+
+export const getSortOptions = () => [
+    { value: 'balanceDesc', label: '💰 Balance: High → Low' },
+    { value: 'balanceAsc', label: '💰 Balance: Low → High' },
+    { value: 'name', label: '👤 Name (A-Z)' },
+    { value: 'room', label: '🏠 Room Number' }
+];
+
+export const getPaymentMethodOptions = () => [
+    { value: 'Cash', label: 'Cash' },
+    { value: 'Bank Transfer', label: 'Bank Transfer' },
+    { value: 'Credit Card', label: 'Credit Card' },
+    { value: 'Debit Card', label: 'Debit Card' },
+    { value: 'Check', label: 'Check' },
+    { value: 'Mobile Payment', label: 'Mobile Payment' }
+];
+
+export const getQuickPayMethodOptions = () => [
+    { value: 'Cash', label: 'Cash' },
+    { value: 'Bank Transfer', label: 'Bank Transfer' },
+    { value: 'Mobile Payment', label: 'Mobile Payment' }
+];
+
+export const getReportPeriodOptions = () => [
+    { value: 'daily', label: 'Daily' },
+    { value: 'weekly', label: 'Weekly' },
+    { value: 'monthly', label: 'Monthly' },
+    { value: 'yearly', label: 'Yearly' }
+];
+
+export const getTransactionFilterOptions = () => [
+    { value: '', label: 'All Methods' },
+    { value: 'Cash', label: 'Cash' },
+    { value: 'Bank Transfer', label: 'Bank Transfer' },
+    { value: 'Check', label: 'Check' }
+];
+
+export const getEmptyStateConfig = (type) => {
+    const configs = {
+        'no-tenants': {
+            icon: '📊',
+            title: 'No Tenants Found',
+            message: 'No tenants match your current search or filter criteria.'
+        },
+        'no-pending-payments': {
+            icon: '✅',
+            title: 'No Pending Payments',
+            message: 'All payments have been confirmed. Check back later for new payment submissions.'
+        },
+        'no-outstanding-balances': {
+            icon: '✅',
+            title: 'No Outstanding Balances',
+            message: 'All tenants are up to date with their payments.'
+        },
+        'no-payment-history': {
+            icon: '📊',
+            title: 'No Payment History',
+            message: 'No payment history found for this tenant.'
+        },
+        'select-tenant': {
+            icon: '👤',
+            title: 'Select a Tenant',
+            message: 'Choose a tenant from the dropdown above to view their payment history.'
+        },
+        'no-transactions': {
+            icon: '📋',
+            title: 'No Transactions Found',
+            message: 'No transactions match your current filter criteria.'
+        },
+        'no-reports': {
+            icon: '📊',
+            title: 'No Reports Available',
+            message: 'Select a period and generate a report'
+        }
+    };
+    
+    return configs[type] || configs['no-tenants'];
+};
+
+export const getSummaryData = (filteredTenants, billingTenants) => {
+    const totalOutstanding = filteredTenants.reduce((sum, t) => sum + parseFloat(t.outstandingBalance || 0), 0);
+    
+    return {
+        showing: filteredTenants.length,
+        total: billingTenants.length,
+        totalOutstanding
+    };
+};
+
+export const getPendingPaymentsSummary = (pendingPayments) => {
+    const totalAmount = pendingPayments.reduce((sum, payment) => sum + payment.amount, 0);
+    
+    return {
+        count: pendingPayments.length,
+        totalAmount
+    };
+};

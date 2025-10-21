@@ -13,6 +13,37 @@ const LoginPage = () => {
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
 
+  // Helper functions for error handling
+  const getErrorType = (errorMessage) => {
+    if (errorMessage.includes('Account not found')) return 'not-found'
+    if (errorMessage.includes('Wrong credentials')) return 'wrong-credentials'
+    if (errorMessage.includes('Account pending approval')) return 'pending'
+    if (errorMessage.includes('Account suspended')) return 'suspended'
+    if (errorMessage.includes('Account rejected')) return 'rejected'
+    if (errorMessage.includes('Account deleted')) return 'deleted'
+    return 'general'
+  }
+
+  const getErrorIcon = (errorMessage) => {
+    if (errorMessage.includes('Account not found')) return '🔍'
+    if (errorMessage.includes('Wrong credentials')) return '🔒'
+    if (errorMessage.includes('Account pending approval')) return '⏳'
+    if (errorMessage.includes('Account suspended')) return '🚫'
+    if (errorMessage.includes('Account rejected')) return '❌'
+    if (errorMessage.includes('Account deleted')) return '🗑️'
+    return '⚠️'
+  }
+
+  const getErrorTitle = (errorMessage) => {
+    if (errorMessage.includes('Account not found')) return 'Account Not Found'
+    if (errorMessage.includes('Wrong credentials')) return 'Wrong Credentials'
+    if (errorMessage.includes('Account pending approval')) return 'Account Pending Approval'
+    if (errorMessage.includes('Account suspended')) return 'Account Suspended'
+    if (errorMessage.includes('Account rejected')) return 'Account Rejected'
+    if (errorMessage.includes('Account deleted')) return 'Account Deleted'
+    return 'Login Failed'
+  }
+
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({
@@ -55,6 +86,7 @@ const LoginPage = () => {
     }
 
     setIsLoading(true)
+    setErrors({}) // Clear previous errors
     
     try {
       const result = await login(formData.email, formData.password)
@@ -74,17 +106,46 @@ const LoginPage = () => {
           navigate('/') 
         }
       } else {
+        // Handle different error types properly
+        let errorMessage = 'Login failed. Please try again.'
+        
+        if (typeof result.error === 'string') {
+          errorMessage = result.error
+        } else if (typeof result.error === 'object' && result.error !== null) {
+          // Handle object errors from backend
+          if (result.error.message) {
+            errorMessage = result.error.message
+          } else if (result.error.error) {
+            errorMessage = result.error.error
+          } else if (result.error.details) {
+            errorMessage = result.error.details
+          } else {
+            errorMessage = 'Invalid credentials. Please check your email and password.'
+          }
+        }
+
         if (result.status === 'Pending') {
           setErrors({ 
-            general: result.error,
+            general: errorMessage,
             pending: true 
           })
         } else {
-          setErrors({ general: result.error })
+          setErrors({ general: errorMessage })
         }
       }
     } catch (error) {
-      setErrors({ general: 'Login failed. Please try again.' })
+      console.error('Login error:', error)
+      let errorMessage = 'Login failed. Please try again.'
+      
+      if (error.message) {
+        errorMessage = error.message
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error
+      }
+      
+      setErrors({ general: errorMessage })
     } finally {
       setIsLoading(false)
     }
@@ -102,13 +163,13 @@ const LoginPage = () => {
 
           <form className="login-form" onSubmit={handleSubmit}>
             {errors.general && (
-              <div className={`error-message general ${errors.pending ? 'pending' : ''}`}>
+              <div className={`error-message general ${errors.pending ? 'pending' : ''} ${getErrorType(errors.general)}`}>
                 <div className="error-icon">
-                  {errors.pending ? '⏳' : '⚠️'}
+                  {getErrorIcon(errors.general)}
                 </div>
                 <div className="error-content">
                   <div className="error-title">
-                    {errors.pending ? 'Account Pending Approval' : 'Login Failed'}
+                    {getErrorTitle(errors.general)}
                   </div>
                   <div className="error-text">
                     {errors.general}
@@ -174,10 +235,10 @@ const LoginPage = () => {
               {isLoading ? (
                 <span className="loading">
                   <span className="spinner"></span>
-                  Signing in...
+                  <span className="loading-text">Logging in...</span>
                 </span>
               ) : (
-                'Sign In'
+                'Log In'
               )}
             </button>
           </form>

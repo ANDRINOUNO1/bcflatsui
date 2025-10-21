@@ -78,9 +78,38 @@ const login = async (email, password) => {
     
     return { success: true }
   } catch (error) {
+    // Parse specific error messages from backend
+    let errorMessage = 'Login failed. Please try again.'
+    
+    if (error.message) {
+      // Handle specific error messages from backend
+      if (error.message.includes('Account not found')) {
+        errorMessage = 'Account not found. Please check your email address.'
+      } else if (error.message.includes('Wrong credentials')) {
+        errorMessage = 'Wrong credentials. Please check your password.'
+      } else if (error.message.includes('Account pending approval')) {
+        errorMessage = 'Account pending approval. Please wait for superadmin approval.'
+        return { 
+          success: false, 
+          error: errorMessage,
+          status: 'Pending'
+        }
+      } else if (error.message.includes('Account suspended')) {
+        errorMessage = 'Account suspended. Please contact support for assistance.'
+      } else if (error.message.includes('Account rejected')) {
+        errorMessage = 'Account rejected. Please contact support for more information.'
+      } else if (error.message.includes('Account deleted')) {
+        errorMessage = 'Account deleted. Please contact support for assistance.'
+      } else if (error.message.includes('Account not active')) {
+        errorMessage = 'Account not active. Please contact support.'
+      } else {
+        errorMessage = error.message
+      }
+    }
+    
     return { 
       success: false, 
-      error: error.message || 'Login failed' 
+      error: errorMessage 
     }
   }
 }

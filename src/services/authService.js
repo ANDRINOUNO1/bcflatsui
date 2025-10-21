@@ -49,7 +49,9 @@ export const authService = {
       return { token: jwtToken, user };
     } catch (error) {
       console.error('❌ Login error:', error.response?.data || error.message);
-      throw new Error(error.response?.data || 'Login failed');
+      // Extract the message from the error response
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Login failed';
+      throw new Error(errorMessage);
     }
   },
 
