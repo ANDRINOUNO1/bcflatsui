@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import '../components/LoginPage.css'
@@ -12,6 +12,27 @@ const LoginPage = () => {
   })
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
+  const [loadingMessage, setLoadingMessage] = useState('Logging in...')
+
+  // Loading message cycling effect
+  useEffect(() => {
+    if (!isLoading) return
+
+    const messages = [
+      'Logging in...',
+      'Verifying credentials...',
+      'Accessing your account...',
+      'Almost there...'
+    ]
+    
+    let messageIndex = 0
+    const interval = setInterval(() => {
+      messageIndex = (messageIndex + 1) % messages.length
+      setLoadingMessage(messages[messageIndex])
+    }, 1500)
+
+    return () => clearInterval(interval)
+  }, [isLoading])
 
   // Helper functions for error handling
   const getErrorType = (errorMessage) => {
@@ -162,6 +183,21 @@ const LoginPage = () => {
           </div>
 
           <form className="login-form" onSubmit={handleSubmit}>
+            {isLoading && (
+              <div className="loading-overlay">
+                <div className="loading-content">
+                  <div className="loading-spinner-large">
+                    <div className="spinner-ring"></div>
+                    <div className="spinner-ring"></div>
+                    <div className="spinner-ring"></div>
+                  </div>
+                  <div className="loading-status">
+                    <h3>Please wait...</h3>
+                    <p>{loadingMessage}</p>
+                  </div>
+                </div>
+              </div>
+            )}
             {errors.general && (
               <div className={`error-message general ${errors.pending ? 'pending' : ''} ${getErrorType(errors.general)}`}>
                 <div className="error-icon">
@@ -235,7 +271,7 @@ const LoginPage = () => {
               {isLoading ? (
                 <span className="loading">
                   <span className="spinner"></span>
-                  <span className="loading-text">Logging in...</span>
+                  <span className="loading-text">{loadingMessage}</span>
                 </span>
               ) : (
                 'Log In'
