@@ -119,58 +119,77 @@ const AccountingPage = () => {
 
     return (
         <div className="accounting-page">
-            <div className="accounting-header-gradient">
-                <div className="accounting-header-container">
-                    <div className="accounting-header-content">
-                        <div>
-                            <h1 className="accounting-title">
-                            <span className="accounting-icon">💰</span>
-                            Accounting & Payments
-                            </h1>
-                            <p className="accounting-subtitle">
-                            Manage tenant payments and track outstanding balances
-                            </p>
+            {/* Top Navigation Bar */}
+            <div className="top-nav-bar">
+                <div className="top-nav-content">
+                    <div className="nav-left">
+                        <div className="nav-icon">🏢</div>
+                        <span className="nav-title">Admin Dashboard</span>
+                    </div>
+                    <div className="nav-right">
+                        <div className="notification-icon">
+                            🔔
+                            <span className="notification-badge">3</span>
                         </div>
+                        <span className="user-email">admin@example.com</span>
+                        <button className="logout-btn" onClick={() => logout()}>
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
 
-                        <div className="header-actions">
-                            <div style={{ position: 'relative' }}>
-                                <button className="refresh-button" onClick={() => setShowNotif(p => !p)} aria-label="Notifications">🔔{unread > 0 && <span className="pending-badge">{unread}</span>}</button>
-                                {showNotif && (
-                                    <div style={{ position: 'absolute', right: 0, top: '100%', width: 360, background: '#fff', border: '1px solid #ddd', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', zIndex: 10 }}>
-                                        <div style={{ padding: 12, borderBottom: '1px solid #eee', fontWeight: 700 }}>Notifications</div>
-                                        <div style={{ maxHeight: 300, overflowY: 'auto' }}>
-                                            {notifications.length === 0 ? (
-                                                <div style={{ padding: 12, color: '#777' }}>No notifications</div>
-                                            ) : notifications.map(n => (
-                                                <div key={n.id} style={{ padding: 12, borderBottom: '1px solid #f0f0f0', background: n.isRead ? '#fff' : '#f9fbff' }}>
-                                                    <div style={{ fontWeight: 600, marginBottom: 4 }}>{n.title}</div>
-                                                    <div style={{ fontSize: 13, color: '#444' }}>{n.message}</div>
-                                                    <div style={{ fontSize: 12, color: '#999', marginTop: 6 }}>{new Date(n.createdAt).toLocaleString()}</div>
-                                                </div>
-                                            ))}
-                                        </div>
+            {/* Main Header */}
+            <div className="main-header">
+                <div className="main-header-content">
+                    <div className="header-left">
+                        <div className="header-icon">💰</div>
+                        <div className="header-text">
+                            <h1 className="header-title">Accounting & Payments</h1>
+                            <p className="header-subtitle">Manage tenant payments and track outstanding balances</p>
+                        </div>
+                    </div>
+                    
+                    <div className="header-actions">
+                        <div style={{ position: 'relative' }}>
+                            <button className="refresh-button" onClick={() => setShowNotif(p => !p)} aria-label="Notifications">
+                                🔔{unread > 0 && <span className="pending-badge">{unread}</span>}
+                            </button>
+                            {showNotif && (
+                                <div style={{ position: 'absolute', right: 0, top: '100%', width: 360, background: '#fff', border: '1px solid #ddd', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', zIndex: 10 }}>
+                                    <div style={{ padding: 12, borderBottom: '1px solid #eee', fontWeight: 700 }}>Notifications</div>
+                                    <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                                        {notifications.length === 0 ? (
+                                            <div style={{ padding: 12, color: '#777' }}>No notifications</div>
+                                        ) : notifications.map(n => (
+                                            <div key={n.id} style={{ padding: 12, borderBottom: '1px solid #f0f0f0', background: n.isRead ? '#fff' : '#f9fbff' }}>
+                                                <div style={{ fontWeight: 600, marginBottom: 4 }}>{n.title}</div>
+                                                <div style={{ fontSize: 13, color: '#444' }}>{n.message}</div>
+                                                <div style={{ fontSize: 12, color: '#999', marginTop: 6 }}>{new Date(n.createdAt).toLocaleString()}</div>
+                                            </div>
+                                        ))}
                                     </div>
-                                )}
-                            </div>
-                            <button
+                                </div>
+                            )}
+                        </div>
+                        <button
                             onClick={() => {
                                 fetchTenantsWithBillingInfo(setLoading, setTenants, setErrorModal);
                                 fetchPaymentStats(setStats, setErrorModal);
                                 fetchPendingPayments(setPendingPayments, setErrorModal);
                             }}
                             className="refresh-button"
-                            >
+                        >
                             <span>🔄</span>
                             Refresh Data
-                            </button>
+                        </button>
 
-                            <button
+                        <button
                             onClick={handleLogout}
                             className="logout-button"
-                            >
+                        >
                             🚪 Logout
-                            </button>
-                        </div>
+                        </button>
                     </div>
                 </div>
             </div>

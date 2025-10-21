@@ -11,6 +11,7 @@ import AdminMaintenancePage from './AdminMaintenancePage'
 import AccountingPage from './AccountingPage'
 import AddAccountPage from './AddAccountPage'
 import ArchivedTenantsPage from './ArchivedTenantsPage'
+import AnnouncementsPage from './AnnouncementsPage'
 import '../components/Dashboard.css'
 
 
@@ -127,6 +128,7 @@ const Dashboard = () => {
     { id: 'accounting', label: 'Accounting', icon: '💰' },
     { id: 'pricing', label: 'Pricing', icon: '💵' },
     { id: 'maintenance', label: 'Maintenance', icon: '🔧' },
+    { id: 'announcements', label: 'Announcements', icon: '📢' },
     { id: 'archives', label: 'Archives', icon: '📦' },
     { id: 'add-account', label: 'Add Account', icon: '👤' }
   ]
@@ -143,6 +145,8 @@ const Dashboard = () => {
         return <PricingPage />
       case 'maintenance':
         return <AdminMaintenancePage />
+      case 'announcements':
+        return <AnnouncementsPage />
       case 'archives':
         return <ArchivedTenantsPage />
       case 'add-account':

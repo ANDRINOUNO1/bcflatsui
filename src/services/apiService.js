@@ -2,7 +2,7 @@ import axios from 'axios';
 
 
 const ENV_BASE = import.meta?.env?.VITE_API_BASE_URL;
-const FALLBACK_BASE = `${window.location?.protocol || 'http:'}//${window.location?.hostname || 'localhost'}:${window.location?.port || '5173'}`;
+const FALLBACK_BASE = 'http://localhost:3000';
 const DEFAULT_API = 'http://localhost:3000/api';
 
 // Normalize to ensure "/api" suffix is present exactly once
@@ -13,7 +13,7 @@ function normalizeApiBase(baseUrl) {
     return `${trimmed}/api`;
 }
 
-const resolvedBaseURL = normalizeApiBase(ENV_BASE || FALLBACK_BASE.replace(/:\\d+$/, ':3000'));
+const resolvedBaseURL = normalizeApiBase(ENV_BASE || FALLBACK_BASE);
 
 // Create axios instance with base configuration
 const apiService = axios.create({

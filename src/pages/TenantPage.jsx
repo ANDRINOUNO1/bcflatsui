@@ -13,6 +13,14 @@ const TenantPage = () => {
     const [availableRooms, setAvailableRooms] = useState([]);
     const [availableBeds, setAvailableBeds] = useState([1, 2, 3, 4]);
     const [floorsList, setFloorsList] = useState([]);
+    
+    // Enhanced table features
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [sortField, setSortField] = useState('name');
+    const [sortDirection, setSortDirection] = useState('asc');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
     const [newTenant, setNewTenant] = useState({
         accountId: '',
         email: '',
@@ -247,6 +255,98 @@ const TenantPage = () => {
         }
     };
 
+    // Enhanced table filtering and sorting logic
+    const filteredAndSortedTenants = tenants
+        .filter(tenant => {
+            const matchesSearch = !searchTerm || 
+                tenant.account.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                tenant.account.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                tenant.account.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                tenant.room.roomNumber.toLowerCase().includes(searchTerm.toLowerCase());
+            
+            const matchesStatus = statusFilter === 'all' || 
+                (statusFilter === 'active' && tenant.status === 'Active') ||
+                (statusFilter === 'inactive' && tenant.status === 'Inactive');
+            
+            const matchesFloor = floorFilter === 'all' || tenant.room.floor === floorFilter;
+            
+            return matchesSearch && matchesStatus && matchesFloor;
+        })
+        .sort((a, b) => {
+            let aValue = a[sortField];
+            let bValue = b[sortField];
+            
+            if (sortField === 'name') {
+                aValue = a.account.firstName + ' ' + a.account.lastName;
+                bValue = b.account.firstName + ' ' + b.account.lastName;
+            } else if (sortField === 'email') {
+                aValue = a.account.email;
+                bValue = b.account.email;
+            } else if (sortField === 'room') {
+                aValue = a.room.roomNumber;
+                bValue = b.room.roomNumber;
+            } else if (sortField === 'status') {
+                aValue = a.status;
+                bValue = b.status;
+            } else if (sortField === 'balance') {
+                aValue = parseFloat(a.outstandingBalance || 0);
+                bValue = parseFloat(b.outstandingBalance || 0);
+            }
+            
+            if (typeof aValue === 'string') {
+                aValue = aValue.toLowerCase();
+                bValue = bValue.toLowerCase();
+            }
+            
+            if (sortDirection === 'asc') {
+                return aValue > bValue ? 1 : -1;
+            } else {
+                return aValue < bValue ? 1 : -1;
+            }
+        });
+
+    // Pagination logic
+    const totalPages = Math.ceil(filteredAndSortedTenants.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedTenants = filteredAndSortedTenants.slice(startIndex, startIndex + itemsPerPage);
+
+    // Sort handler
+    const handleSort = (field) => {
+        if (sortField === field) {
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(field);
+            setSortDirection('asc');
+        }
+    };
+
+    // Export CSV handler
+    const handleExportCSV = () => {
+        const csvData = filteredAndSortedTenants.map(tenant => ({
+            Name: `${tenant.account.firstName} ${tenant.account.lastName}`,
+            Email: tenant.account.email,
+            Room: tenant.room.roomNumber,
+            Bed: tenant.bedNumber,
+            Floor: tenant.room.floor,
+            Status: tenant.status,
+            'Outstanding Balance': tenant.outstandingBalance || 0
+        }));
+        
+        const csv = [
+            Object.keys(csvData[0]).join(','),
+            ...csvData.map(row => Object.values(row).join(','))
+        ].join('\n');
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'tenants.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
+    };
+
+
     if (loading) {
         return <div className="tenants-loading">Loading tenants...</div>;
     }
@@ -312,6 +412,51 @@ const TenantPage = () => {
                             + Add Tenant
                         </button>
                     </div>
+                    
+                    {/* Enhanced Filters */}
+                    <div className="enhanced-filters">
+                        <div className="filter-group">
+                            <input
+                                type="text"
+                                placeholder="Search tenants..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="search-input"
+                            />
+                        </div>
+                        
+                        <div className="filter-group">
+                            <label>Status:</label>
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                className="filter-select"
+                            >
+                                <option value="all">All</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                        
+                        <div className="filter-group">
+                            <label>Items per page:</label>
+                            <select
+                                value={itemsPerPage}
+                                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                                className="filter-select"
+                            >
+                                <option value={5}>5</option>
+                                <option value={10}>10</option>
+                                <option value={25}>25</option>
+                                <option value={50}>50</option>
+                            </select>
+                        </div>
+                        
+                        <button onClick={handleExportCSV} className="export-btn">
+                            📊 Export CSV
+                        </button>
+                    </div>
+                    
                     <div className="tenants-table-wrapper">
                         {filteredTenants.length === 0 ? (
                             <div className="tenants-empty">
@@ -321,40 +466,82 @@ const TenantPage = () => {
                         <table className="tenants-table">
                             <thead>
                                 <tr>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Room</th>
+                                    <th
+                                        className={`sortable ${sortField === 'name' ? `sorted-${sortDirection}` : ''}`}
+                                        onClick={() => handleSort('name')}
+                                    >
+                                        Name {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}
+                                    </th>
+                                    <th
+                                        className={`sortable ${sortField === 'email' ? `sorted-${sortDirection}` : ''}`}
+                                        onClick={() => handleSort('email')}
+                                    >
+                                        Email {sortField === 'email' && (sortDirection === 'asc' ? '↑' : '↓')}
+                                    </th>
+                                    <th
+                                        className={`sortable ${sortField === 'room' ? `sorted-${sortDirection}` : ''}`}
+                                        onClick={() => handleSort('room')}
+                                    >
+                                        Room {sortField === 'room' && (sortDirection === 'asc' ? '↑' : '↓')}
+                                    </th>
                                     <th>Bed</th>
                                     <th>Floor</th>
-                                    <th>Status</th>
-                                    <th>Check-in</th>
-                                    <th>Check-out</th>
-                                    <th>Monthly Rent per Bed</th>
-                                    <th>Outstanding Balance</th>
+                                    <th
+                                        className={`sortable ${sortField === 'status' ? `sorted-${sortDirection}` : ''}`}
+                                        onClick={() => handleSort('status')}
+                                    >
+                                        Status {sortField === 'status' && (sortDirection === 'asc' ? '↑' : '↓')}
+                                    </th>
+                                    <th
+                                        className={`sortable ${sortField === 'balance' ? `sorted-${sortDirection}` : ''}`}
+                                        onClick={() => handleSort('balance')}
+                                    >
+                                        Outstanding Balance {sortField === 'balance' && (sortDirection === 'asc' ? '↑' : '↓')}
+                                    </th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredTenants.map((tenant) => (
+                                {paginatedTenants.map((tenant) => (
                                     <tr
                                         key={tenant.id}
                                         className={selectedTenant?.id === tenant.id ? 'selected' : ''}
                                         onClick={() => handleTenantClick(tenant)}
                                     >
-                                        <td>{tenant.account.firstName} {tenant.account.lastName}</td>
-                                        <td>{tenant.account.email}</td>
-                                        <td>{tenant.room.roomNumber}</td>
-                                        <td>{tenant.bedNumber}</td>
-                                        <td>{tenant.room.floor}</td>
+                                        <td className="name-cell">
+                                            <div className="tenant-id">#{tenant.id}</div>
+                                            <div className="tenant-name">{tenant.account.firstName} {tenant.account.lastName}</div>
+                                        </td>
                                         <td>
-                                            <span className={`status-badge ${tenant.status.toLowerCase().replace(' ', '-')}`}>
+                                            <a href={`mailto:${tenant.account.email}`} className="tenant-email">
+                                                {tenant.account.email}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span className="room-badge">
+                                                {tenant.room.roomNumber}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span className="bed-badge">
+                                                {tenant.bedNumber}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span className="floor-badge">
+                                                {tenant.room.floor}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span className={`status-badge status-${tenant.status.toLowerCase()}`}>
                                                 {tenant.status}
                                             </span>
                                         </td>
-                                        <td>{new Date(tenant.checkInDate).toLocaleDateString()}</td>
-                                        <td>{tenant.checkOutDate ? new Date(tenant.checkOutDate).toLocaleDateString() : '-'}</td>
-                                        <td>₱{tenant.monthlyRent.toLocaleString()}</td>
-                                        <td>₱{parseFloat(tenant.outstandingBalance || 0).toLocaleString()}</td>
+                                        <td className="money-cell">
+                                            <span className={`money-amount ${tenant.outstandingBalance > 0 ? 'outstanding' : 'paid'}`}>
+                                                ₱{parseFloat(tenant.outstandingBalance || 0).toLocaleString()}
+                                            </span>
+                                        </td>
                                         <td>
                                             <div className="tenant-actions">
                                                 {tenant.status === 'Pending' && (
@@ -386,6 +573,38 @@ const TenantPage = () => {
                             </tbody>
                         </table>
                         )}
+                    </div>
+                    
+                    {/* Pagination */}
+                    <div className="pagination">
+                        <div className="pagination-info">
+                            Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredAndSortedTenants.length)} of {filteredAndSortedTenants.length} tenants
+                        </div>
+                        <div className="pagination-controls">
+                            <button
+                                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                                disabled={currentPage === 1}
+                                className="pagination-btn"
+                            >
+                                Previous
+                            </button>
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`pagination-btn ${currentPage === page ? 'active' : ''}`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                                disabled={currentPage === totalPages}
+                                className="pagination-btn"
+                            >
+                                Next
+                            </button>
+                        </div>
                     </div>
                 </div>
 
