@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { archivedTenantService } from '../services/archivedTenantService';
-import { notificationService } from '../services/notificationService';
 import './ArchivedTenantsPage.css';
 
 const ArchivedTenantsPage = () => {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
     const [archivedTenants, setArchivedTenants] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedTenant, setSelectedTenant] = useState(null);
@@ -19,23 +18,12 @@ const ArchivedTenantsPage = () => {
     const [sortBy, setSortBy] = useState('checkOutDate');
     const [sortOrder, setSortOrder] = useState('DESC');
 
-    // Notifications
-    const [notifications, setNotifications] = useState([]);
-    const [unread, setUnread] = useState(0);
-    const [showNotif, setShowNotif] = useState(false);
 
     // Modal
     const [errorModal, setErrorModal] = useState({ open: false, title: '', message: '', details: '' });
 
     useEffect(() => {
         fetchArchivedTenants();
-        fetchNotifications();
-    }, []);
-
-    useEffect(() => {
-        // Poll notifications every 30 seconds
-        const interval = setInterval(fetchNotifications, 30000);
-        return () => clearInterval(interval);
     }, []);
 
     const fetchArchivedTenants = async () => {
@@ -64,22 +52,6 @@ const ArchivedTenantsPage = () => {
         }
     };
 
-    const fetchNotifications = async () => {
-        try {
-            const data = await notificationService.fetchMyNotifications();
-            setNotifications(data);
-            setUnread(data.filter(n => !n.isRead).length);
-        } catch (error) {
-            console.error('Error fetching notifications:', error);
-        }
-    };
-
-    const handleNotificationClick = async (notification) => {
-        if (!notification.isRead) {
-            await notificationService.markNotificationAsRead(notification.id);
-            fetchNotifications();
-        }
-    };
 
     const handleViewDetails = async (tenant) => {
         try {
@@ -161,50 +133,7 @@ const ArchivedTenantsPage = () => {
         <div className="archived-tenants-page">
             {/* Header */}
             <header className="page-header">
-                <div className="header-content">
-                    <h1>📦 Archived Tenants</h1>
-                    <div className="header-actions">
-                        {/* Notification Bell */}
-                        <div className="notification-wrapper">
-                            <button
-                                className="notification-bell"
-                                onClick={() => setShowNotif(!showNotif)}
-                            >
-                                🔔
-                                {unread > 0 && <span className="notification-badge">{unread}</span>}
-                            </button>
-                            {showNotif && (
-                                <div className="notification-dropdown">
-                                    <div className="notification-header">
-                                        <h3>Notifications</h3>
-                                        <button onClick={() => setShowNotif(false)}>✕</button>
-                                    </div>
-                                    <div className="notification-list">
-                                        {notifications.length === 0 ? (
-                                            <p className="no-notifications">No notifications</p>
-                                        ) : (
-                                            notifications.map(notif => (
-                                                <div
-                                                    key={notif.id}
-                                                    className={`notification-item ${notif.isRead ? 'read' : 'unread'}`}
-                                                    onClick={() => handleNotificationClick(notif)}
-                                                >
-                                                    <strong>{notif.title}</strong>
-                                                    <p>{notif.message}</p>
-                                                    <small>{formatDate(notif.createdAt)}</small>
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                        <div className="user-info">
-                            <span>👤 {user?.firstName} {user?.lastName}</span>
-                            <button onClick={logout} className="logout-btn">Logout</button>
-                        </div>
-                    </div>
-                </div>
+                <h1>📦 Archived Tenants</h1>
             </header>
 
             <div className="archived-content">

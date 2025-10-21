@@ -6,9 +6,10 @@ import TenantDashboard from '../pages/TenantDashboard'
 import MaintenancePage from '../pages/MaintenancePage'
 import AdminMaintenancePage from '../pages/AdminMaintenancePage'
 import PricingPage from '../pages/PricingPage'
-import AccountingPage from '../pages/AccountingPage'
+import AccountingDashboard from '../pages/AccountingDashboard'
 import SuperAdminPage from '../pages/SuperAdminPage'
 import ArchivedTenantsPage from '../pages/ArchivedTenantsPage'
+import NotFoundPage from '../pages/NotFoundPage'
 import { useAuth } from '../context/AuthContext'
 
 const AppRoutes = () => {
@@ -54,7 +55,7 @@ const AppRoutes = () => {
         element={
           isAuthenticated
             ? (user?.role === 'Accounting' || user?.role === 'Admin' || user?.role === 'SuperAdmin'
-                ? <AccountingPage />
+                ? <AccountingDashboard />
                 : <Navigate to="/tenant" replace />)
             : <Navigate to="/login" replace />
         } 
@@ -86,8 +87,9 @@ const AppRoutes = () => {
         } 
       />
       
-      {/* Fallback Route - Redirect to landing page instead of login */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* 404 Not Found Route */}
+      <Route path="/404" element={<NotFoundPage />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )
 }

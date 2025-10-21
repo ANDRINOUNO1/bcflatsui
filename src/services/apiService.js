@@ -1,8 +1,25 @@
 import axios from 'axios';
 
+
+const ENV_BASE = import.meta?.env?.VITE_API_BASE_URL;
+//const FALLBACK_BASE = 'http://localhost:3000';
+//const DEFAULT_API = 'http://localhost:3000/api';
+const FALLBACK_BASE = 'https://bcflatsback-production.up.railway.app';
+const DEFAULT_API = 'https://bcflatsback-production.up.railway.app/api';
+
+// Normalize to ensure "/api" suffix is present exactly once
+function normalizeApiBase(baseUrl) {
+    if (!baseUrl) return DEFAULT_API;
+    const trimmed = baseUrl.replace(/\/$/, '');
+    if (/\/api$/i.test(trimmed)) return trimmed;
+    return `${trimmed}/api`;
+}
+
+const resolvedBaseURL = normalizeApiBase(ENV_BASE || FALLBACK_BASE);
+
 // Create axios instance with base configuration
 const apiService = axios.create({
-    baseURL: 'http://localhost:3000/api',
+    baseURL: resolvedBaseURL,
     timeout: 10000,
     headers: {
         'Content-Type': 'application/json',

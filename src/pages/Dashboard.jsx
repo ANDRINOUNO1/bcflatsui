@@ -4,11 +4,11 @@ import { roomService } from '../services/roomService'
 import { tenantService } from '../services/tenantService'
 import { paymentService } from '../services/paymentService'
 import { notificationService } from '../services/notificationService'
+import { fetchTenantsWithBillingInfo, fetchPaymentStats, formatCurrency, formatDate, getDueDateStatus } from '../functions/accounting'
 import RoomPage from './RoomPage'
 import TenantPage from './TenantPage'
 import PricingPage from './PricingPage'
 import AdminMaintenancePage from './AdminMaintenancePage'
-import AccountingPage from './AccountingPage'
 import AddAccountPage from './AddAccountPage'
 import ArchivedTenantsPage from './ArchivedTenantsPage'
 import '../components/Dashboard.css'
@@ -31,6 +31,21 @@ const Dashboard = () => {
   const [notifications, setNotifications] = useState([])
   const [unread, setUnread] = useState(0)
   const [showNotif, setShowNotif] = useState(false)
+  
+  // Announcements state
+  const [announcementTitle, setAnnouncementTitle] = useState('')
+  const [announcementMessage, setAnnouncementMessage] = useState('')
+  const [announcementRoles, setAnnouncementRoles] = useState(['Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
+  const [sendingAnnouncement, setSendingAnnouncement] = useState(false)
+  const [announcements, setAnnouncements] = useState([])
+  const [loadingAnnouncements, setLoadingAnnouncements] = useState(false)
+  const [announcementError, setAnnouncementError] = useState('')
+
+  // Accounting View state
+  const [accountingTenants, setAccountingTenants] = useState([])
+  const [accountingStats, setAccountingStats] = useState(null)
+  const [accountingLoading, setAccountingLoading] = useState(false)
+  const [accountingError, setAccountingError] = useState('')
 
   const fetchDashboardData = async () => {
     try {
@@ -98,8 +113,12 @@ const Dashboard = () => {
     const loadNotifs = async () => {
       try {
         const data = await notificationService.fetchMyNotifications(25)
-        setNotifications(data)
-        setUnread((data || []).filter(n => !n.isRead).length)
+        // Filter out suspended announcements (system_announcement type with isRead: true)
+        const filteredNotifications = (data || []).filter(n => 
+          !(n.type === 'system_announcement' && n.isRead)
+        )
+        setNotifications(filteredNotifications)
+        setUnread(filteredNotifications.filter(n => !n.isRead).length)
       } catch {
         // Silently fail - notifications are not critical
       }
@@ -111,6 +130,38 @@ const Dashboard = () => {
     return () => id && clearInterval(id)
   }, [isAuthenticated])
 
+  // Fetch announcements when announcements tab is active
+  useEffect(() => {
+    if (activeTab === 'announcements' && isAuthenticated) {
+      fetchAnnouncements()
+    }
+  }, [activeTab, isAuthenticated])
+
+  // Fetch accounting data when accounting-view tab is active
+  useEffect(() => {
+    if (activeTab === 'accounting-view' && isAuthenticated) {
+      fetchAccountingData()
+    }
+  }, [activeTab, isAuthenticated])
+
+  const fetchAccountingData = async () => {
+    try {
+      setAccountingLoading(true)
+      setAccountingError('')
+      
+      const errorModal = { open: false, title: '', message: '', details: '' }
+      await Promise.all([
+        fetchTenantsWithBillingInfo(setAccountingLoading, setAccountingTenants, () => setAccountingError('Failed to load tenant data')),
+        fetchPaymentStats(setAccountingStats, () => setAccountingError('Failed to load payment stats'))
+      ])
+    } catch (error) {
+      console.error('Failed to fetch accounting data:', error)
+      setAccountingError('Failed to load accounting data')
+    } finally {
+      setAccountingLoading(false)
+    }
+  }
+
   const handleRefresh = async () => {
     setRefreshing(true)
     await fetchDashboardData()
@@ -120,13 +171,88 @@ const Dashboard = () => {
     logout()
   }
 
+  // Announcement handlers
+  const handleSendAnnouncement = async (e) => {
+    e.preventDefault()
+    if (!announcementTitle || !announcementMessage) {
+      alert('Please fill in both title and message')
+      return
+    }
+    setSendingAnnouncement(true)
+    try {
+      await notificationService.broadcastAnnouncement(
+        announcementTitle,
+        announcementMessage,
+        announcementRoles
+      )
+      setAnnouncementTitle('')
+      setAnnouncementMessage('')
+      setAnnouncementRoles(['Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
+      alert('Announcement sent successfully to all selected roles!')
+      // Refresh announcements list
+      fetchAnnouncements()
+    } catch (error) {
+      setError(error?.message || 'Failed to send announcement')
+    } finally {
+      setSendingAnnouncement(false)
+    }
+  }
+
+  const toggleAnnouncementRole = (role) => {
+    setAnnouncementRoles(prev => 
+      prev.includes(role) 
+        ? prev.filter(r => r !== role)
+        : [...prev, role]
+    )
+  }
+
+  // Fetch announcements
+  const fetchAnnouncements = async () => {
+    try {
+      setLoadingAnnouncements(true)
+      setAnnouncementError('')
+      const data = await notificationService.getAllAnnouncements()
+      setAnnouncements(data)
+    } catch (error) {
+      console.error('Failed to fetch announcements:', error)
+      setAnnouncementError('Failed to load announcements')
+    } finally {
+      setLoadingAnnouncements(false)
+    }
+  }
+
+  // Delete announcement
+  const handleDeleteAnnouncement = async (id) => {
+    try {
+      await notificationService.deleteAnnouncement(id)
+      setAnnouncements(prev => prev.filter(ann => ann.id !== id))
+    } catch (error) {
+      console.error('Failed to delete announcement:', error)
+      alert('Failed to delete announcement')
+    }
+  }
+
+  // Suspend announcement
+  const handleSuspendAnnouncement = async (id) => {
+    try {
+      await notificationService.suspendAnnouncement(id)
+      setAnnouncements(prev => prev.map(ann => 
+        ann.id === id ? { ...ann, isRead: true } : ann
+      ))
+    } catch (error) {
+      console.error('Failed to suspend announcement:', error)
+      alert('Failed to suspend announcement')
+    }
+  }
+
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'rooms', label: 'Rooms', icon: '🏠' },
     { id: 'tenants', label: 'Tenants', icon: '👥' },
-    { id: 'accounting', label: 'Accounting', icon: '💰' },
+    { id: 'accounting-view', label: 'Accounting View', icon: '💰' },
     { id: 'pricing', label: 'Pricing', icon: '💵' },
     { id: 'maintenance', label: 'Maintenance', icon: '🔧' },
+    { id: 'announcements', label: 'Announcements', icon: '📢' },
     { id: 'archives', label: 'Archives', icon: '📦' },
     { id: 'add-account', label: 'Add Account', icon: '👤' }
   ]
@@ -137,12 +263,417 @@ const Dashboard = () => {
         return <RoomPage />
       case 'tenants':
         return <TenantPage />
-      case 'accounting':
-        return <AccountingPage />
+      case 'accounting-view':
+        return (
+          <div className="dashboard-screen">
+            <div className="dashboard-header-gradient">
+              <div className="dash-container">
+                <div className="dash-header-row">
+                  <div>
+                    <h1 className="dash-title">💰 Accounting View</h1>
+                    <p className="dash-subtitle">
+                      Comprehensive financial overview and tenant payment status.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => window.location.href = '/accounting'}
+                    className="btn-primary refresh-btn"
+                  >
+                    Go to Accounting Dashboard →
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="dash-container dash-content">
+              {/* Financial Overview */}
+              <div className="overview-card">
+                <h3 className="overview-title">
+                  <span>💰</span> Financial Overview
+                </h3>
+                <div className="overview-list">
+                  {accountingError && (
+                    <div className="form-error" style={{ marginBottom: '15px' }}>
+                      {accountingError}
+                    </div>
+                  )}
+                  
+                  {accountingLoading ? (
+                    <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                      Loading financial data...
+                    </div>
+                  ) : (
+                    <>
+                      <div className="financial-summary">
+                        <div className="summary-item">
+                          <span className="summary-label">Total Collected This Month:</span>
+                          <span className="summary-value text-green">
+                            {formatCurrency(accountingStats?.totalCollectedThisMonth || 0)}
+                          </span>
+                        </div>
+                        <div className="summary-item">
+                          <span className="summary-label">Outstanding Balances:</span>
+                          <span className="summary-value text-red">
+                            {formatCurrency(accountingStats?.totalOutstanding || 0)}
+                          </span>
+                        </div>
+                        <div className="summary-item">
+                          <span className="summary-label">Payment Collection Rate:</span>
+                          <span className="summary-value">
+                            {accountingStats?.collectionRate || 0}%
+                          </span>
+                        </div>
+                        <div className="summary-item">
+                          <span className="summary-label">Overdue Accounts:</span>
+                          <span className="summary-value text-orange">
+                            {accountingStats?.overdueCount || 0}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="view-actions">
+                        <button
+                          onClick={() => window.location.href = '/accounting'}
+                          className="btn-primary"
+                        >
+                          📊 Open Accounting Dashboard
+                        </button>
+                        <button
+                          onClick={fetchAccountingData}
+                          disabled={accountingLoading}
+                          className="btn-secondary"
+                        >
+                          {accountingLoading ? 'Refreshing...' : '🔄 Refresh Data'}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Tenant List with Financial Status */}
+              <div className="overview-card">
+                <h3 className="overview-title">
+                  <span>👥</span> Tenant Financial Status
+                </h3>
+                <div className="overview-list">
+                  {accountingLoading ? (
+                    <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                      Loading tenant data...
+                    </div>
+                  ) : accountingTenants.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                      No tenant data available
+                    </div>
+                  ) : (
+                    <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, background: 'white', borderRadius: '0.5rem', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' }}>
+                        <thead>
+                          <tr>
+                            <th style={{ background: '#f8fafc', color: '#374151', fontWeight: 600, textAlign: 'left', padding: '0.75rem 1rem', borderBottom: '1px solid #e5e7eb', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tenant</th>
+                            <th style={{ background: '#f8fafc', color: '#374151', fontWeight: 600, textAlign: 'left', padding: '0.75rem 1rem', borderBottom: '1px solid #e5e7eb', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Room</th>
+                            <th style={{ background: '#f8fafc', color: '#374151', fontWeight: 600, textAlign: 'left', padding: '0.75rem 1rem', borderBottom: '1px solid #e5e7eb', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Balance</th>
+                            <th style={{ background: '#f8fafc', color: '#374151', fontWeight: 600, textAlign: 'left', padding: '0.75rem 1rem', borderBottom: '1px solid #e5e7eb', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
+                            <th style={{ background: '#f8fafc', color: '#374151', fontWeight: 600, textAlign: 'left', padding: '0.75rem 1rem', borderBottom: '1px solid #e5e7eb', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Last Payment</th>
+                            <th style={{ background: '#f8fafc', color: '#374151', fontWeight: 600, textAlign: 'left', padding: '0.75rem 1rem', borderBottom: '1px solid #e5e7eb', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Next Due</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {accountingTenants.map((tenant) => {
+                            const dueDateStatus = getDueDateStatus(tenant.nextDueDate)
+                            const isPaid = parseFloat(tenant.outstandingBalance || 0) <= 0
+                            const statusColor = isPaid ? '#10b981' : '#ef4444'
+                            const statusText = isPaid ? 'Paid' : 'Unpaid'
+                            
+                            return (
+                              <tr key={tenant.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                                <td style={{ padding: '1rem', color: '#374151', fontSize: '0.875rem' }}>
+                                  <div style={{ fontWeight: 600 }}>{tenant.name}</div>
+                                  <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{tenant.email}</div>
+                                </td>
+                                <td style={{ padding: '1rem', color: '#374151', fontSize: '0.875rem' }}>
+                                  <div style={{ fontWeight: 600 }}>Room {tenant.roomNumber}</div>
+                                  <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Floor {tenant.floor}</div>
+                                </td>
+                                <td style={{ padding: '1rem', color: '#374151', fontSize: '0.875rem' }}>
+                                  <span style={{ 
+                                    background: isPaid ? '#dcfce7' : '#fee2e2', 
+                                    color: isPaid ? '#166534' : '#991b1b', 
+                                    padding: '0.25rem 0.5rem', 
+                                    borderRadius: '0.375rem', 
+                                    fontSize: '0.75rem', 
+                                    fontWeight: 600 
+                                  }}>
+                                    {formatCurrency(tenant.outstandingBalance || 0)}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '1rem', color: '#374151', fontSize: '0.875rem' }}>
+                                  <span style={{ 
+                                    background: isPaid ? '#dcfce7' : '#fee2e2', 
+                                    color: statusColor, 
+                                    padding: '0.25rem 0.5rem', 
+                                    borderRadius: '0.375rem', 
+                                    fontSize: '0.75rem', 
+                                    fontWeight: 600 
+                                  }}>
+                                    {statusText}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '1rem', color: '#374151', fontSize: '0.875rem' }}>
+                                  {tenant.lastPaymentDate ? formatDate(tenant.lastPaymentDate) : 'No payments yet'}
+                                </td>
+                                <td style={{ padding: '1rem', color: '#374151', fontSize: '0.875rem' }}>
+                                  {tenant.nextDueDate ? (
+                                    <div style={{ color: dueDateStatus.color, fontWeight: 600 }}>
+                                      {formatDate(tenant.nextDueDate)}
+                                    </div>
+                                  ) : (
+                                    <div>Not set</div>
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )
       case 'pricing':
         return <PricingPage />
       case 'maintenance':
         return <AdminMaintenancePage />
+      case 'announcements':
+        return (
+          <div className="dashboard-screen">
+            <div className="dashboard-header-gradient">
+              <div className="dash-container">
+                <div className="dash-header-row">
+                  <div>
+                    <h1 className="dash-title">📢 Announcements</h1>
+                    <p className="dash-subtitle">
+                      Send important messages to tenants and staff members.
+                    </p>
+                  </div>
+                  <button
+                    onClick={fetchAnnouncements}
+                    disabled={loadingAnnouncements}
+                    className="btn-primary refresh-btn"
+                  >
+                    {loadingAnnouncements ? 'Refreshing...' : 'Refresh List 🔄'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="dash-container dash-content">
+              <div className="overview-grid">
+                {/* Send Announcement Card */}
+                <div className="overview-card">
+                  <h3 className="overview-title">
+                    <span>📢</span> Send Announcement
+                  </h3>
+                  <div className="overview-list">
+                    <p style={{ marginBottom: '20px', color: '#666' }}>
+                      <strong>📢 Broadcast Announcement:</strong> Send important messages to all users or specific roles across the system.
+                    </p>
+                    
+                    <form onSubmit={handleSendAnnouncement} className="account-form">
+                      <div className="form-group">
+                        <label htmlFor="announcementTitle">Announcement Title</label>
+                        <input
+                          type="text"
+                          id="announcementTitle"
+                          value={announcementTitle}
+                          onChange={(e) => setAnnouncementTitle(e.target.value)}
+                          className="form-input"
+                          placeholder="Enter announcement title..."
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="announcementMessage">Message</label>
+                        <textarea
+                          id="announcementMessage"
+                          value={announcementMessage}
+                          onChange={(e) => setAnnouncementMessage(e.target.value)}
+                          className="form-textarea"
+                          rows="4"
+                          placeholder="Enter your announcement message..."
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label>Target Roles</label>
+                        <div className="checkbox-group">
+                          {['Admin', 'SuperAdmin', 'Accounting', 'Tenant'].map(role => (
+                            <label key={role} className="checkbox-label">
+                              <input
+                                type="checkbox"
+                                checked={announcementRoles.includes(role)}
+                                onChange={() => toggleAnnouncementRole(role)}
+                              />
+                              <span className="checkbox-text">{role}</span>
+                            </label>
+                          ))}
+                        </div>
+                        {announcementRoles.length === 0 && (
+                          <p className="form-error">Please select at least one role</p>
+                        )}
+                      </div>
+
+                      <div className="form-actions">
+                        <button
+                          type="submit"
+                          className="btn-primary"
+                          disabled={sendingAnnouncement || announcementRoles.length === 0}
+                        >
+                          {sendingAnnouncement ? '📤 Sending...' : '📢 Send Announcement'}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => {
+                            setAnnouncementTitle('')
+                            setAnnouncementMessage('')
+                            setAnnouncementRoles(['Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
+                          }}
+                        >
+                          Clear Form
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+
+                {/* Announcements List Card */}
+                <div className="overview-card">
+                  <h3 className="overview-title">
+                    <span>📋</span> Announcements List
+                  </h3>
+                  <div className="overview-list">
+                    {announcementError && (
+                      <div className="form-error" style={{ marginBottom: '15px' }}>
+                        {announcementError}
+                      </div>
+                    )}
+                    
+                    {loadingAnnouncements ? (
+                      <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                        Loading announcements...
+                      </div>
+                    ) : announcements.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                        No announcements found
+                      </div>
+                    ) : (
+                      <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                        {(() => {
+                          // Group announcements by title and message
+                          const groupedAnnouncements = announcements.reduce((groups, announcement) => {
+                            const key = `${announcement.title}|${announcement.message}|${announcement.createdAt}`;
+                            if (!groups[key]) {
+                              groups[key] = {
+                                title: announcement.title,
+                                message: announcement.message,
+                                createdAt: announcement.createdAt,
+                                roles: [],
+                                ids: [],
+                                isRead: announcement.isRead
+                              };
+                            }
+                            groups[key].roles.push(announcement.recipientRole);
+                            groups[key].ids.push(announcement.id);
+                            // If any announcement in the group is not read, mark the group as not read
+                            if (!announcement.isRead) {
+                              groups[key].isRead = false;
+                            }
+                            return groups;
+                          }, {});
+
+                          return Object.values(groupedAnnouncements).map((group, index) => (
+                            <div key={index} className="list-item" style={{ 
+                              border: '1px solid #e0e0e0', 
+                              borderRadius: '8px', 
+                              padding: '15px', 
+                              marginBottom: '10px',
+                              background: group.isRead ? '#f9f9f9' : '#fff'
+                            }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>
+                                      {group.title}
+                                    </h4>
+                                    {group.isRead && (
+                                      <span style={{ 
+                                        background: '#e0e0e0', 
+                                        color: '#666', 
+                                        padding: '2px 8px', 
+                                        borderRadius: '12px', 
+                                        fontSize: '12px' 
+                                      }}>
+                                        Suspended
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p style={{ 
+                                    margin: '0 0 8px 0', 
+                                    color: '#555', 
+                                    fontSize: '14px',
+                                    lineHeight: '1.4'
+                                  }}>
+                                    {group.message}
+                                  </p>
+                                  <div style={{ fontSize: '12px', color: '#888' }}>
+                                    <div>Target: {group.roles.join(', ')}</div>
+                                    <div>Sent: {new Date(group.createdAt).toLocaleString()}</div>
+                                  </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px', marginLeft: '15px' }}>
+                                  {!group.isRead && (
+                                    <button
+                                      onClick={() => {
+                                        // Suspend all announcements in this group
+                                        group.ids.forEach(id => handleSuspendAnnouncement(id));
+                                      }}
+                                      className="btn-secondary"
+                                      style={{ fontSize: '12px', padding: '6px 12px' }}
+                                    >
+                                      ⏸️ Suspend
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => {
+                                      // Delete all announcements in this group
+                                      if (confirm('Are you sure you want to delete this announcement? This will remove it from all target roles.')) {
+                                        group.ids.forEach(id => handleDeleteAnnouncement(id));
+                                      }
+                                    }}
+                                    className="btn-danger"
+                                    style={{ fontSize: '12px', padding: '6px 12px' }}
+                                  >
+                                    🗑️ Delete
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
       case 'archives':
         return <ArchivedTenantsPage />
       case 'add-account':
@@ -333,11 +864,14 @@ const Dashboard = () => {
                 <button className="quick-btn green" onClick={() => setActiveTab('tenants')}>
                   👥 Manage Tenants
                 </button>
-                <button className="quick-btn purple" onClick={() => setActiveTab('accounting')}>
-                  💰 View Accounting
+                <button className="quick-btn purple" onClick={() => setActiveTab('accounting-view')}>
+                  💰 Accounting View
                 </button>
                 <button className="quick-btn orange" onClick={() => setActiveTab('maintenance')}>
                   🔧 Maintenance
+                </button>
+                <button className="quick-btn red" onClick={() => setActiveTab('announcements')}>
+                  📢 Announcements
                 </button>
                 <button className="quick-btn teal" onClick={() => setActiveTab('archives')}>
                   📦 Archives
@@ -441,27 +975,19 @@ const Dashboard = () => {
                     }}
                     onClick={() => setShowNotif(false)}
                   />
-                  <div style={{ 
-                    position: 'absolute', 
-                    right: 0, 
-                    top: '100%', 
-                    width: 380, 
-                    background: '#fff', 
-                    border: '1px solid #ddd', 
-                    borderRadius: 8, 
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.1)', 
-                    zIndex: 20,
-                    marginTop: 8
-                  }}>
-                    <div style={{ padding: 12, borderBottom: '1px solid #eee', fontWeight: 700 }}>Notifications</div>
-                    <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+                  <div className="notification-dropdown">
+                    <div className="notification-header">
+                      <span>Notifications</span>
+                      {unread > 0 && <span className="notification-count">{unread}</span>}
+                    </div>
+                    <div className="notification-content">
                       {notifications.length === 0 ? (
-                        <div style={{ padding: 12, color: '#777' }}>No notifications</div>
+                        <div className="notification-empty">No notifications</div>
                       ) : notifications.map(n => (
-                        <div key={n.id} style={{ padding: 12, borderBottom: '1px solid #f0f0f0', background: n.isRead ? '#fff' : '#f9fbff' }}>
-                          <div style={{ fontWeight: 600, marginBottom: 4 }}>{n.title}</div>
-                          <div style={{ fontSize: 13, color: '#444' }}>{n.message}</div>
-                          <div style={{ fontSize: 12, color: '#999', marginTop: 6 }}>{new Date(n.createdAt).toLocaleString()}</div>
+                        <div key={n.id} className={`notification-item ${!n.isRead ? 'unread' : ''}`}>
+                          <div className="notification-title">{n.title}</div>
+                          <div className="notification-message">{n.message}</div>
+                          <div className="notification-time">{new Date(n.createdAt).toLocaleString()}</div>
                         </div>
                       ))}
                     </div>

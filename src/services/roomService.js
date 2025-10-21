@@ -1,7 +1,5 @@
 import { apiService } from './apiService';
 
-const API_BASE_URL = 'http://localhost:3000/api';
-
 // Helper function to format currency in Philippine Peso
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-PH', {
@@ -14,7 +12,7 @@ export const roomService = {
     // Get room statistics
     getRoomStats: async () => {
         try {
-            const response = await apiService.get(`${API_BASE_URL}/rooms/stats`);
+            const response = await apiService.get(`/rooms/stats`);
             return response.data;
         } catch (error) {
             console.error('Error fetching room stats:', error);
@@ -25,7 +23,7 @@ export const roomService = {
     // Get all available rooms
     getAvailableRooms: async () => {
         try {
-            const response = await apiService.get(`${API_BASE_URL}/rooms/available`);
+            const response = await apiService.get(`/rooms/available`);
             return response.data;
         } catch (error) {
             console.error('Error fetching available rooms:', error);
@@ -37,7 +35,7 @@ export const roomService = {
     getAllRooms: async (floor) => {
         try {
             const params = floor && floor !== 'all' ? `?floor=${encodeURIComponent(floor)}` : '';
-            const response = await apiService.get(`${API_BASE_URL}/rooms${params}`);
+            const response = await apiService.get(`/rooms${params}`);
             return response.data;
         } catch (error) {
             console.error('Error fetching all rooms:', error);
@@ -48,7 +46,7 @@ export const roomService = {
     // Get room by ID
     getRoomById: async (roomId) => {
         try {
-            const response = await apiService.get(`${API_BASE_URL}/rooms/${roomId}`);
+            const response = await apiService.get(`/rooms/${roomId}`);
             return response.data;
         } catch (error) {
             console.error('Error fetching room:', error);
@@ -59,7 +57,7 @@ export const roomService = {
     // Get room bed status
     getRoomBedStatus: async (roomId) => {
         try {
-            const response = await apiService.get(`${API_BASE_URL}/rooms/${roomId}/beds`);
+            const response = await apiService.get(`/rooms/${roomId}/beds`);
             return response.data;
         } catch (error) {
             console.error('Error fetching room bed status:', error);
@@ -70,7 +68,7 @@ export const roomService = {
     // Get room tenants
     getRoomTenants: async (roomId) => {
         try {
-            const response = await apiService.get(`${API_BASE_URL}/rooms/${roomId}/tenants`);
+            const response = await apiService.get(`/rooms/${roomId}/tenants`);
             return response.data;
         } catch (error) {
             console.error('Error fetching room tenants:', error);
@@ -81,7 +79,7 @@ export const roomService = {
     // Create new room (Admin only)
     createRoom: async (roomData) => {
         try {
-            const response = await apiService.post(`${API_BASE_URL}/rooms`, roomData);
+            const response = await apiService.post(`/rooms`, roomData);
             return response.data;
         } catch (error) {
             console.error('Error creating room:', error);
@@ -92,7 +90,7 @@ export const roomService = {
     // Update room (Admin only)
     updateRoom: async (roomId, updateData) => {
         try {
-            const response = await apiService.put(`${API_BASE_URL}/rooms/${roomId}`, updateData);
+            const response = await apiService.put(`/rooms/${roomId}`, updateData);
             return response.data;
         } catch (error) {
             console.error('Error updating room:', error);
@@ -103,7 +101,7 @@ export const roomService = {
     // Update room pricing (Admin only)
     updateRoomPricing: async (roomId, pricingData) => {
         try {
-            const response = await apiService.patch(`${API_BASE_URL}/rooms/${roomId}/pricing`, pricingData);
+            const response = await apiService.patch(`/rooms/${roomId}/pricing`, pricingData);
             return response.data;
         } catch (error) {
             console.error('Error updating room pricing:', error);
@@ -114,7 +112,7 @@ export const roomService = {
     // Delete room (Admin only)
     deleteRoom: async (roomId) => {
         try {
-            const response = await apiService.delete(`${API_BASE_URL}/rooms/${roomId}`);
+            const response = await apiService.delete(`/rooms/${roomId}`);
             return response.data;
         } catch (error) {
             console.error('Error deleting room:', error);
@@ -125,7 +123,7 @@ export const roomService = {
     // Update room status
     updateRoomStatus: async (roomId, status) => {
         try {
-            const response = await apiService.patch(`${API_BASE_URL}/rooms/${roomId}/status`, { status });
+            const response = await apiService.patch(`/rooms/${roomId}/status`, { status });
             return response.data;
         } catch (error) {
             console.error('Error updating room status:', error);
@@ -136,7 +134,7 @@ export const roomService = {
     // Set maintenance mode (Admin only)
     setMaintenanceMode: async (roomId, maintenance, reason) => {
         try {
-            const response = await apiService.patch(`${API_BASE_URL}/rooms/${roomId}/maintenance`, {
+            const response = await apiService.patch(`/rooms/${roomId}/maintenance`, {
                 maintenance,
                 reason
             });
@@ -150,7 +148,7 @@ export const roomService = {
     // Add tenant to room
     addTenantToRoom: async (roomId, tenantData) => {
         try {
-            const response = await apiService.post(`${API_BASE_URL}/rooms/${roomId}/tenants`, tenantData);
+            const response = await apiService.post(`/rooms/${roomId}/tenants`, tenantData);
             return response.data;
         } catch (error) {
             console.error('Error adding tenant to room:', error);
@@ -161,7 +159,7 @@ export const roomService = {
     // Remove tenant from room
     removeTenantFromRoom: async (roomId, tenantId) => {
         try {
-            const response = await apiService.delete(`${API_BASE_URL}/rooms/${roomId}/tenants/${tenantId}`);
+            const response = await apiService.delete(`/rooms/${roomId}/tenants/${tenantId}`);
             return response.data;
         } catch (error) {
             console.error('Error removing tenant from room:', error);
