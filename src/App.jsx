@@ -10,13 +10,13 @@ function App() {
   React.useEffect(() => {
     const handleRouteChange = () => {
       // Check if the current path exists in our routes
-      const validRoutes = ['/', '/login', '/dashboard', '/tenant', '/accounting', '/super-admin', '/admin/maintenance', '/admin/pricing', '/archived-tenants', '/tenant/maintenance'];
+      const validRoutes = ['/', '/login', '/dashboard', '/tenant', '/accounting', '/super-admin', '/admin/maintenance', '/admin/pricing', '/archived-tenants', '/tenant/maintenance', '/404'];
       const currentPath = window.location.pathname;
       
       // If it's not a valid route and not an asset, redirect to 404
       if (!validRoutes.includes(currentPath) && !currentPath.startsWith('/assets/') && !currentPath.startsWith('/bclogo.jpg') && !currentPath.startsWith('/samplepic.jpg') && !currentPath.startsWith('/vite.svg')) {
-        // Force React Router to show 404 page
-        window.history.replaceState(null, '', '/404');
+        // Redirect to 404 page
+        window.location.replace('/404');
       }
     };
 
