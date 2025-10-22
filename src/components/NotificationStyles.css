@@ -1,0 +1,186 @@
+/* Enhanced Notification System Styles */
+
+/* Notification Badge Animations */
+@keyframes notificationBounce {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { 
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% { 
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+@keyframes bellShake {
+  0%, 100% { transform: rotate(0deg); }
+  10%, 30%, 50%, 70%, 90% { transform: rotate(-5deg); }
+  20%, 40%, 60%, 80% { transform: rotate(5deg); }
+}
+
+/* Notification Button Styles */
+.notification-btn {
+  position: relative;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+}
+
+.notification-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.notification-btn:active {
+  transform: translateY(0);
+}
+
+/* Notification Badge Styles */
+.notification-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  border: 3px solid white;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.3), 0 0 0 1px rgba(239,68,68,0.2);
+  z-index: 10;
+  min-width: 22px;
+  min-height: 22px;
+  animation: notificationBounce 0.6s ease-out, pulse 2s infinite 0.6s;
+}
+
+/* Bell Icon Styles */
+.bell-icon {
+  font-size: 18px;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+  transition: transform 0.2s ease;
+}
+
+.bell-icon.new-notification {
+  animation: bellShake 0.5s ease-in-out;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .notification-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 16px;
+  }
+  
+  .notification-badge {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+    font-size: 10px;
+    top: -6px;
+    right: -6px;
+    border-width: 2px;
+  }
+  
+  .bell-icon {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .notification-btn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    font-size: 14px;
+  }
+  
+  .notification-badge {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    min-height: 18px;
+    font-size: 9px;
+    top: -5px;
+    right: -5px;
+    border-width: 2px;
+  }
+  
+  .bell-icon {
+    font-size: 14px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .notification-badge {
+    border-width: 4px;
+    box-shadow: 0 0 0 2px #000;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .notification-badge {
+    animation: none;
+  }
+  
+  .bell-icon.new-notification {
+    animation: none;
+  }
+  
+  .notification-btn {
+    transition: none;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .notification-btn {
+    background: #1d4ed8;
+  }
+  
+  .notification-btn:hover {
+    background: #1e40af;
+  }
+}

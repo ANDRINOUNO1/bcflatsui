@@ -11,7 +11,10 @@ import PricingPage from './PricingPage'
 import AdminMaintenancePage from './AdminMaintenancePage'
 import AddAccountPage from './AddAccountPage'
 import ArchivedTenantsPage from './ArchivedTenantsPage'
+import NotificationButton from '../components/NotificationButton'
+import NotificationDropdown from '../components/NotificationDropdown'
 import '../components/Dashboard.css'
+import '../components/NotificationStyles.css'
 
 
 const Dashboard = () => {
@@ -31,6 +34,7 @@ const Dashboard = () => {
   const [notifications, setNotifications] = useState([])
   const [unread, setUnread] = useState(0)
   const [showNotif, setShowNotif] = useState(false)
+  const [markingAsRead, setMarkingAsRead] = useState(false)
   
   // Announcements state
   const [announcementTitle, setAnnouncementTitle] = useState('')
@@ -113,9 +117,9 @@ const Dashboard = () => {
     const loadNotifs = async () => {
       try {
         const data = await notificationService.fetchMyNotifications(25)
-        // Filter out suspended announcements (system_announcement type with isRead: true)
+        // Filter out suspended announcements (SYSTEM type with isRead: true)
         const filteredNotifications = (data || []).filter(n => 
-          !(n.type === 'system_announcement' && n.isRead)
+          !(n.type === 'SYSTEM' && n.isRead)
         )
         setNotifications(filteredNotifications)
         setUnread(filteredNotifications.filter(n => !n.isRead).length)
@@ -175,10 +179,17 @@ const Dashboard = () => {
   const handleSendAnnouncement = async (e) => {
     e.preventDefault()
     if (!announcementTitle || !announcementMessage) {
-      alert('Please fill in both title and message')
+      setAnnouncementError('Please fill in both title and message')
       return
     }
+    if (announcementRoles.length === 0) {
+      setAnnouncementError('Please select at least one target role')
+      return
+    }
+    
     setSendingAnnouncement(true)
+    setAnnouncementError('')
+    
     try {
       await notificationService.broadcastAnnouncement(
         announcementTitle,
@@ -188,11 +199,14 @@ const Dashboard = () => {
       setAnnouncementTitle('')
       setAnnouncementMessage('')
       setAnnouncementRoles(['Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
+      setAnnouncementError('')
       alert('Announcement sent successfully to all selected roles!')
       // Refresh announcements list
       fetchAnnouncements()
     } catch (error) {
-      setError(error?.message || 'Failed to send announcement')
+      console.error('Failed to send announcement:', error)
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to send announcement'
+      setAnnouncementError(errorMessage)
     } finally {
       setSendingAnnouncement(false)
     }
@@ -242,6 +256,36 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Failed to suspend announcement:', error)
       alert('Failed to suspend announcement')
+    }
+  }
+
+  // Mark notification as read
+  const handleMarkAsRead = async (notificationId) => {
+    try {
+      setMarkingAsRead(true)
+      await notificationService.markAsRead(notificationId)
+      setNotifications(prev => prev.map(n => 
+        n.id === notificationId ? { ...n, isRead: true } : n
+      ))
+      setUnread(prev => Math.max(0, prev - 1))
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error)
+    } finally {
+      setMarkingAsRead(false)
+    }
+  }
+
+  // Mark all notifications as read
+  const handleMarkAllAsRead = async () => {
+    try {
+      setMarkingAsRead(true)
+      await notificationService.markAllAsRead()
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
+      setUnread(0)
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error)
+    } finally {
+      setMarkingAsRead(false)
     }
   }
 
@@ -473,90 +517,117 @@ const Dashboard = () => {
             <div className="dash-container dash-content">
               <div className="overview-grid">
                 {/* Send Announcement Card */}
-                <div className="overview-card">
-                  <h3 className="overview-title">
-                    <span>📢</span> Send Announcement
-                  </h3>
-                  <div className="overview-list">
-                    <p style={{ marginBottom: '20px', color: '#666' }}>
+                <div style={{ background: 'white', padding: '1.5rem', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                    <span style={{ fontSize: '1.25rem' }}>📢</span>
+                    <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 600 }}>Send Announcement</h3>
+                  </div>
+                  <div style={{ marginBottom: '1rem', padding: '1rem', background: '#f0f9ff', borderRadius: '0.5rem', border: '1px solid #bae6fd' }}>
+                    <p style={{ margin: 0, color: '#0c4a6e', fontSize: '0.875rem' }}>
                       <strong>📢 Broadcast Announcement:</strong> Send important messages to all users or specific roles across the system.
                     </p>
-                    
-                    <form onSubmit={handleSendAnnouncement} className="account-form">
-                      <div className="form-group">
-                        <label htmlFor="announcementTitle">Announcement Title</label>
-                        <input
-                          type="text"
-                          id="announcementTitle"
-                          value={announcementTitle}
-                          onChange={(e) => setAnnouncementTitle(e.target.value)}
-                          className="form-input"
-                          placeholder="Enter announcement title..."
-                          required
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label htmlFor="announcementMessage">Message</label>
-                        <textarea
-                          id="announcementMessage"
-                          value={announcementMessage}
-                          onChange={(e) => setAnnouncementMessage(e.target.value)}
-                          className="form-textarea"
-                          rows="4"
-                          placeholder="Enter your announcement message..."
-                          required
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Target Roles</label>
-                        <div className="checkbox-group">
-                          {['Admin', 'SuperAdmin', 'Accounting', 'Tenant'].map(role => (
-                            <label key={role} className="checkbox-label">
-                              <input
-                                type="checkbox"
-                                checked={announcementRoles.includes(role)}
-                                onChange={() => toggleAnnouncementRole(role)}
-                              />
-                              <span className="checkbox-text">{role}</span>
-                            </label>
-                          ))}
-                        </div>
-                        {announcementRoles.length === 0 && (
-                          <p className="form-error">Please select at least one role</p>
-                        )}
-                      </div>
-
-                      <div className="form-actions">
-                        <button
-                          type="submit"
-                          className="btn-primary"
-                          disabled={sendingAnnouncement || announcementRoles.length === 0}
-                        >
-                          {sendingAnnouncement ? '📤 Sending...' : '📢 Send Announcement'}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          onClick={() => {
-                            setAnnouncementTitle('')
-                            setAnnouncementMessage('')
-                            setAnnouncementRoles(['Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
-                          }}
-                        >
-                          Clear Form
-                        </button>
-                      </div>
-                    </form>
                   </div>
+                  
+                  <form onSubmit={handleSendAnnouncement}>
+                    {announcementError && (
+                      <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '0.5rem', color: '#dc2626', fontSize: '0.875rem' }}>
+                        {announcementError}
+                      </div>
+                    )}
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label htmlFor="announcementTitle" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Announcement Title</label>
+                      <input
+                        type="text"
+                        id="announcementTitle"
+                        value={announcementTitle}
+                        onChange={(e) => setAnnouncementTitle(e.target.value)}
+                        required
+                        style={{ width: '100%', padding: '0.75rem', border: '2px solid #dc2626', borderRadius: '0.5rem', fontSize: '0.875rem' }}
+                        placeholder="Enter announcement title..."
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label htmlFor="announcementMessage" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Message</label>
+                      <textarea
+                        id="announcementMessage"
+                        value={announcementMessage}
+                        onChange={(e) => setAnnouncementMessage(e.target.value)}
+                        required
+                        rows="6"
+                        style={{ width: '100%', padding: '0.75rem', border: '2px solid #dc2626', borderRadius: '0.5rem', fontSize: '0.875rem', resize: 'vertical', fontFamily: 'inherit' }}
+                        placeholder="Enter your announcement message..."
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Target Recipients</label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', padding: '1rem', background: '#f9fafb', borderRadius: '0.5rem' }}>
+                        {['Admin', 'SuperAdmin', 'Accounting', 'Tenant'].map(role => (
+                          <label key={role} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={announcementRoles.includes(role)}
+                              onChange={() => toggleAnnouncementRole(role)}
+                              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                            />
+                            <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>{role}</span>
+                          </label>
+                        ))}
+                      </div>
+                      {announcementRoles.length === 0 && (
+                        <small style={{ color: '#dc2626', marginTop: '0.5rem', display: 'block' }}>
+                          Please select at least one recipient role
+                        </small>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                      <button 
+                        type="submit" 
+                        style={{ 
+                          padding: '0.75rem 1.5rem', 
+                          background: '#dc2626', 
+                          color: 'white', 
+                          border: 'none', 
+                          borderRadius: '0.5rem', 
+                          fontWeight: 600,
+                          cursor: sendingAnnouncement || announcementRoles.length === 0 ? 'not-allowed' : 'pointer',
+                          opacity: sendingAnnouncement || announcementRoles.length === 0 ? 0.6 : 1
+                        }}
+                        disabled={sendingAnnouncement || announcementRoles.length === 0}
+                      >
+                        {sendingAnnouncement ? '📤 Sending...' : '📢 Send Announcement'}
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setAnnouncementTitle('')
+                          setAnnouncementMessage('')
+                          setAnnouncementRoles(['Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
+                        }}
+                        style={{ 
+                          padding: '0.75rem 1.5rem', 
+                          background: '#6b7280', 
+                          color: 'white', 
+                          border: 'none', 
+                          borderRadius: '0.5rem', 
+                          fontWeight: 600,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </form>
                 </div>
 
                 {/* Announcements List Card */}
-                <div className="overview-card">
-                  <h3 className="overview-title">
-                    <span>📋</span> Announcements List
-                  </h3>
+                <div style={{ background: 'white', padding: '1.5rem', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                    <span style={{ fontSize: '1.25rem' }}>📋</span>
+                    <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 600 }}>Announcements List</h3>
+                  </div>
                   <div className="overview-list">
                     {announcementError && (
                       <div className="form-error" style={{ marginBottom: '15px' }}>
@@ -565,31 +636,41 @@ const Dashboard = () => {
                     )}
                     
                     {loadingAnnouncements ? (
-                      <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
-                        Loading announcements...
-                      </div>
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>Loading announcements...</div>
                     ) : announcements.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
-                        No announcements found
-                      </div>
+                      <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>No announcements found</div>
                     ) : (
-                      <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                      <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
                         {(() => {
-                          // Group announcements by title and message
+                          // Group announcements by announcementId if available, otherwise by title/message/time
                           const groupedAnnouncements = announcements.reduce((groups, announcement) => {
-                            const key = `${announcement.title}|${announcement.message}|${announcement.createdAt}`;
+                            let key;
+                            
+                            // Use announcementId if available for better grouping
+                            if (announcement.metadata?.announcementId) {
+                              key = announcement.metadata.announcementId;
+                            } else {
+                              // Fallback to title/message/time grouping
+                              const createdAt = new Date(announcement.createdAt);
+                              const roundedTime = new Date(createdAt.getFullYear(), createdAt.getMonth(), createdAt.getDate(), createdAt.getHours(), createdAt.getMinutes());
+                              key = `${announcement.title}|${announcement.message}|${roundedTime.getTime()}`;
+                            }
+                            
                             if (!groups[key]) {
                               groups[key] = {
                                 title: announcement.title,
                                 message: announcement.message,
                                 createdAt: announcement.createdAt,
-                                roles: [],
+                                roles: new Set(),
                                 ids: [],
                                 isRead: announcement.isRead
                               };
                             }
-                            groups[key].roles.push(announcement.recipientRole);
+                            
+                            // Use Set to avoid duplicate roles
+                            groups[key].roles.add(announcement.recipientRole);
                             groups[key].ids.push(announcement.id);
+                            
                             // If any announcement in the group is not read, mark the group as not read
                             if (!announcement.isRead) {
                               groups[key].isRead = false;
@@ -598,13 +679,7 @@ const Dashboard = () => {
                           }, {});
 
                           return Object.values(groupedAnnouncements).map((group, index) => (
-                            <div key={index} className="list-item" style={{ 
-                              border: '1px solid #e0e0e0', 
-                              borderRadius: '8px', 
-                              padding: '15px', 
-                              marginBottom: '10px',
-                              background: group.isRead ? '#f9f9f9' : '#fff'
-                            }}>
+                            <div key={index} className="announcement-card" data-status={group.isRead ? 'suspended' : 'active'}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                 <div style={{ flex: 1 }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
@@ -632,7 +707,7 @@ const Dashboard = () => {
                                     {group.message}
                                   </p>
                                   <div style={{ fontSize: '12px', color: '#888' }}>
-                                    <div>Target: {group.roles.join(', ')}</div>
+                                    <div>Target: {Array.from(group.roles).join(', ')}</div>
                                     <div>Sent: {new Date(group.createdAt).toLocaleString()}</div>
                                   </div>
                                 </div>
@@ -961,40 +1036,21 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="profile-meta">
-            <div style={{ position: 'relative', marginRight: 12 }}>
-              <button className="refresh-btn" onClick={() => setShowNotif(p => !p)} aria-label="Notifications">
-                🔔{unread > 0 && <span className="pending-badge">{unread}</span>}
-              </button>
-              {showNotif && (
-                <>
-                  <div 
-                    style={{ 
-                      position: 'fixed', 
-                      inset: 0, 
-                      zIndex: 10 
-                    }}
-                    onClick={() => setShowNotif(false)}
-                  />
-                  <div className="notification-dropdown">
-                    <div className="notification-header">
-                      <span>Notifications</span>
-                      {unread > 0 && <span className="notification-count">{unread}</span>}
-                    </div>
-                    <div className="notification-content">
-                      {notifications.length === 0 ? (
-                        <div className="notification-empty">No notifications</div>
-                      ) : notifications.map(n => (
-                        <div key={n.id} className={`notification-item ${!n.isRead ? 'unread' : ''}`}>
-                          <div className="notification-title">{n.title}</div>
-                          <div className="notification-message">{n.message}</div>
-                          <div className="notification-time">{new Date(n.createdAt).toLocaleString()}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+            <NotificationButton
+              unreadCount={unread}
+              onClick={() => setShowNotif(p => !p)}
+              showDropdown={showNotif}
+              style={{ marginRight: 12 }}
+            >
+              <NotificationDropdown
+                notifications={notifications}
+                unreadCount={unread}
+                markingAsRead={markingAsRead}
+                onMarkAsRead={handleMarkAsRead}
+                onMarkAllAsRead={handleMarkAllAsRead}
+                onClose={() => setShowNotif(false)}
+              />
+            </NotificationButton>
             <div className="email">{user?.email}</div>
             <button className="logout-btn" onClick={handleLogout}>Logout</button>
           </div>
