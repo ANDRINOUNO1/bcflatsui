@@ -109,7 +109,7 @@ export default function SuperAdminPage() {
   // Announcements state
   const [announcementTitle, setAnnouncementTitle] = useState('')
   const [announcementMessage, setAnnouncementMessage] = useState('')
-  const [announcementRoles, setAnnouncementRoles] = useState(['Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
+  const [announcementRoles, setAnnouncementRoles] = useState(['HeadAdmin', 'Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
   const [sendingAnnouncement, setSendingAnnouncement] = useState(false)
   const [announcements, setAnnouncements] = useState([])
   const [loadingAnnouncements, setLoadingAnnouncements] = useState(false)
@@ -156,7 +156,7 @@ export default function SuperAdminPage() {
   const [historySearchQuery, setHistorySearchQuery] = useState('')
 
   const statuses = useMemo(() => ['Active', 'Pending', 'Suspended', 'Deleted', 'Rejected'], [])
-  const roles = useMemo(() => ['Admin', 'SuperAdmin', 'Accounting', 'Tenant'], [])
+  const roles = useMemo(() => ['HeadAdmin', 'Admin', 'SuperAdmin', 'Accounting', 'Tenant'], [])
 
   const navigationItems = [
     {
@@ -478,7 +478,7 @@ export default function SuperAdminPage() {
       )
       setAnnouncementTitle('')
       setAnnouncementMessage('')
-      setAnnouncementRoles(['Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
+      setAnnouncementRoles(['HeadAdmin', 'Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
       alert('Announcement sent successfully to all selected roles!')
     } catch (e) {
       setError(e?.message || 'Failed to send announcement')
@@ -1084,7 +1084,7 @@ onChange={(e) => setSearchQuery(e.target.value)}
                       onClick={() => {
                         setAnnouncementTitle('')
                         setAnnouncementMessage('')
-                        setAnnouncementRoles(['Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
+                        setAnnouncementRoles(['HeadAdmin', 'Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
                       }}
                       style={{ 
                         padding: '0.75rem 1.5rem', 

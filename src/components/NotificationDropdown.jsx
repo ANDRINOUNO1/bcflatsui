@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const NotificationDropdown = ({ 
   notifications = [], 
@@ -8,61 +8,35 @@ const NotificationDropdown = ({
   onMarkAllAsRead,
   onClose
 }) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    // Trigger animation on mount
+    const timer = setTimeout(() => setIsVisible(true), 10);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(onClose, 200); // Allow animation to complete
+  };
+
   return (
     <>
-      {/* Overlay */}
+      {/* Enhanced Overlay */}
       <div 
-        style={{ 
-          position: 'fixed', 
-          inset: 0, 
-          zIndex: 10 
-        }}
-        onClick={onClose}
+        className={`notification-overlay ${isVisible ? 'visible' : ''}`}
+        onClick={handleClose}
       />
       
-      {/* Dropdown */}
-      <div 
-        style={{
-          position: 'absolute',
-          top: '100%',
-          right: 0,
-          width: '380px',
-          maxHeight: '500px',
-          background: 'white',
-          borderRadius: '12px',
-          boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-          border: '1px solid #e5e7eb',
-          zIndex: 20,
-          overflow: 'hidden',
-          marginTop: '8px'
-        }}
-      >
-        {/* Header */}
-        <div 
-          style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            padding: '16px 20px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderBottom: '1px solid #e5e7eb'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '18px' }}>🔔</span>
-            <span style={{ fontSize: '16px', fontWeight: '600' }}>Notifications</span>
+      {/* Enhanced Dropdown */}
+      <div className={`notification-dropdown ${isVisible ? 'visible' : ''}`}>
+        {/* Enhanced Header */}
+        <div className="notification-header">
+          <div className="notification-header-content">
+            <span className="notification-title">Notifications</span>
             {unreadCount > 0 && (
-              <span 
-                style={{
-                  background: 'rgba(255,255,255,0.2)',
-                  color: 'white',
-                  borderRadius: '12px',
-                  padding: '2px 8px',
-                  fontSize: '12px',
-                  fontWeight: 'bold'
-                }}
-              >
+              <span className="notification-badge">
                 {unreadCount} new
               </span>
             )}
@@ -71,145 +45,63 @@ const NotificationDropdown = ({
             <button
               onClick={onMarkAllAsRead}
               disabled={markingAsRead}
-              style={{
-                background: 'rgba(255,255,255,0.2)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                padding: '6px 12px',
-                fontSize: '12px',
-                fontWeight: '500',
-                cursor: markingAsRead ? 'not-allowed' : 'pointer',
-                opacity: markingAsRead ? 0.6 : 1,
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                if (!markingAsRead) {
-                  e.target.style.background = 'rgba(255,255,255,0.3)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!markingAsRead) {
-                  e.target.style.background = 'rgba(255,255,255,0.2)';
-                }
-              }}
+              className="mark-all-read-btn"
             >
               {markingAsRead ? '⏳' : '✓'} Mark All Read
             </button>
           )}
         </div>
         
-        {/* Content */}
-        <div 
-          style={{
-            maxHeight: '400px',
-            overflowY: 'auto',
-            padding: '8px 0'
-          }}
-        >
+        {/* Enhanced Content */}
+        <div className="notification-content">
           {notifications.length === 0 ? (
-            <div 
-              style={{
-                padding: '40px 20px',
-                textAlign: 'center',
-                color: '#6b7280',
-                fontSize: '14px'
-              }}
-            >
-              <div style={{ fontSize: '32px', marginBottom: '8px' }}>📭</div>
-              <div>No notifications yet</div>
+            <div className="notification-empty">
+              <div className="empty-icon">📭</div>
+              <div className="empty-text">No notifications yet</div>
+              <div className="empty-subtext">You'll see important updates here</div>
             </div>
-          ) : notifications.map(n => (
-            <div 
-              key={n.id} 
-              style={{
-                padding: '12px 20px',
-                borderBottom: '1px solid #f3f4f6',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                background: n.isRead ? '#fff' : '#f8fafc',
-                position: 'relative'
-              }}
-              onClick={() => !n.isRead && onMarkAsRead(n.id)}
-              onMouseEnter={(e) => {
-                e.target.style.background = n.isRead ? '#f9fafb' : '#f1f5f9';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background = n.isRead ? '#fff' : '#f8fafc';
-              }}
-            >
-              {!n.isRead && (
+          ) : (
+            <div className="notification-list">
+              {notifications.map((n, index) => (
                 <div 
-                  style={{
-                    position: 'absolute',
-                    left: '8px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: '8px',
-                    height: '8px',
-                    background: '#3b82f6',
-                    borderRadius: '50%'
-                  }}
-                />
-              )}
-              <div 
-                style={{
-                  fontWeight: n.isRead ? '500' : '600',
-                  fontSize: '14px',
-                  color: '#111827',
-                  marginBottom: '4px',
-                  marginLeft: n.isRead ? '0' : '16px'
-                }}
-              >
-                {n.title}
-              </div>
-              <div 
-                style={{
-                  fontSize: '13px',
-                  color: '#6b7280',
-                  marginBottom: '6px',
-                  marginLeft: n.isRead ? '0' : '16px',
-                  lineHeight: '1.4'
-                }}
-              >
-                {n.message}
-              </div>
-              <div 
-                style={{
-                  fontSize: '11px',
-                  color: '#9ca3af',
-                  marginLeft: n.isRead ? '0' : '16px'
-                }}
-              >
-                {new Date(n.createdAt).toLocaleString()}
-              </div>
-              {!n.isRead && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onMarkAsRead(n.id);
-                  }}
-                  disabled={markingAsRead}
-                  style={{
-                    position: 'absolute',
-                    right: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: '#3b82f6',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    padding: '4px 8px',
-                    fontSize: '10px',
-                    cursor: markingAsRead ? 'not-allowed' : 'pointer',
-                    opacity: markingAsRead ? 0.6 : 1
-                  }}
+                  key={n.id} 
+                  className={`notification-item ${n.isRead ? 'read' : 'unread'}`}
+                  onClick={() => !n.isRead && onMarkAsRead(n.id)}
+                  style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  ✓ Mark Read
-                </button>
-              )}
+                  {/* Enhanced Unread indicator */}
+                  {!n.isRead && <div className="unread-indicator" />}
+                  
+                  {/* Enhanced Notification content */}
+                  <div className="notification-text-content">
+                    <div className="notification-item-title">
+                      {n.title}
+                    </div>
+                    <div className="notification-item-message">
+                      {n.message}
+                    </div>
+                    <div className="notification-item-time">
+                      {new Date(n.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+                  
+                  {/* Enhanced Mark Read Button */}
+                  {!n.isRead && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onMarkAsRead(n.id);
+                      }}
+                      disabled={markingAsRead}
+                      className="mark-read-btn"
+                    >
+                      ✓ Mark Read
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       </div>
     </>

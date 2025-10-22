@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { roomService } from '../services/roomService'
 import { tenantService } from '../services/tenantService'
 import { paymentService } from '../services/paymentService'
 import { notificationService } from '../services/notificationService'
+import { navigationControlService } from '../services/navigationControlService'
+import { overduePaymentService } from '../services/overduePaymentService'
 import { fetchTenantsWithBillingInfo, fetchPaymentStats, formatCurrency, formatDate, getDueDateStatus } from '../functions/accounting'
 import RoomPage from './RoomPage'
 import TenantPage from './TenantPage'
@@ -18,7 +20,7 @@ import '../components/NotificationStyles.css'
 
 
 const Dashboard = () => {
-  const { user, logout, isAuthenticated } = useAuth()
+  const { user, logout, isAuthenticated, hasPermission } = useAuth()
   const [stats, setStats] = useState({
     totalRooms: 0,
     occupiedRooms: 0,
@@ -39,7 +41,7 @@ const Dashboard = () => {
   // Announcements state
   const [announcementTitle, setAnnouncementTitle] = useState('')
   const [announcementMessage, setAnnouncementMessage] = useState('')
-  const [announcementRoles, setAnnouncementRoles] = useState(['Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
+  const [announcementRoles, setAnnouncementRoles] = useState(['HeadAdmin', 'Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
   const [sendingAnnouncement, setSendingAnnouncement] = useState(false)
   const [announcements, setAnnouncements] = useState([])
   const [loadingAnnouncements, setLoadingAnnouncements] = useState(false)
@@ -50,6 +52,28 @@ const Dashboard = () => {
   const [accountingStats, setAccountingStats] = useState(null)
   const [accountingLoading, setAccountingLoading] = useState(false)
   const [accountingError, setAccountingError] = useState('')
+
+  // HeadAdmin state (Navigation Control)
+  const [admins, setAdmins] = useState([])
+  const [navigationPermissions, setNavigationPermissions] = useState([])
+  const [loadingAdmins, setLoadingAdmins] = useState(false)
+  const [showAdminModal, setShowAdminModal] = useState(false)
+  const [showNavigationModal, setShowNavigationModal] = useState(false)
+  const [selectedAdmin, setSelectedAdmin] = useState(null)
+  const [selectedNavigationItems, setSelectedNavigationItems] = useState([])
+  const [adminForm, setAdminForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: ''
+  })
+  const [adminSearchTerm, setAdminSearchTerm] = useState('')
+
+  // Overdue Payment state
+  const [overdueTenants, setOverdueTenants] = useState([])
+  const [overdueStats, setOverdueStats] = useState(null)
+  const [loadingOverdue, setLoadingOverdue] = useState(false)
+  const [overdueError, setOverdueError] = useState('')
 
   const fetchDashboardData = async () => {
     try {
@@ -117,12 +141,9 @@ const Dashboard = () => {
     const loadNotifs = async () => {
       try {
         const data = await notificationService.fetchMyNotifications(25)
-        // Filter out suspended announcements (SYSTEM type with isRead: true)
-        const filteredNotifications = (data || []).filter(n => 
-          !(n.type === 'SYSTEM' && n.isRead)
-        )
-        setNotifications(filteredNotifications)
-        setUnread(filteredNotifications.filter(n => !n.isRead).length)
+        // Keep all notifications, including read ones - don't filter out read SYSTEM notifications
+        setNotifications(data || [])
+        setUnread((data || []).filter(n => !n.isRead).length)
       } catch {
         // Silently fail - notifications are not critical
       }
@@ -148,12 +169,38 @@ const Dashboard = () => {
     }
   }, [activeTab, isAuthenticated])
 
+  // HeadAdmin functions (Navigation Control)
+  const loadHeadAdminData = useCallback(async () => {
+    if (user?.role !== 'HeadAdmin') return
+    
+    try {
+      setLoadingAdmins(true)
+      const [adminsData, permissionsData] = await Promise.all([
+        navigationControlService.getAllAdmins(),
+        navigationControlService.getNavigationPermissions()
+      ])
+      
+      setAdmins(adminsData)
+      setNavigationPermissions(permissionsData)
+    } catch (error) {
+      console.error('Failed to load HeadAdmin data:', error)
+    } finally {
+      setLoadingAdmins(false)
+    }
+  }, [user?.role])
+
+  // Load HeadAdmin data when user is HeadAdmin
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'HeadAdmin') {
+      loadHeadAdminData()
+    }
+  }, [isAuthenticated, user?.role, loadHeadAdminData])
+
   const fetchAccountingData = async () => {
     try {
       setAccountingLoading(true)
       setAccountingError('')
       
-      const errorModal = { open: false, title: '', message: '', details: '' }
       await Promise.all([
         fetchTenantsWithBillingInfo(setAccountingLoading, setAccountingTenants, () => setAccountingError('Failed to load tenant data')),
         fetchPaymentStats(setAccountingStats, () => setAccountingError('Failed to load payment stats'))
@@ -166,6 +213,45 @@ const Dashboard = () => {
     }
   }
 
+  // Fetch overdue payment data
+  const fetchOverdueData = async () => {
+    try {
+      setLoadingOverdue(true)
+      setOverdueError('')
+      
+      const [overdueTenantsData, overdueStatsData] = await Promise.all([
+        overduePaymentService.getOverdueTenants(),
+        overduePaymentService.getOverdueStats()
+      ])
+      
+      setOverdueTenants(overdueTenantsData)
+      setOverdueStats(overdueStatsData)
+    } catch (error) {
+      console.error('Failed to fetch overdue data:', error)
+      setOverdueError('Failed to load overdue payment data')
+    } finally {
+      setLoadingOverdue(false)
+    }
+  }
+
+  // Manually check for overdue payments and send notifications
+  const handleCheckOverduePayments = async () => {
+    try {
+      setLoadingOverdue(true)
+      const result = await overduePaymentService.checkOverduePayments()
+      
+      // Refresh overdue data after checking
+      await fetchOverdueData()
+      
+      alert(`Overdue payment check completed!\n\nChecked: ${result.checked} tenants\nNotifications sent: ${result.overdue}`)
+    } catch (error) {
+      console.error('Failed to check overdue payments:', error)
+      alert('Failed to check overdue payments: ' + error.message)
+    } finally {
+      setLoadingOverdue(false)
+    }
+  }
+
   const handleRefresh = async () => {
     setRefreshing(true)
     await fetchDashboardData()
@@ -174,6 +260,77 @@ const Dashboard = () => {
   const handleLogout = () => {
     logout()
   }
+
+  // HeadAdmin handler functions
+  const handleCreateAdmin = async (e) => {
+    e.preventDefault()
+    try {
+      await navigationControlService.createAdmin(adminForm)
+      await loadHeadAdminData()
+      setShowAdminModal(false)
+      setAdminForm({ firstName: '', lastName: '', email: '', password: '' })
+      alert('Admin created successfully!')
+    } catch (error) {
+      alert('Failed to create admin: ' + error.message)
+    }
+  }
+
+  const handleUpdateNavigationPermissions = async () => {
+    if (!selectedAdmin) return
+
+    try {
+      await navigationControlService.updateAdminNavigationPermissions(selectedAdmin.id, selectedNavigationItems)
+      await loadHeadAdminData()
+      setShowNavigationModal(false)
+      setSelectedAdmin(null)
+      setSelectedNavigationItems([])
+      alert('Navigation permissions updated successfully! Admin should refresh their access to see changes.')
+    } catch (error) {
+      alert('Failed to update navigation permissions: ' + error.message)
+    }
+  }
+
+  const handleDeactivateAdmin = async (adminId) => {
+    if (!confirm('Are you sure you want to deactivate this admin?')) return
+
+    try {
+      await navigationControlService.deactivateAdmin(adminId)
+      await loadHeadAdminData()
+      alert('Admin deactivated successfully!')
+    } catch (error) {
+      alert('Failed to deactivate admin: ' + error.message)
+    }
+  }
+
+  const handleDeleteAdmin = async (adminId) => {
+    if (!confirm('Are you sure you want to delete this admin? This action cannot be undone.')) return
+
+    try {
+      await navigationControlService.deleteAdmin(adminId)
+      await loadHeadAdminData()
+      alert('Admin deleted successfully!')
+    } catch (error) {
+      alert('Failed to delete admin: ' + error.message)
+    }
+  }
+
+  const openNavigationModal = async (admin) => {
+    setSelectedAdmin(admin)
+    setSelectedNavigationItems(admin.permissions.map(p => p.id))
+    setShowNavigationModal(true)
+  }
+
+  // Filter admins based on search term
+  const filteredAdmins = admins.filter(admin => {
+    if (!adminSearchTerm) return true
+    const searchLower = adminSearchTerm.toLowerCase()
+    return (
+      admin.email.toLowerCase().includes(searchLower) ||
+      admin.firstName.toLowerCase().includes(searchLower) ||
+      admin.lastName.toLowerCase().includes(searchLower) ||
+      `${admin.firstName} ${admin.lastName}`.toLowerCase().includes(searchLower)
+    )
+  })
 
   // Announcement handlers
   const handleSendAnnouncement = async (e) => {
@@ -198,7 +355,7 @@ const Dashboard = () => {
       )
       setAnnouncementTitle('')
       setAnnouncementMessage('')
-      setAnnouncementRoles(['Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
+      setAnnouncementRoles(['HeadAdmin', 'Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
       setAnnouncementError('')
       alert('Announcement sent successfully to all selected roles!')
       // Refresh announcements list
@@ -289,17 +446,243 @@ const Dashboard = () => {
     }
   }
 
-  const navigationItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-    { id: 'rooms', label: 'Rooms', icon: '🏠' },
-    { id: 'tenants', label: 'Tenants', icon: '👥' },
-    { id: 'accounting-view', label: 'Accounting View', icon: '💰' },
-    { id: 'pricing', label: 'Pricing', icon: '💵' },
-    { id: 'maintenance', label: 'Maintenance', icon: '🔧' },
-    { id: 'announcements', label: 'Announcements', icon: '📢' },
-    { id: 'archives', label: 'Archives', icon: '📦' },
-    { id: 'add-account', label: 'Add Account', icon: '👤' }
-  ]
+      const navigationItems = [
+        { id: 'dashboard', label: 'Dashboard', icon: '📊', permission: { resource: 'navigation', action: 'dashboard' } },
+        { id: 'rooms', label: 'Rooms', icon: '🏠', permission: { resource: 'navigation', action: 'rooms' } },
+        { id: 'tenants', label: 'Tenants', icon: '👥', permission: { resource: 'navigation', action: 'tenants' } },
+        { id: 'accounting-view', label: 'Accounting View', icon: '💰', permission: { resource: 'navigation', action: 'accounting' } },
+        { id: 'overdue-payments', label: 'Overdue Payments', icon: '⚠️', permission: { resource: 'navigation', action: 'overdue_payments' } },
+        { id: 'pricing', label: 'Pricing', icon: '💵', permission: { resource: 'navigation', action: 'pricing' } },
+        { id: 'maintenance', label: 'Maintenance', icon: '🔧', permission: { resource: 'navigation', action: 'maintenance' } },
+        { id: 'announcements', label: 'Announcements', icon: '📢', permission: { resource: 'navigation', action: 'announcements' } },
+        { id: 'archives', label: 'Archives', icon: '📦', permission: { resource: 'navigation', action: 'archives' } },
+        { id: 'add-account', label: 'Add Account', icon: '👤', permission: { resource: 'navigation', action: 'add_account' } },
+        // HeadAdmin specific tabs
+        ...(user?.role === 'HeadAdmin' ? [
+          { id: 'admin-management', label: 'Admin Management', icon: '👑', permission: { resource: 'admin', action: 'manage' } },
+          { id: 'navigation-control', label: 'Navigation Control', icon: '🧭', permission: { resource: 'navigation', action: 'control' } }
+        ] : [])
+      ]
+
+  // HeadAdmin render functions
+  const renderAdminManagement = () => (
+    <div className="dashboard-screen">
+      <div className="dashboard-header-gradient">
+        <div className="dash-container">
+          <div className="dash-header-row">
+            <div>
+              <h1 className="dash-title">👑 Admin Management</h1>
+              <p className="dash-subtitle">Manage admin accounts and their permissions</p>
+            </div>
+            <button
+              onClick={() => setShowAdminModal(true)}
+              className="btn-primary refresh-btn"
+            >
+              ➕ Create Admin
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="dash-container dash-content">
+        <div className="overview-grid">
+          {loadingAdmins ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>Loading admins...</div>
+          ) : (
+            <div className="admin-management-grid">
+              {filteredAdmins.filter(admin => admin.role === 'Admin').map(admin => (
+                <div key={admin.id} className="admin-card">
+                  <div className="admin-header">
+                    <div className="admin-info">
+                      <h3>{admin.firstName} {admin.lastName}</h3>
+                      <p className="admin-email">{admin.email}</p>
+                      <div className="admin-badges">
+                        <span className="role-badge admin">ADMIN</span>
+                        <span className={`status-badge ${admin.status === 'Active' ? 'active' : 'inactive'}`}>
+                          {admin.status === 'Active' ? 'ACTIVE' : 'INACTIVE'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="admin-details">
+                    <div className="detail-item">
+                      <span className="detail-label">Roles:</span>
+                      <span className="detail-value">{admin.role} (Level {admin.roleLevel || 50})</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Permissions:</span>
+                      <span className="detail-value">{admin.permissions?.length || 0} permissions</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Created:</span>
+                      <span className="detail-value">{new Date(admin.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+
+                  <div className="admin-actions">
+                    <button 
+                      className="btn-secondary"
+                      onClick={() => openNavigationModal(admin)}
+                    >
+                      🧭 Manage Navigation
+                    </button>
+                    <button 
+                      className="btn-warning"
+                      onClick={() => handleDeactivateAdmin(admin.id)}
+                    >
+                      ⏸️ Deactivate
+                    </button>
+                    <button 
+                      className="btn-danger"
+                      onClick={() => handleDeleteAdmin(admin.id)}
+                    >
+                      🗑️ Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+
+  const renderNavigationControl = () => (
+    <div className="dashboard-screen">
+      <div className="dashboard-header-gradient">
+        <div className="dash-container">
+          <div className="dash-header-row">
+            <div>
+              <h1 className="dash-title">🧭 Navigation Control</h1>
+              <p className="dash-subtitle">Control which navigation items each Admin can access in their dashboard</p>
+            </div>
+            <div className="nav-control-actions">
+              <button
+                onClick={() => setShowAdminModal(true)}
+                className="btn-primary refresh-btn"
+              >
+                ➕ Create New Admin
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="dash-container dash-content">
+        {/* Admin Search Bar */}
+        <div className="admin-search-section">
+          <div className="search-card">
+            <div className="search-header">
+              <h3>🔍 Search Admins</h3>
+              <p>Search by name or email to find specific admin accounts</p>
+            </div>
+            <div className="search-input-container">
+              <input
+                type="text"
+                placeholder="Search by name or email..."
+                value={adminSearchTerm}
+                onChange={(e) => setAdminSearchTerm(e.target.value)}
+                className="admin-search-input"
+              />
+              <div className="search-icon">🔍</div>
+            </div>
+            {adminSearchTerm && (
+              <div className="search-results-info">
+                Found {filteredAdmins.filter(admin => admin.role === 'Admin').length} admin(s) matching "{adminSearchTerm}"
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="overview-grid">
+          <div className="navigation-control-grid">
+            {loadingAdmins ? (
+              <div className="loading-state">
+                <div className="loading-spinner"></div>
+                <p>Loading admin accounts...</p>
+              </div>
+            ) : filteredAdmins.filter(admin => admin.role === 'Admin').length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">👥</div>
+                <h3>No Admin Accounts Found</h3>
+                <p>Create admin accounts to manage their navigation access</p>
+                <button 
+                  className="btn-primary"
+                  onClick={() => setShowAdminModal(true)}
+                >
+                  Create Admin Account
+                </button>
+              </div>
+            ) : (
+              filteredAdmins.filter(admin => admin.role === 'Admin').map(admin => (
+                <div key={admin.id} className="admin-navigation-card">
+                  <div className="admin-header">
+                    <div className="admin-info">
+                      <h3>{admin.firstName} {admin.lastName}</h3>
+                      <p className="admin-email">{admin.email}</p>
+                      <div className="admin-badges">
+                        <span className="role-badge admin">ADMIN</span>
+                        <span className={`status-badge ${admin.status === 'Active' ? 'active' : 'inactive'}`}>
+                          {admin.status === 'Active' ? 'ACTIVE' : 'INACTIVE'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="navigation-items">
+                    <h4>📋 Navigation Access Control</h4>
+                    <p className="nav-description">Click "Manage Navigation" to control which items this Admin can access</p>
+                    
+                    <div className="nav-items-grid">
+                      {navigationPermissions.map(navItem => {
+                        const hasPermission = admin.permissions?.some(p => p.id === navItem.id);
+                        
+                        return (
+                          <div 
+                            key={navItem.id} 
+                            className={`nav-item-control ${hasPermission ? 'enabled' : 'disabled'}`}
+                          >
+                            <div className="nav-item-info">
+                              <span className="nav-icon">📄</span>
+                              <div className="nav-details">
+                                <span className="nav-label">{navItem.name}</span>
+                                <span className="nav-description">{navItem.description}</span>
+                              </div>
+                            </div>
+                            <div className="nav-status">
+                              <span className={`status-badge ${hasPermission ? 'enabled' : 'disabled'}`}>
+                                {hasPermission ? '✅ Enabled' : '❌ Disabled'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="admin-actions">
+                    <button 
+                      className="btn-primary"
+                      onClick={() => openNavigationModal(admin)}
+                    >
+                      🔧 Manage Navigation Access
+                    </button>
+                    <div className="refresh-status">
+                      <span className="refresh-info">
+                        💡 Admin should use "Refresh Access" button to see changes immediately
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 
   const renderContent = () => {
     switch (activeTab) {
@@ -753,6 +1136,10 @@ const Dashboard = () => {
         return <ArchivedTenantsPage />
       case 'add-account':
         return <AddAccountPage />
+      case 'admin-management':
+        return renderAdminManagement()
+      case 'navigation-control':
+        return renderNavigationControl()
       case 'dashboard':
       default:
         return (
@@ -762,9 +1149,12 @@ const Dashboard = () => {
             <div className="dash-container">
               <div className="dash-header-row">
                 <div>
-                  <h1 className="dash-title">Admin Dashboard</h1>
+                  <h1 className="dash-title">{user?.role === 'HeadAdmin' ? 'Head Admin Dashboard' : 'Admin Dashboard'}</h1>
                   <p className="dash-subtitle">
-                    Manage your student housing efficiently with real-time data.
+                    {user?.role === 'HeadAdmin' 
+                      ? 'Manage admins, permissions, and system access with full control.' 
+                      : 'Manage your student housing efficiently with real-time data.'
+                    }
                   </p>
                 </div>
                 <button
@@ -1031,8 +1421,8 @@ const Dashboard = () => {
               <span className="hamburger-icon">☰</span>
             </button>
             <div className="logoo">
-              <span className="logo-icon">🏢</span>
-              <span className="logo-text">Admin Dashboard</span>
+              <span className="logo-icon">{user?.role === 'HeadAdmin' ? '👑' : '🏢'}</span>
+              <span className="logo-text">{user?.role === 'HeadAdmin' ? 'Head Admin Dashboard' : 'Admin Dashboard'}</span>
             </div>
           </div>
           <div className="profile-meta">
@@ -1062,7 +1452,7 @@ const Dashboard = () => {
         {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>}
         
         {/* Sidebar */}
-        <aside className="dashboard-sidebar">
+        <aside className={`dashboard-sidebar ${sidebarOpen ? 'open' : ''}`}>
           {/* BCFLATS Branding */}
           <div className="sidebar-brand">
             <div className="brand-logo">BCFLATS</div>
@@ -1070,16 +1460,28 @@ const Dashboard = () => {
 
           {/* Navigation */}
           <nav className="sidebar-nav">
-            {navigationItems.map((item) => (
+            {navigationItems.map((item) => {
+              // Check if user has permission for this navigation item
+              const hasAccess = !item.permission || hasPermission('navigation', item.permission.action);
+              
+              return (
               <button
                 key={item.id}
-                className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
-                onClick={() => setActiveTab(item.id)}
+                  className={`nav-item ${activeTab === item.id ? 'active' : ''} ${!hasAccess ? 'locked' : ''}`}
+                  onClick={() => {
+                    if (hasAccess) {
+                      setActiveTab(item.id);
+                    }
+                  }}
+                  disabled={!hasAccess}
+                  title={!hasAccess ? 'Access restricted - Contact Head Admin' : ''}
               >
                 <span className="nav-icon">{item.icon}</span>
                 <span className="nav-label">{item.label}</span>
+                  {!hasAccess && <span className="lock-icon">🔒</span>}
               </button>
-            ))}
+              );
+            })}
           </nav>
 
           {/* User Profile */}
@@ -1098,10 +1500,6 @@ const Dashboard = () => {
 
           {/* Footer Actions */}
           <div className="sidebar-footer">
-            <button className="theme-toggle-btn">
-              <span className="nav-icon">🌙</span>
-              <span className="nav-label">Light</span>
-            </button>
             <button className="logout-btn" onClick={handleLogout}>
               <span className="nav-icon">🚪</span>
               <span className="nav-label">Logout</span>
@@ -1114,6 +1512,160 @@ const Dashboard = () => {
           {renderContent()}
         </main>
       </div>
+
+      {/* HeadAdmin Modals */}
+      {showAdminModal && (
+        <div className="modal-overlay" onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setShowAdminModal(false);
+            setAdminForm({ firstName: '', lastName: '', email: '', password: '' });
+          }
+        }}>
+          <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">Create New Admin</h3>
+              <button 
+                className="modal-close" 
+                onClick={() => {
+                  setShowAdminModal(false);
+                  setAdminForm({ firstName: '', lastName: '', email: '', password: '' });
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="modal-body">
+              <form onSubmit={handleCreateAdmin}>
+                <div className="form-group">
+                  <label htmlFor="firstName">First Name</label>
+                  <input
+                    type="text"
+                    id="firstName"
+                    value={adminForm.firstName}
+                    onChange={(e) => setAdminForm(prev => ({ ...prev, firstName: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="lastName">Last Name</label>
+                  <input
+                    type="text"
+                    id="lastName"
+                    value={adminForm.lastName}
+                    onChange={(e) => setAdminForm(prev => ({ ...prev, lastName: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="email">Email</label>
+                  <input
+                    type="email"
+                    id="email"
+                    value={adminForm.email}
+                    onChange={(e) => setAdminForm(prev => ({ ...prev, email: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="password">Password</label>
+                  <input
+                    type="password"
+                    id="password"
+                    value={adminForm.password}
+                    onChange={(e) => setAdminForm(prev => ({ ...prev, password: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div className="modal-actions">
+                  <button type="button" className="btn-secondary" onClick={() => setShowAdminModal(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-primary">
+                    Create Admin
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showNavigationModal && selectedAdmin && (
+        <div className="modal-overlay" onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setShowNavigationModal(false);
+            setSelectedAdmin(null);
+            setSelectedNavigationItems([]);
+          }
+        }}>
+          <div className="modal-container large-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">Manage Navigation Access - {selectedAdmin.firstName} {selectedAdmin.lastName}</h3>
+              <button 
+                className="modal-close" 
+                onClick={() => {
+                  setShowNavigationModal(false);
+                  setSelectedAdmin(null);
+                  setSelectedNavigationItems([]);
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="navigation-permissions">
+                <h4>Select Navigation Items This Admin Can Access:</h4>
+                <div className="permissions-grid">
+                  {navigationPermissions.map(permission => (
+                    <div key={permission.id} className="permission-item">
+                      <label className="permission-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={selectedNavigationItems.includes(permission.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedNavigationItems(prev => [...prev, permission.id]);
+                            } else {
+                              setSelectedNavigationItems(prev => prev.filter(id => id !== permission.id));
+                            }
+                          }}
+                        />
+                        <span className="permission-label">
+                          <span className="permission-icon">📄</span>
+                          <div className="permission-info">
+                            <span className="permission-name">{permission.name}</span>
+                            <span className="permission-description">{permission.description}</span>
+                          </div>
+                        </span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="modal-actions">
+                <button 
+                  type="button" 
+                  className="btn-secondary" 
+                  onClick={() => {
+                    setShowNavigationModal(false);
+                    setSelectedAdmin(null);
+                    setSelectedNavigationItems([]);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="btn-primary" 
+                  onClick={handleUpdateNavigationPermissions}
+                >
+                  Update Permissions
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
