@@ -279,14 +279,7 @@ const LoginPage = () => {
             </button>
           </form>
 
-          <div className="login-footer">
-            <p>
-              Don't have an account?{' '}
-              <Link to="/register" className="register-link">
-                Sign up here
-              </Link>
-            </p>
-          </div>
+          
           <Link to="/" className="back-link">
             ← Back to Home
           </Link>
