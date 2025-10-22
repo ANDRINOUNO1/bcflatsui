@@ -2,10 +2,10 @@ import axios from 'axios';
 
 
 const ENV_BASE = import.meta?.env?.VITE_API_BASE_URL;
-const FALLBACK_BASE = 'http://localhost:3000';
-const DEFAULT_API = 'http://localhost:3000/api';
-//const FALLBACK_BASE = 'https://bcflatsback-production.up.railway.app';
-//const DEFAULT_API = 'https://bcflatsback-production.up.railway.app/api';
+//const FALLBACK_BASE = 'http://localhost:3000';
+//const DEFAULT_API = 'http://localhost:3000/api';
+const FALLBACK_BASE = 'https://bcflatsback-production.up.railway.app';
+const DEFAULT_API = 'https://bcflatsback-production.up.railway.app/api';
 
 // Normalize to ensure "/api" suffix is present exactly once
 function normalizeApiBase(baseUrl) {
