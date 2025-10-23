@@ -2,7 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { notificationService } from '../services/notificationService';
+import { tenantService } from '../services/tenantService';
+import NotificationButton from '../components/NotificationButton';
+import NotificationDropdown from '../components/NotificationDropdown';
 import '../components/TenantDashboard.css';
+import '../components/NotificationStyles.css';
 import {
     fetchTenantData,
     fetchPaymentHistory,
@@ -41,6 +45,17 @@ const TenantDashboard = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [markingAsRead, setMarkingAsRead] = useState(false);
+  const [announcements, setAnnouncements] = useState([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(false);
+  
+  // Emergency contact modal states
+  const [emergencyContactModal, setEmergencyContactModal] = useState({ open: false, loading: false });
+  const [emergencyContactForm, setEmergencyContactForm] = useState({
+    name: '',
+    phone: '',
+    relationship: ''
+  });
 
   const fetchTenantDataWrapper = useCallback(async () => {
     await fetchTenantData(user?.id, setLoading, setBillingError, setRoomError, setTenantData, setBillingInfo, setRoomData, setMaintenanceRequests, setErrorModal, setRefreshing);
@@ -64,13 +79,101 @@ const TenantDashboard = () => {
 
   const handleRefreshWrapper = async () => {
     await handleRefresh(setRefreshing, fetchTenantDataWrapper, fetchPaymentHistoryWrapper);
+    await fetchAnnouncements();
+  };
+
+  const fetchAnnouncements = useCallback(async () => {
+    try {
+      setAnnouncementsLoading(true);
+      const notifications = await notificationService.fetchMyNotifications(50);
+      // Filter for announcements
+      const announcementNotifications = notifications.filter(notif => 
+        notif.type === 'announcement' || notif.metadata?.isAnnouncement
+      );
+      setAnnouncements(announcementNotifications);
+    } catch (err) {
+      console.error('Failed to load announcements:', err);
+    } finally {
+      setAnnouncementsLoading(false);
+    }
+  }, []);
+
+  // Emergency contact modal functions
+  const openEmergencyContactModal = () => {
+    setEmergencyContactForm({
+      name: tenantData?.emergencyContact?.name || '',
+      phone: tenantData?.emergencyContact?.phone || '',
+      relationship: tenantData?.emergencyContact?.relationship || ''
+    });
+    setEmergencyContactModal({ open: true, loading: false });
+  };
+
+  const closeEmergencyContactModal = () => {
+    setEmergencyContactModal({ open: false, loading: false });
+    setEmergencyContactForm({ name: '', phone: '', relationship: '' });
+  };
+
+  const handleEmergencyContactSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!emergencyContactForm.name || !emergencyContactForm.phone || !emergencyContactForm.relationship) {
+      setErrorModal({
+        open: true,
+        title: 'Validation Error',
+        message: 'Please fill in all emergency contact fields.',
+        details: ''
+      });
+      return;
+    }
+
+    setEmergencyContactModal({ open: true, loading: true });
+    
+    try {
+      const updateData = {
+        emergencyContact: {
+          name: emergencyContactForm.name.trim(),
+          phone: emergencyContactForm.phone.trim(),
+          relationship: emergencyContactForm.relationship.trim()
+        }
+      };
+      
+      await tenantService.updateTenant(tenantData.id, updateData);
+      
+      // Update local state
+      setTenantData(prev => ({
+        ...prev,
+        emergencyContact: updateData.emergencyContact
+      }));
+      
+      closeEmergencyContactModal();
+      
+      // Show success message
+      setErrorModal({
+        open: true,
+        title: 'Success',
+        message: 'Emergency contact information updated successfully!',
+        details: ''
+      });
+      
+    } catch (err) {
+      console.error('Failed to update emergency contact:', err);
+      setErrorModal({
+        open: true,
+        title: 'Update Failed',
+        message: err.response?.data?.message || 'Failed to update emergency contact information.',
+        details: err.message
+      });
+    } finally {
+      setEmergencyContactModal({ open: true, loading: false });
+    }
   };
 
   useEffect(() => {
     if (user) {
       fetchTenantDataWrapper();
+      fetchAnnouncements();
     }
-  }, [user, fetchTenantDataWrapper]);
+  }, [user, fetchTenantDataWrapper, fetchAnnouncements]);
 
   // Poll notifications
   useEffect(() => {
@@ -91,6 +194,52 @@ const TenantDashboard = () => {
     return () => intervalId && clearInterval(intervalId);
   }, [user]);
 
+  // Handle notification dropdown visibility changes
+  const handleNotificationToggle = async (isOpen) => {
+    if (isOpen && unreadCount > 0) {
+      try {
+        // Mark all notifications as read when dropdown is opened
+        await notificationService.markAllAsRead();
+        
+        // Update local state immediately
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        setUnreadCount(0);
+      } catch (err) {
+        console.error('Failed to mark notifications as read:', err);
+      }
+    }
+  };
+
+  // Mark notification as read
+  const handleMarkAsRead = async (notificationId) => {
+    try {
+      setMarkingAsRead(true);
+      await notificationService.markAsRead(notificationId);
+      setNotifications(prev => prev.map(n => 
+        n.id === notificationId ? { ...n, isRead: true } : n
+      ));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    } finally {
+      setMarkingAsRead(false);
+    }
+  };
+
+  // Mark all notifications as read
+  const handleMarkAllAsRead = async () => {
+    try {
+      setMarkingAsRead(true);
+      await notificationService.markAllAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    } finally {
+      setMarkingAsRead(false);
+    }
+  };
+
   useEffect(() => {
     if (showPaymentHistory && tenantData?.id) {
       fetchPaymentHistoryWrapper();
@@ -99,7 +248,7 @@ const TenantDashboard = () => {
 
   // Handle body scroll when modals are open
   useEffect(() => {
-    if (paymentModal.open || errorModal.open) {
+    if (paymentModal.open || errorModal.open || emergencyContactModal.open) {
       document.body.classList.add('modal-open');
     } else {
       document.body.classList.remove('modal-open');
@@ -109,7 +258,7 @@ const TenantDashboard = () => {
     return () => {
       document.body.classList.remove('modal-open');
     };
-  }, [paymentModal.open, errorModal.open]);
+  }, [paymentModal.open, errorModal.open, emergencyContactModal.open]);
 
   if (loading) {
     return (
@@ -190,43 +339,28 @@ const TenantDashboard = () => {
               <p className="tenant-welcome-subtitle">Here's an overview of your home and account.</p>
             </div>
             <div className="tenant-header-actions" style={{ position: 'relative', display: 'flex', gap: 8 }}>
-              <button
-                onClick={() => setShowNotifications(prev => !prev)}
-                className="tenant-refresh-button"
-                aria-label="Notifications"
-                style={{ position: 'relative' }}
-              >
-                🔔 {unreadCount > 0 && <span className="notif-badge">{unreadCount}</span>}
-              </button>
-              {showNotifications && (
-                <>
-                  <div 
-                    style={{ 
-                      position: 'fixed', 
-                      top: 0, 
-                      left: 0, 
-                      right: 0, 
-                      bottom: 0, 
-                      zIndex: 40 
-                    }}
-                    onClick={() => setShowNotifications(false)}
-                  />
-                  <div className="notif-dropdown">
-                    <div style={{ padding: 12, borderBottom: '1px solid #eee', fontWeight: 700 }}>Notifications</div>
-                    <div style={{ maxHeight: 300, overflowY: 'auto' }}>
-                      {notifications.length === 0 ? (
-                        <div style={{ padding: 12, color: '#777' }}>No notifications</div>
-                      ) : notifications.map(n => (
-                        <div key={n.id} style={{ padding: 12, borderBottom: '1px solid #f0f0f0', background: n.isRead ? '#fff' : '#f9fbff' }}>
-                          <div style={{ fontWeight: 600, marginBottom: 4 }}>{n.title}</div>
-                          <div style={{ fontSize: 13, color: '#444' }}>{n.message}</div>
-                          <div style={{ fontSize: 12, color: '#999', marginTop: 6 }}>{new Date(n.createdAt).toLocaleString()}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
+            <NotificationButton
+              unreadCount={unreadCount}
+              onClick={() => {
+                const newShowState = !showNotifications;
+                setShowNotifications(newShowState);
+                handleNotificationToggle(newShowState);
+              }}
+              showDropdown={showNotifications}
+              style={{ marginRight: 12 }}
+            >
+              <NotificationDropdown
+                notifications={notifications}
+                unreadCount={unreadCount}
+                markingAsRead={markingAsRead}
+                onMarkAsRead={handleMarkAsRead}
+                onMarkAllAsRead={handleMarkAllAsRead}
+                onClose={() => {
+                  setShowNotifications(false);
+                  handleNotificationToggle(false);
+                }}
+              />
+            </NotificationButton>
               <button
                 onClick={handleRefreshWrapper}
                 disabled={refreshing}
@@ -443,7 +577,7 @@ const TenantDashboard = () => {
             <div className="info-row info-row--light-border">
               <span className="info-label">Floor:</span>
               <span className="info-value">
-                {roomError ? 'Unavailable' : roomData?.floor ? `${roomData.floor}${getFloorSuffix(roomData.floor)}` : 'N/A'}
+                {roomError ? 'Unavailable' : roomData?.floor ? getFloorSuffix(roomData.floor) : 'N/A'}
               </span>
             </div>
             <div className="info-row info-row--light-border">
@@ -585,7 +719,10 @@ const TenantDashboard = () => {
               </div>
             </div>
             <div className="card-footer-action">
-              <button className="btn-full-width">
+              <button 
+                className="btn-full-width"
+                onClick={openEmergencyContactModal}
+              >
                 Update Contact Info
               </button>
             </div>
@@ -628,27 +765,55 @@ const TenantDashboard = () => {
 
         <div className="content-card">
           <h3 className="card-title card-title-with-icon">
-            <span className="card-title-icon">👥</span>
-            Community & Events
+            <span className="card-title-icon">📢</span>
+            Building Announcements
           </h3>
-          <div className="community-grid">
-            <div className="community-card community-card--blue">
-              <h4 className="community-card-title">📢 Building Announcements</h4>
-              <p className="community-card-text">Welcome to {roomData?.building || 'BCFlats'}!</p>
+          <p className="card-description">
+            Stay updated with the latest announcements from building management.
+          </p>
+          
+          {announcementsLoading ? (
+            <div className="loading-container">
+              <div className="loading-spinner"></div>
+              <p className="loading-text">Loading announcements...</p>
             </div>
-            <div className="community-card community-card--green">
-              <h4 className="community-card-title">🛒 Community Board</h4>
-              <p className="community-card-text">Buy/Sell/Share items with neighbors</p>
+          ) : announcements.length > 0 ? (
+            <div className="announcements-list">
+              {announcements.map((announcement, index) => (
+                <div key={announcement.id || index} className="announcement-card">
+                  <div className="announcement-card-header">
+                    <h4 className="announcement-card-title">{announcement.title}</h4>
+                    <span className="announcement-card-date">
+                      {new Date(announcement.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                  <div className="announcement-card-content">
+                    <p>{announcement.message}</p>
+                  </div>
+                  <div className="announcement-card-footer">
+                    <span className="announcement-card-type">📢 Announcement</span>
+                    {announcement.metadata?.createdByName && (
+                      <span className="announcement-card-author">
+                        By: {announcement.metadata.createdByName}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="community-card community-card--purple">
-              <h4 className="community-card-title">🎬 Event Calendar</h4>
-              <p className="community-card-text">Movie night on {roomData?.floor ? `${getFloorSuffix(roomData.floor)} floor` : 'ground floor'}</p>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-state-icon">📢</div>
+              <h4 className="empty-state-title">No Announcements</h4>
+              <p className="empty-state-text">There are no announcements at the moment. Check back later for updates!</p>
             </div>
-            <div className="community-card community-card--orange">
-              <h4 className="community-card-title">🏠 Floor Meeting</h4>
-              <p className="community-card-text">{roomData?.floor ? `${getFloorSuffix(roomData.floor)} floor` : 'Building'} residents meeting</p>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -773,6 +938,108 @@ const TenantDashboard = () => {
                 ) : (
                   <>
                     💳 Process Payment
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Emergency Contact Modal */}
+      {emergencyContactModal.open && (
+        <div className="modal-overlay" onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            closeEmergencyContactModal();
+          }
+        }}>
+          <div className="modal-container payment-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header payment-modal-header">
+              <div className="modal-title-content payment-modal-title-content">
+                <span className="modal-icon payment-modal-icon">🚨</span>
+                <h3 className="modal-title payment-modal-title">Update Emergency Contact</h3>
+              </div>
+              <button 
+                aria-label="Close" 
+                className="modal-close payment-modal-close" 
+                onClick={closeEmergencyContactModal}
+                disabled={emergencyContactModal.loading}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="modal-body payment-modal-body">
+              <form onSubmit={handleEmergencyContactSubmit} className="modal-form payment-form">
+                <div className="form-group">
+                  <label htmlFor="contactName" className="form-label">
+                    Contact Name <span className="required">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="contactName"
+                    className="form-input"
+                    value={emergencyContactForm.name}
+                    onChange={(e) => setEmergencyContactForm(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Enter emergency contact name"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="contactPhone" className="form-label">
+                    Phone Number <span className="required">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    id="contactPhone"
+                    className="form-input"
+                    value={emergencyContactForm.phone}
+                    onChange={(e) => setEmergencyContactForm(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="Enter phone number"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="contactRelationship" className="form-label">
+                    Relationship <span className="required">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="contactRelationship"
+                    className="form-input"
+                    value={emergencyContactForm.relationship}
+                    onChange={(e) => setEmergencyContactForm(prev => ({ ...prev, relationship: e.target.value }))}
+                    placeholder="e.g., Parent, Sibling, Friend"
+                    required
+                  />
+                </div>
+              </form>
+            </div>
+            <div className="modal-footer payment-modal-footer">
+              <button 
+                type="button" 
+                className="modal-btn modal-btn-secondary"
+                onClick={closeEmergencyContactModal}
+                disabled={emergencyContactModal.loading}
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                className="modal-btn modal-btn-primary"
+                onClick={handleEmergencyContactSubmit}
+                disabled={emergencyContactModal.loading || !emergencyContactForm.name || !emergencyContactForm.phone || !emergencyContactForm.relationship}
+              >
+                {emergencyContactModal.loading ? (
+                  <>
+                    <div className="modal-btn-loading"></div>
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    🚨 Update Contact
                   </>
                 )}
               </button>

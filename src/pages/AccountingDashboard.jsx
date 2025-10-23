@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { notificationService } from '../services/notificationService'
+import NotificationButton from '../components/NotificationButton'
+import NotificationDropdown from '../components/NotificationDropdown'
+import '../components/AccountingDashboard.css'
+import '../components/NotificationStyles.css'
 import {
   fetchTenantsWithBillingInfo,
   fetchPaymentStats,
@@ -160,6 +164,7 @@ export default function AccountingDashboard() {
   const [notifications, setNotifications] = useState([])
   const [unread, setUnread] = useState(0)
   const [showNotif, setShowNotif] = useState(false)
+  const [markingAsRead, setMarkingAsRead] = useState(false)
   
   // Transaction List state
   const [transactions, setTransactions] = useState([])
@@ -284,6 +289,36 @@ export default function AccountingDashboard() {
     id = setInterval(loadNotifs, 15000)
     return () => id && clearInterval(id)
   }, [])
+
+  // Mark notification as read
+  const handleMarkAsRead = async (notificationId) => {
+    try {
+      setMarkingAsRead(true)
+      await notificationService.markAsRead(notificationId)
+      setNotifications(prev => prev.map(n => 
+        n.id === notificationId ? { ...n, isRead: true } : n
+      ))
+      setUnread(prev => Math.max(0, prev - 1))
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error)
+    } finally {
+      setMarkingAsRead(false)
+    }
+  }
+
+  // Mark all notifications as read
+  const handleMarkAllAsRead = async () => {
+    try {
+      setMarkingAsRead(true)
+      await notificationService.markAllAsRead()
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
+      setUnread(0)
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error)
+    } finally {
+      setMarkingAsRead(false)
+    }
+  }
 
   // Load data based on active tab
   useEffect(() => {
@@ -1178,40 +1213,21 @@ export default function AccountingDashboard() {
             </div>
           </div>
           <div className="profile-meta">
-            <div style={{ position: 'relative', marginRight: 12 }}>
-              <button className="refresh-btn" onClick={() => setShowNotif(p => !p)} aria-label="Notifications">
-                🔔{unread > 0 && <span className="pending-badge">{unread}</span>}
-              </button>
-              {showNotif && (
-                <>
-                  <div 
-                    style={{ 
-                      position: 'fixed', 
-                      inset: 0, 
-                      zIndex: 10 
-                    }}
-                    onClick={() => setShowNotif(false)}
-                  />
-                  <div className="notification-dropdown">
-                    <div className="notification-header">
-                      <span>Notifications</span>
-                      {unread > 0 && <span className="notification-count">{unread}</span>}
-                    </div>
-                    <div className="notification-content">
-                      {notifications.length === 0 ? (
-                        <div className="notification-empty">No notifications</div>
-                      ) : notifications.map(n => (
-                        <div key={n.id} className={`notification-item ${!n.isRead ? 'unread' : ''}`}>
-                          <div className="notification-title">{n.title}</div>
-                          <div className="notification-message">{n.message}</div>
-                          <div className="notification-time">{new Date(n.createdAt).toLocaleString()}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+            <NotificationButton
+              unreadCount={unread}
+              onClick={() => setShowNotif(p => !p)}
+              showDropdown={showNotif}
+              style={{ marginRight: 12 }}
+            >
+              <NotificationDropdown
+                notifications={notifications}
+                unreadCount={unread}
+                markingAsRead={markingAsRead}
+                onMarkAsRead={handleMarkAsRead}
+                onMarkAllAsRead={handleMarkAllAsRead}
+                onClose={() => setShowNotif(false)}
+              />
+            </NotificationButton>
             <div className="email">{user?.email}</div>
             <button className="logout-btn" onClick={handleLogout}>Logout</button>
           </div>

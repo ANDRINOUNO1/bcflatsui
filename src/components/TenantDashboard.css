@@ -1573,3 +1573,522 @@ body.modal-open {
     background: #4b5563;
   }
 }
+
+/* Announcements Styles */
+.announcements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.announcement-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  background: white;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.announcement-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border-color: #d1d5db;
+}
+
+.announcement-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+  gap: 1rem;
+}
+
+.announcement-card-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.announcement-card-date {
+  font-size: 0.875rem;
+  color: #6b7280;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.announcement-card-content {
+  margin-bottom: 1rem;
+}
+
+.announcement-card-content p {
+  margin: 0;
+  color: #374151;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.announcement-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.875rem;
+}
+
+.announcement-card-type {
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+
+.announcement-card-author {
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Community Grid Styles */
+.community-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.community-card {
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.community-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.community-card--blue {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-color: #93c5fd;
+}
+
+.community-card--green {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  border-color: #86efac;
+}
+
+.community-card--purple {
+  background: linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%);
+  border-color: #c4b5fd;
+}
+
+.community-card--orange {
+  background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
+  border-color: #fb923c;
+}
+
+.community-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: #1f2937;
+}
+
+.community-card-text {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Responsive adjustments for announcements */
+@media (max-width: 640px) {
+  .announcement-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .announcement-card-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .announcement-card {
+    padding: 1rem;
+  }
+}
+
+/* Notification Pulse Animation */
+@keyframes pulse {
+  0%, 100% { 
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% { 
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+/* ==================== COMPREHENSIVE RESPONSIVE DESIGN FOR TENANT DASHBOARD ==================== */
+
+/* Large Desktop (1200px and up) */
+@media (min-width: 1200px) {
+  .tenant-dashboard {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .tenant-main-content {
+    flex: 1;
+    padding: 2rem;
+  }
+  
+  .tenant-stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .tenant-overview-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Desktop (992px to 1199px) */
+@media (max-width: 1199px) and (min-width: 992px) {
+  .tenant-main-content {
+    padding: 1.5rem;
+  }
+  
+  .tenant-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .tenant-overview-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Tablet (768px to 991px) */
+@media (max-width: 991px) and (min-width: 768px) {
+  .tenant-main-content {
+    padding: 1rem;
+  }
+  
+  .tenant-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .tenant-overview-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .tenant-header-container {
+    padding: 0 1rem;
+  }
+  
+  .tenant-header-title {
+    font-size: 1.5rem;
+  }
+  
+  .tenant-header-subtitle {
+    font-size: 0.875rem;
+  }
+}
+
+/* Mobile Landscape (576px to 767px) */
+@media (max-width: 767px) and (min-width: 576px) {
+  .tenant-main-content {
+    padding: 0.75rem;
+  }
+  
+  .tenant-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  
+  .tenant-overview-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .tenant-header-container {
+    padding: 0 0.75rem;
+  }
+  
+  .tenant-header-title {
+    font-size: 1.25rem;
+  }
+  
+  .tenant-header-subtitle {
+    font-size: 0.75rem;
+  }
+  
+  .tenant-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .tenant-refresh-btn {
+    align-self: flex-end;
+  }
+  
+  .tenant-stat-card {
+    padding: 1rem;
+  }
+  
+  .tenant-stat-number {
+    font-size: 1.75rem;
+  }
+  
+  .tenant-overview-card {
+    padding: 1rem;
+  }
+  
+  .tenant-overview-title {
+    font-size: 1rem;
+  }
+}
+
+/* Mobile Portrait (up to 575px) */
+@media (max-width: 575px) {
+  .tenant-main-content {
+    padding: 0.5rem;
+  }
+  
+  .tenant-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .tenant-overview-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .tenant-header-container {
+    padding: 0 0.5rem;
+  }
+  
+  .tenant-header-title {
+    font-size: 1rem;
+  }
+  
+  .tenant-header-subtitle {
+    font-size: 0.75rem;
+  }
+  
+  .tenant-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .tenant-refresh-btn {
+    align-self: flex-end;
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .tenant-stat-card {
+    padding: 0.75rem;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .tenant-stat-info {
+    flex: 1;
+  }
+  
+  .tenant-stat-label {
+    font-size: 0.75rem;
+  }
+  
+  .tenant-stat-number {
+    font-size: 1.5rem;
+  }
+  
+  .tenant-stat-icon {
+    font-size: 1.5rem;
+  }
+  
+  .tenant-overview-card {
+    padding: 0.75rem;
+  }
+  
+  .tenant-overview-title {
+    font-size: 0.875rem;
+  }
+  
+  .tenant-btn-primary, .tenant-btn-secondary {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Form Responsiveness for Tenant Dashboard */
+@media (max-width: 767px) {
+  .tenant-form-group {
+    margin-bottom: 1rem;
+  }
+  
+  .tenant-form-group label {
+    font-size: 0.875rem;
+  }
+  
+  .tenant-form-group input,
+  .tenant-form-group textarea,
+  .tenant-form-group select {
+    font-size: 0.875rem;
+    padding: 0.75rem;
+  }
+  
+  .tenant-modal-container {
+    margin: 1rem;
+    max-width: calc(100vw - 2rem);
+  }
+  
+  .tenant-modal-header {
+    padding: 1rem;
+  }
+  
+  .tenant-modal-body {
+    padding: 1rem;
+  }
+  
+  .tenant-modal-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .tenant-modal-actions button {
+    width: 100%;
+  }
+}
+
+/* Table Responsiveness for Tenant Dashboard */
+@media (max-width: 767px) {
+  .tenant-table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .tenant-data-table {
+    min-width: 600px;
+  }
+  
+  .tenant-table-container {
+    padding: 0.5rem;
+  }
+  
+  .tenant-data-table th,
+  .tenant-data-table td {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .tenant-action-buttons {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .tenant-btn-success,
+  .tenant-btn-danger,
+  .tenant-btn-warning {
+    width: 100%;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Payment Form Responsiveness */
+@media (max-width: 767px) {
+  .tenant-payment-form {
+    padding: 1rem;
+  }
+  
+  .tenant-payment-form .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  .tenant-payment-form input,
+  .tenant-payment-form select {
+    font-size: 0.875rem;
+    padding: 0.75rem;
+  }
+  
+  .tenant-payment-methods {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .tenant-payment-methods label {
+    margin-bottom: 0;
+  }
+}
+
+/* Maintenance Request Responsiveness */
+@media (max-width: 767px) {
+  .tenant-maintenance-form {
+    padding: 1rem;
+  }
+  
+  .tenant-maintenance-form .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  .tenant-maintenance-form textarea {
+    min-height: 120px;
+  }
+  
+  .tenant-priority-selector {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .tenant-priority-selector label {
+    margin-bottom: 0;
+  }
+}
+
+/* Utility Classes for Tenant Dashboard Responsive Design */
+.tenant-hide-mobile {
+  display: block;
+}
+
+.tenant-show-mobile {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .tenant-hide-mobile {
+    display: none;
+  }
+  
+  .tenant-show-mobile {
+    display: block;
+  }
+}
+
+/* Ensure proper scrolling on mobile for tenant dashboard */
+@media (max-width: 767px) {
+  .tenant-main-content {
+    overflow-x: hidden;
+  }
+  
+  .tenant-dashboard-screen {
+    overflow-x: hidden;
+  }
+}

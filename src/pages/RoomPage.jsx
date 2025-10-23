@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { roomService } from '../services/roomService';
 import { tenantService } from '../services/tenantService';
 import { useAuth } from '../context/AuthContext';
@@ -33,9 +33,51 @@ const RoomPage = () => {
     // Check if user is admin
     const isAdmin = user?.role === 'Admin' || user?.role === 'SuperAdmin';
 
+    const fetchRooms = useCallback(async () => {
+        try {
+            setLoading(true);
+            console.log('🔄 RoomPage: Fetching rooms...');
+            // Always fetch all rooms; filtering is client-side to avoid clearing
+            const roomsData = await roomService.getAllRooms();
+            console.log('✅ RoomPage: Rooms fetched successfully:', roomsData.length);
+            
+            if (roomsData.length > 0) {
+                console.log('📋 First room data structure:', roomsData[0]);
+                console.log('🔑 First room properties:', Object.keys(roomsData[0]));
+                
+                // Check if pricing data exists in the first room
+                const firstRoom = roomsData[0];
+                console.log('💰 First room pricing check:');
+                console.log('  - monthlyRent:', firstRoom.monthlyRent);
+                console.log('  - monthly_rent:', firstRoom.monthly_rent);
+                console.log('  - rent:', firstRoom.rent);
+                console.log('  - price:', firstRoom.price);
+                console.log('  - utilities:', firstRoom.utilities);
+                console.log('  - utilities_cost:', firstRoom.utilities_cost);
+                console.log('  - utility_cost:', firstRoom.utility_cost);
+            }
+            
+            setAllRooms(roomsData);
+            // Keep selection if it still exists
+            if (selectedRoom) {
+                const stillExists = roomsData.some(r => r.id === selectedRoom?.room?.id || r.id === selectedRoom?.id);
+                if (!stillExists) setSelectedRoom(null);
+            }
+        } catch (error) {
+            console.error('❌ RoomPage: Error fetching rooms:', error);
+            if (error.response?.status === 401) {
+                console.log('🔐 RoomPage: Authentication error, showing empty state');
+                setAllRooms([]);
+                setRooms([]);
+            }
+        } finally {
+            setLoading(false);
+        }
+    }, [selectedRoom]);
+
     useEffect(() => {
         fetchRooms();
-    }, []);
+    }, [fetchRooms]);
 
     // Debug modal state
     useEffect(() => {
@@ -55,8 +97,9 @@ const RoomPage = () => {
             setRooms(allRooms.filter(r => String(r.floor) === String(floorFilter)));
         }
     }, [floorFilter, allRooms]);
-const handleOpenAddTenantModal = () => {
-    console.log('Opening Add Tenant modal for room:', selectedRoom?.room?.id);
+
+const handleOpenAddTenantModal = async () => {
+    console.log('🔄 Opening Add Tenant modal for room:', selectedRoom?.room?.id);
     
     // Reset tenant form
     const resetTenant = {
@@ -72,38 +115,16 @@ const handleOpenAddTenantModal = () => {
     };
     
     setNewTenant(resetTenant);
-    loadRoomPricing();
+    
+    // Load room pricing data first
+    await loadRoomPricing();
     
     // Add a small delay to ensure state updates
     setTimeout(() => {
         setShowAddTenant(true);
-        console.log('Add Tenant modal state set to true, showAddTenant:', true);
+        console.log('✅ Add Tenant modal state set to true, showAddTenant:', true);
     }, 100);
 };
-    const fetchRooms = async () => {
-        try {
-            setLoading(true);
-            console.log(' RoomPage: Fetching rooms...');
-            // Always fetch all rooms; filtering is client-side to avoid clearing
-            const roomsData = await roomService.getAllRooms();
-            console.log(' RoomPage: Rooms fetched successfully:', roomsData.length);
-            setAllRooms(roomsData);
-            // Keep selection if it still exists
-            if (selectedRoom) {
-                const stillExists = roomsData.some(r => r.id === selectedRoom?.room?.id || r.id === selectedRoom?.id);
-                if (!stillExists) setSelectedRoom(null);
-            }
-        } catch (error) {
-            console.error('❌ RoomPage: Error fetching rooms:', error);
-            if (error.response?.status === 401) {
-                console.log(' RoomPage: Authentication error, showing empty state');
-                setAllRooms([]);
-                setRooms([]);
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const floors = Array.from(new Set(allRooms.map(r => r.floor))).sort((a, b) => a - b);
     const filteredRooms = floorFilter === 'all' ? rooms : rooms; // rooms already filtered via effect
@@ -121,15 +142,56 @@ const handleOpenAddTenantModal = () => {
         }
     };
 
-    const handlePricingClick = (room) => {
-        console.log('Pricing clicked for room:', room);
-        setPricingData({
-            monthlyRent: (room.monthlyRent || 0).toString(),
-            utilities: (room.utilities || 0).toString()
-        });
-        setSelectedRoom({ room });
-        setShowPricingModal(true);
-        console.log('Pricing modal should be open now');
+    const handlePricingClick = async (room) => {
+        console.log('💰 Pricing clicked for room:', room);
+        console.log('📊 Room monthlyRent:', room.monthlyRent);
+        console.log('⚡ Room utilities:', room.utilities);
+        console.log('🔑 Room object keys:', Object.keys(room));
+        
+        // Set loading state
+        setLoading(true);
+        
+        try {
+            // Fetch detailed room information to get pricing data
+            console.log('🔄 Fetching detailed room data for ID:', room.id);
+            const detailedRoom = await roomService.getRoomById(room.id);
+            console.log('✅ Detailed room data received:', detailedRoom);
+            
+            // Try alternative property names that might be used in the backend
+            const monthlyRent = detailedRoom.monthlyRent || detailedRoom.monthly_rent || detailedRoom.rent || detailedRoom.price || detailedRoom.monthly_rent_per_bed || room.monthlyRent || 0;
+            const utilities = detailedRoom.utilities || detailedRoom.utilities_cost || detailedRoom.utility_cost || detailedRoom.utilities_per_bed || room.utilities || 0;
+            
+            console.log('💰 Found monthlyRent:', monthlyRent);
+            console.log('⚡ Found utilities:', utilities);
+            console.log('📋 All detailed room properties:', Object.keys(detailedRoom));
+            
+            setPricingData({
+                monthlyRent: monthlyRent.toString(),
+                utilities: utilities.toString()
+            });
+            setSelectedRoom({ room: detailedRoom });
+            setShowPricingModal(true);
+            console.log('✅ Pricing modal opened successfully');
+        } catch (error) {
+            console.error('❌ Error fetching room details for pricing:', error);
+            console.log('🔄 Falling back to basic room data');
+            
+            // Fallback to using the room data we have
+            const monthlyRent = room.monthlyRent || room.monthly_rent || room.rent || room.price || room.monthly_rent_per_bed || 0;
+            const utilities = room.utilities || room.utilities_cost || room.utility_cost || room.utilities_per_bed || 0;
+            
+            console.log('💰 Fallback monthlyRent:', monthlyRent);
+            console.log('⚡ Fallback utilities:', utilities);
+            
+            setPricingData({
+                monthlyRent: monthlyRent.toString(),
+                utilities: utilities.toString()
+            });
+            setSelectedRoom({ room });
+            setShowPricingModal(true);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleUpdatePricing = async () => {
@@ -205,12 +267,49 @@ const handleOpenAddTenantModal = () => {
     };
 
     const loadRoomPricing = async () => {
+        console.log('🔄 Loading room pricing for Add Tenant modal...');
+        console.log('📋 Selected room:', selectedRoom?.room);
+        
         if (selectedRoom?.room) {
-            setNewTenant(prev => ({
-                ...prev,
-                monthlyRent: (selectedRoom.room.monthlyRent || 0).toString(),
-                utilities: (selectedRoom.room.utilities || 0).toString()
-            }));
+            try {
+                // Try to fetch detailed room data first
+                console.log('🔄 Fetching detailed room data for pricing...');
+                const detailedRoom = await roomService.getRoomById(selectedRoom.room.id);
+                console.log('✅ Detailed room data received:', detailedRoom);
+                
+                // Try multiple property names for pricing data
+                const monthlyRent = detailedRoom.monthlyRent || detailedRoom.monthly_rent || detailedRoom.rent || detailedRoom.price || detailedRoom.monthly_rent_per_bed || selectedRoom.room.monthlyRent || 0;
+                const utilities = detailedRoom.utilities || detailedRoom.utilities_cost || detailedRoom.utility_cost || detailedRoom.utilities_per_bed || selectedRoom.room.utilities || 0;
+                
+                console.log('💰 Found monthlyRent for tenant:', monthlyRent);
+                console.log('⚡ Found utilities for tenant:', utilities);
+                
+                setNewTenant(prev => ({
+                    ...prev,
+                    monthlyRent: monthlyRent.toString(),
+                    utilities: utilities.toString()
+                }));
+                
+                console.log('✅ Room pricing loaded successfully for Add Tenant modal');
+            } catch (error) {
+                console.error('❌ Error fetching detailed room data for tenant pricing:', error);
+                console.log('🔄 Falling back to basic room data');
+                
+                // Fallback to basic room data
+                const monthlyRent = selectedRoom.room.monthlyRent || selectedRoom.room.monthly_rent || selectedRoom.room.rent || selectedRoom.room.price || selectedRoom.room.monthly_rent_per_bed || 0;
+                const utilities = selectedRoom.room.utilities || selectedRoom.room.utilities_cost || selectedRoom.room.utility_cost || selectedRoom.room.utilities_per_bed || 0;
+                
+                console.log('💰 Fallback monthlyRent for tenant:', monthlyRent);
+                console.log('⚡ Fallback utilities for tenant:', utilities);
+                
+                setNewTenant(prev => ({
+                    ...prev,
+                    monthlyRent: monthlyRent.toString(),
+                    utilities: utilities.toString()
+                }));
+            }
+        } else {
+            console.log('⚠️ No selected room found for pricing');
         }
     };
 
@@ -469,34 +568,43 @@ const handleOpenAddTenantModal = () => {
                         </div>
                         <div className="modal-body">
                             <form className="modal-form">
-                                <div className="modal-form-group">
-                                    <label className="modal-form-label">Monthly Rent per Bed (₱):</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        className="modal-form-input"
-                                        value={pricingData.monthlyRent}
-                                        onChange={(e) => setPricingData({...pricingData, monthlyRent: e.target.value})}
-                                        placeholder="Enter monthly rent per bed"
-                                    />
-                                </div>
-                                <div className="modal-form-group">
-                                    <label className="modal-form-label">Utilities per Bed (₱):</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        className="modal-form-input"
-                                        value={pricingData.utilities}
-                                        onChange={(e) => setPricingData({...pricingData, utilities: e.target.value})}
-                                        placeholder="Enter utilities cost per bed"
-                                    />
-                                </div>
-                                <div className="pricing-summary">
-                                    <p><strong>Total per Bed:</strong> ₱{((parseFloat(pricingData.monthlyRent) || 0) + (parseFloat(pricingData.utilities) || 0)).toLocaleString()}</p>
-                                    <p><strong>Room Total (4 beds):</strong> ₱{(((parseFloat(pricingData.monthlyRent) || 0) + (parseFloat(pricingData.utilities) || 0)) * 4).toLocaleString()}</p>
-                                </div>
+                                {loading ? (
+                                    <div className="loading-container">
+                                        <div className="loading-spinner"></div>
+                                        <p>Loading room pricing data...</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="modal-form-group">
+                                            <label className="modal-form-label">Monthly Rent per Bed (₱):</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                className="modal-form-input"
+                                                value={pricingData.monthlyRent}
+                                                onChange={(e) => setPricingData({...pricingData, monthlyRent: e.target.value})}
+                                                placeholder="Enter monthly rent per bed"
+                                            />
+                                        </div>
+                                        <div className="modal-form-group">
+                                            <label className="modal-form-label">Utilities per Bed (₱):</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                className="modal-form-input"
+                                                value={pricingData.utilities}
+                                                onChange={(e) => setPricingData({...pricingData, utilities: e.target.value})}
+                                                placeholder="Enter utilities cost per bed"
+                                            />
+                                        </div>
+                                        <div className="pricing-summary">
+                                            <p><strong>Total per Bed:</strong> ₱{((parseFloat(pricingData.monthlyRent) || 0) + (parseFloat(pricingData.utilities) || 0)).toLocaleString()}</p>
+                                            <p><strong>Room Total (4 beds):</strong> ₱{(((parseFloat(pricingData.monthlyRent) || 0) + (parseFloat(pricingData.utilities) || 0)) * 4).toLocaleString()}</p>
+                                        </div>
+                                    </>
+                                )}
                             </form>
                         </div>
                         <div className="modal-footer">
@@ -540,117 +648,126 @@ const handleOpenAddTenantModal = () => {
                         </div>
                         <div className="modal-body">
                             <form className="modal-form">
-                                <div className="modal-form-group">
-                                    <label className="modal-form-label">Account ID (optional):</label>
-                                    <input
-                                        type="number"
-                                        className="modal-form-input"
-                                        value={newTenant.accountId}
-                                        onChange={(e) => setNewTenant({...newTenant, accountId: e.target.value})}
-                                        placeholder="Enter account ID"
-                                    />
-                                </div>
-                                <div className="modal-form-group">
-                                    <label className="modal-form-label">Monthly Rent per Bed (₱):</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        className="modal-form-input"
-                                        value={newTenant.monthlyRent}
-                                        onChange={(e) => setNewTenant({...newTenant, monthlyRent: e.target.value})}
-                                        placeholder="Enter monthly rent per bed"
-                                    />
-                                </div>
-                                <div className="modal-form-group">
-                                    <label className="modal-form-label">Utilities per Bed (₱):</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        className="modal-form-input"
-                                        value={newTenant.utilities}
-                                        onChange={(e) => setNewTenant({...newTenant, utilities: e.target.value})}
-                                        placeholder="Enter utilities cost per bed"
-                                    />
-                                </div>
-                                <div className="modal-form-group">
-                                    <label className="modal-form-label">Deposit (₱):</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        className="modal-form-input"
-                                        value={newTenant.deposit}
-                                        onChange={(e) => setNewTenant({...newTenant, deposit: e.target.value})}
-                                        placeholder="Enter deposit amount"
-                                    />
-                                </div>
-                                <div className="pricing-summary">
-                                    <h4>💰 Pricing Summary (Per Bed)</h4>
-                                    <div className="summary-item">
-                                        <span>Monthly Rent per Bed:</span>
-                                        <span>₱{parseFloat(newTenant.monthlyRent || 0).toLocaleString()}</span>
+                                {loading ? (
+                                    <div className="loading-container">
+                                        <div className="loading-spinner"></div>
+                                        <p>Loading room pricing data...</p>
                                     </div>
-                                    <div className="summary-item">
-                                        <span>Utilities per Bed:</span>
-                                        <span>₱{parseFloat(newTenant.utilities || 0).toLocaleString()}</span>
-                                    </div>
-                                    <div className="summary-item total">
-                                        <span>Total per Bed:</span>
-                                        <span>₱{(parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)).toLocaleString()}</span>
-                                    </div>
-                                    <div className="summary-item">
-                                        <span>Room Total (4 beds):</span>
-                                        <span>₱{(((parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)) * 4)).toFixed(2)}</span>
-                                    </div>
-                                </div>
-                                <div className="modal-form-group">
-                                    <label className="modal-form-label">Emergency Contact Name:</label>
-                                    <input
-                                        type="text"
-                                        className="modal-form-input"
-                                        value={newTenant.emergencyContact.name}
-                                        onChange={(e) => setNewTenant({
-                                            ...newTenant,
-                                            emergencyContact: {...newTenant.emergencyContact, name: e.target.value}
-                                        })}
-                                        placeholder="Enter emergency contact name"
-                                    />
-                                </div>
-                                <div className="modal-form-group">
-                                    <label className="modal-form-label">Emergency Contact Phone:</label>
-                                    <input
-                                        type="text"
-                                        className="modal-form-input"
-                                        value={newTenant.emergencyContact.phone}
-                                        onChange={(e) => setNewTenant({
-                                            ...newTenant,
-                                            emergencyContact: {...newTenant.emergencyContact, phone: e.target.value}
-                                        })}
-                                        placeholder="Enter emergency contact phone"
-                                    />
-                                </div>
-                                <div className="modal-form-group">
-                                    <label className="modal-form-label">Emergency Contact Relationship:</label>
-                                    <input
-                                        type="text"
-                                        className="modal-form-input"
-                                        value={newTenant.emergencyContact.relationship}
-                                        onChange={(e) => setNewTenant({
-                                            ...newTenant,
-                                            emergencyContact: {...newTenant.emergencyContact, relationship: e.target.value}
-                                        })}
-                                        placeholder="Enter relationship (e.g., Parent, Sibling, Friend)"
-                                    />
-                                </div>
-                                <div className="modal-form-group">
-                                    <label className="modal-form-label">Special Requirements:</label>
-                                    <textarea
-                                        className="modal-form-textarea"
-                                        value={newTenant.specialRequirements}
-                                        onChange={(e) => setNewTenant({...newTenant, specialRequirements: e.target.value})}
-                                        placeholder="Enter any special requirements"
-                                        rows="3"
-                                    />
-                                </div>
+                                ) : (
+                                    <>
+                                        <div className="modal-form-group">
+                                            <label className="modal-form-label">Account ID (optional):</label>
+                                            <input
+                                                type="number"
+                                                className="modal-form-input"
+                                                value={newTenant.accountId}
+                                                onChange={(e) => setNewTenant({...newTenant, accountId: e.target.value})}
+                                                placeholder="Enter account ID"
+                                            />
+                                        </div>
+                                        <div className="modal-form-group">
+                                            <label className="modal-form-label">Monthly Rent per Bed (₱):</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                className="modal-form-input"
+                                                value={newTenant.monthlyRent}
+                                                onChange={(e) => setNewTenant({...newTenant, monthlyRent: e.target.value})}
+                                                placeholder="Enter monthly rent per bed"
+                                            />
+                                        </div>
+                                        <div className="modal-form-group">
+                                            <label className="modal-form-label">Utilities per Bed (₱):</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                className="modal-form-input"
+                                                value={newTenant.utilities}
+                                                onChange={(e) => setNewTenant({...newTenant, utilities: e.target.value})}
+                                                placeholder="Enter utilities cost per bed"
+                                            />
+                                        </div>
+                                        <div className="modal-form-group">
+                                            <label className="modal-form-label">Deposit (₱):</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                className="modal-form-input"
+                                                value={newTenant.deposit}
+                                                onChange={(e) => setNewTenant({...newTenant, deposit: e.target.value})}
+                                                placeholder="Enter deposit amount"
+                                            />
+                                        </div>
+                                        <div className="pricing-summary">
+                                            <h4>💰 Pricing Summary (Per Bed)</h4>
+                                            <div className="summary-item">
+                                                <span>Monthly Rent per Bed:</span>
+                                                <span>₱{parseFloat(newTenant.monthlyRent || 0).toLocaleString()}</span>
+                                            </div>
+                                            <div className="summary-item">
+                                                <span>Utilities per Bed:</span>
+                                                <span>₱{parseFloat(newTenant.utilities || 0).toLocaleString()}</span>
+                                            </div>
+                                            <div className="summary-item total">
+                                                <span>Total per Bed:</span>
+                                                <span>₱{(parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)).toLocaleString()}</span>
+                                            </div>
+                                            <div className="summary-item">
+                                                <span>Room Total (4 beds):</span>
+                                                <span>₱{(((parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)) * 4)).toFixed(2)}</span>
+                                            </div>
+                                        </div>
+                                        <div className="modal-form-group">
+                                            <label className="modal-form-label">Emergency Contact Name:</label>
+                                            <input
+                                                type="text"
+                                                className="modal-form-input"
+                                                value={newTenant.emergencyContact.name}
+                                                onChange={(e) => setNewTenant({
+                                                    ...newTenant,
+                                                    emergencyContact: {...newTenant.emergencyContact, name: e.target.value}
+                                                })}
+                                                placeholder="Enter emergency contact name"
+                                            />
+                                        </div>
+                                        <div className="modal-form-group">
+                                            <label className="modal-form-label">Emergency Contact Phone:</label>
+                                            <input
+                                                type="text"
+                                                className="modal-form-input"
+                                                value={newTenant.emergencyContact.phone}
+                                                onChange={(e) => setNewTenant({
+                                                    ...newTenant,
+                                                    emergencyContact: {...newTenant.emergencyContact, phone: e.target.value}
+                                                })}
+                                                placeholder="Enter emergency contact phone"
+                                            />
+                                        </div>
+                                        <div className="modal-form-group">
+                                            <label className="modal-form-label">Emergency Contact Relationship:</label>
+                                            <input
+                                                type="text"
+                                                className="modal-form-input"
+                                                value={newTenant.emergencyContact.relationship}
+                                                onChange={(e) => setNewTenant({
+                                                    ...newTenant,
+                                                    emergencyContact: {...newTenant.emergencyContact, relationship: e.target.value}
+                                                })}
+                                                placeholder="Enter relationship (e.g., Parent, Sibling, Friend)"
+                                            />
+                                        </div>
+                                        <div className="modal-form-group">
+                                            <label className="modal-form-label">Special Requirements:</label>
+                                            <textarea
+                                                className="modal-form-textarea"
+                                                value={newTenant.specialRequirements}
+                                                onChange={(e) => setNewTenant({...newTenant, specialRequirements: e.target.value})}
+                                                placeholder="Enter any special requirements"
+                                                rows="3"
+                                            />
+                                        </div>
+                                    </>
+                                )}
                             </form>
                         </div>
                         <div className="modal-footer">

@@ -39,7 +39,10 @@ import PricingPage from './PricingPage'
 import AdminMaintenancePage from './AdminMaintenancePage'
 import AddAccountPage from './AddAccountPage'
 import ArchivedTenantsPage from './ArchivedTenantsPage'
+import NotificationButton from '../components/NotificationButton'
+import NotificationDropdown from '../components/NotificationDropdown'
 import '../components/SuperAdmin.css'
+import '../components/NotificationStyles.css'
 
 const RoleBadge = ({ role }) => (
   <span className={`role-badge ${String(role || '').toLowerCase()}`}>{role}</span>
@@ -89,6 +92,7 @@ export default function SuperAdminPage() {
   const [notifications, setNotifications] = useState([])
   const [unread, setUnread] = useState(0)
   const [showNotif, setShowNotif] = useState(false)
+  const [markingAsRead, setMarkingAsRead] = useState(false)
   
   // Archived tenants state
   const [archivedTenants, setArchivedTenants] = useState([])
@@ -105,7 +109,7 @@ export default function SuperAdminPage() {
   // Announcements state
   const [announcementTitle, setAnnouncementTitle] = useState('')
   const [announcementMessage, setAnnouncementMessage] = useState('')
-  const [announcementRoles, setAnnouncementRoles] = useState(['Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
+  const [announcementRoles, setAnnouncementRoles] = useState(['HeadAdmin', 'Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
   const [sendingAnnouncement, setSendingAnnouncement] = useState(false)
   const [announcements, setAnnouncements] = useState([])
   const [loadingAnnouncements, setLoadingAnnouncements] = useState(false)
@@ -152,7 +156,7 @@ export default function SuperAdminPage() {
   const [historySearchQuery, setHistorySearchQuery] = useState('')
 
   const statuses = useMemo(() => ['Active', 'Pending', 'Suspended', 'Deleted', 'Rejected'], [])
-  const roles = useMemo(() => ['Admin', 'SuperAdmin', 'Accounting', 'Tenant'], [])
+  const roles = useMemo(() => ['HeadAdmin', 'Admin', 'SuperAdmin', 'Accounting', 'Tenant'], [])
 
   const navigationItems = [
     {
@@ -287,6 +291,36 @@ export default function SuperAdminPage() {
     id = setInterval(loadNotifs, 15000)
     return () => id && clearInterval(id)
   }, [])
+
+  // Mark notification as read
+  const handleMarkAsRead = async (notificationId) => {
+    try {
+      setMarkingAsRead(true)
+      await notificationService.markAsRead(notificationId)
+      setNotifications(prev => prev.map(n => 
+        n.id === notificationId ? { ...n, isRead: true } : n
+      ))
+      setUnread(prev => Math.max(0, prev - 1))
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error)
+    } finally {
+      setMarkingAsRead(false)
+    }
+  }
+
+  // Mark all notifications as read
+  const handleMarkAllAsRead = async () => {
+    try {
+      setMarkingAsRead(true)
+      await notificationService.markAllAsRead()
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
+      setUnread(0)
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error)
+    } finally {
+      setMarkingAsRead(false)
+    }
+  }
 
   const handleApprove = async (id) => {
     await superAdminService.approveAccount(id)
@@ -444,7 +478,7 @@ export default function SuperAdminPage() {
       )
       setAnnouncementTitle('')
       setAnnouncementMessage('')
-      setAnnouncementRoles(['Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
+      setAnnouncementRoles(['HeadAdmin', 'Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
       alert('Announcement sent successfully to all selected roles!')
     } catch (e) {
       setError(e?.message || 'Failed to send announcement')
@@ -587,7 +621,7 @@ export default function SuperAdminPage() {
     try {
       const data = await notificationService.fetchMyNotifications()
       const filteredNotifs = data.filter(notif => 
-        !(notif.type === 'system_announcement' && notif.isRead === true)
+        !(notif.type === 'SYSTEM' && notif.isRead === true)
       )
       setNotifications(filteredNotifs)
       setUnread(filteredNotifs.filter(n => !n.isRead).length)
@@ -1050,7 +1084,7 @@ onChange={(e) => setSearchQuery(e.target.value)}
                       onClick={() => {
                         setAnnouncementTitle('')
                         setAnnouncementMessage('')
-                        setAnnouncementRoles(['Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
+                        setAnnouncementRoles(['HeadAdmin', 'Admin', 'SuperAdmin', 'Accounting', 'Tenant'])
                       }}
                       style={{ 
                         padding: '0.75rem 1.5rem', 
@@ -1081,54 +1115,121 @@ onChange={(e) => setSearchQuery(e.target.value)}
                   <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>No announcements found</div>
                 ) : (
                   <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
-                    {announcements.map(announcement => (
-                      <div key={announcement.id} style={{ 
-                        padding: '1rem', 
-                        border: '1px solid #e5e7eb', 
-                        borderRadius: '0.5rem', 
-                        marginBottom: '1rem',
-                        background: announcement.isSuspended ? '#fef2f2' : '#fff'
-                      }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>{announcement.title}</h4>
-                            {announcement.isSuspended && (
-                              <span style={{ 
-                                background: '#6b7280', 
-                                color: 'white', 
-                                padding: '0.25rem 0.5rem', 
-                                borderRadius: '1rem', 
-                                fontSize: '0.75rem',
-                                fontWeight: 500
-                              }}>
-                                Suspended
-                              </span>
-                            )}
+                    {(() => {
+                      // Group announcements by announcementId if available, otherwise by title/message/time
+                      const groupedAnnouncements = announcements.reduce((groups, announcement) => {
+                        let key;
+                        
+                        // Use announcementId if available for better grouping
+                        if (announcement.metadata?.announcementId) {
+                          key = announcement.metadata.announcementId;
+                        } else {
+                          // Fallback to title/message/time grouping
+                          const createdAt = new Date(announcement.createdAt);
+                          const roundedTime = new Date(createdAt.getFullYear(), createdAt.getMonth(), createdAt.getDate(), createdAt.getHours(), createdAt.getMinutes());
+                          key = `${announcement.title}|${announcement.message}|${roundedTime.getTime()}`;
+                        }
+                        
+                        if (!groups[key]) {
+                          groups[key] = {
+                            title: announcement.title,
+                            message: announcement.message,
+                            createdAt: announcement.createdAt,
+                            roles: new Set(),
+                            ids: [],
+                            isRead: announcement.isRead,
+                            isSuspended: announcement.isSuspended
+                          };
+                        }
+                        
+                        // Use Set to avoid duplicate roles
+                        groups[key].roles.add(announcement.recipientRole);
+                        groups[key].ids.push(announcement.id);
+                        
+                        // If any announcement in the group is not read, mark the group as not read
+                        if (!announcement.isRead) {
+                          groups[key].isRead = false;
+                        }
+                        
+                        // If any announcement in the group is suspended, mark the group as suspended
+                        if (announcement.isSuspended) {
+                          groups[key].isSuspended = true;
+                        }
+                        
+                        return groups;
+                      }, {});
+
+                      return Object.values(groupedAnnouncements).map((group, index) => (
+                        <div key={index} style={{ 
+                          padding: '1rem', 
+                          border: '1px solid #e5e7eb', 
+                          borderRadius: '0.5rem', 
+                          marginBottom: '1rem',
+                          background: group.isSuspended ? '#fef2f2' : '#fff'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>{group.title}</h4>
+                              {group.isSuspended && (
+                                <span style={{ 
+                                  background: '#6b7280', 
+                                  color: 'white', 
+                                  padding: '0.25rem 0.5rem', 
+                                  borderRadius: '1rem', 
+                                  fontSize: '0.75rem',
+                                  fontWeight: 500
+                                }}>
+                                  Suspended
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                              {!group.isSuspended && (
+                                <button 
+                                  onClick={() => handleSuspendAnnouncement(group.ids[0])}
+                                  style={{ 
+                                    background: '#3b82f6', 
+                                    color: 'white', 
+                                    border: 'none', 
+                                    padding: '0.5rem', 
+                                    borderRadius: '0.25rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.25rem',
+                                    fontSize: '0.875rem'
+                                  }}
+                                >
+                                  ⏸️ Suspend
+                                </button>
+                              )}
+                              <button 
+                                onClick={() => handleDeleteAnnouncement(group.ids[0])}
+                                style={{ 
+                                  background: '#dc2626', 
+                                  color: 'white', 
+                                  border: 'none', 
+                                  padding: '0.5rem', 
+                                  borderRadius: '0.25rem',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.25rem',
+                                  fontSize: '0.875rem'
+                                }}
+                              >
+                                🗑️ Delete
+                              </button>
+                            </div>
                           </div>
-                          <button 
-                            onClick={() => handleDeleteAnnouncement(announcement.id)}
-                            style={{ 
-                              background: '#dc2626', 
-                              color: 'white', 
-                              border: 'none', 
-                              padding: '0.5rem', 
-                              borderRadius: '0.25rem',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.25rem'
-                            }}
-                          >
-                            🗑️ Delete
-                          </button>
+                          <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', color: '#374151' }}>{group.message}</p>
+                          <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                            <div><strong>Target:</strong> {Array.from(group.roles).join(', ')}</div>
+                            <div><strong>Sent:</strong> {new Date(group.createdAt).toLocaleString()}</div>
+                          </div>
                         </div>
-                        <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', color: '#374151' }}>{announcement.message}</p>
-                        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                          <div><strong>Target:</strong> {announcement.targetRoles?.join(', ') || 'All'}</div>
-                          <div><strong>Sent:</strong> {new Date(announcement.createdAt).toLocaleString()}</div>
-                        </div>
-                      </div>
-                    ))}
+                      ));
+                    })()}
                   </div>
                 )}
               </div>
@@ -1778,25 +1879,21 @@ onChange={(e) => setAccountingSearchQuery(e.target.value)}
             </div>
           </div>
           <div className="profile-meta">
-            <div style={{ position: 'relative', marginRight: 12 }}>
-              <button className="refresh-btn" onClick={() => setShowNotif(p => !p)} aria-label="Notifications">🔔{unread > 0 && <span className="pending-badge">{unread}</span>}</button>
-              {showNotif && (
-                <div style={{ position: 'absolute', right: 0, top: '100%', width: 380, background: '#fff', border: '1px solid #ddd', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', zIndex: 20 }}>
-                  <div style={{ padding: 12, borderBottom: '1px solid #eee', fontWeight: 700 }}>Notifications</div>
-                  <div style={{ maxHeight: 320, overflowY: 'auto' }}>
-                    {notifications.length === 0 ? (
-                      <div style={{ padding: 12, color: '#777' }}>No notifications</div>
-                    ) : notifications.map(n => (
-                      <div key={n.id} style={{ padding: 12, borderBottom: '1px solid #f0f0f0', background: n.isRead ? '#fff' : '#f9fbff' }}>
-                        <div style={{ fontWeight: 600, marginBottom: 4 }}>{n.title}</div>
-                        <div style={{ fontSize: 13, color: '#444' }}>{n.message}</div>
-                        <div style={{ fontSize: 12, color: '#999', marginTop: 6 }}>{new Date(n.createdAt).toLocaleString()}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <NotificationButton
+              unreadCount={unread}
+              onClick={() => setShowNotif(p => !p)}
+              showDropdown={showNotif}
+              style={{ marginRight: 12 }}
+            >
+              <NotificationDropdown
+                notifications={notifications}
+                unreadCount={unread}
+                markingAsRead={markingAsRead}
+                onMarkAsRead={handleMarkAsRead}
+                onMarkAllAsRead={handleMarkAllAsRead}
+                onClose={() => setShowNotif(false)}
+              />
+            </NotificationButton>
             <div className="email">Super Admin</div>
             <button className="logout-btn" onClick={logout}>Logout</button>
           </div>
