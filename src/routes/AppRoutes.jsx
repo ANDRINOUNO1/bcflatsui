@@ -31,7 +31,7 @@ const AppRoutes = () => {
         element={
           isAuthenticated
             ? (
-                user?.role === 'Admin' ? (
+                user?.role === 'HeadAdmin' || user?.role === 'Admin' ? (
                   <Dashboard />
                 ) : user?.role === 'SuperAdmin' ? (
                   <SuperAdminPage />
@@ -46,7 +46,15 @@ const AppRoutes = () => {
         path="/super-admin" 
         element={
           isAuthenticated
-            ? (user?.role === 'SuperAdmin' ? <SuperAdminPage /> : <Navigate to="/" replace />)
+            ? (user?.role === 'SuperAdmin' || user?.role === 'HeadAdmin' ? <SuperAdminPage /> : <Navigate to="/" replace />)
+            : <Navigate to="/login" replace />
+        }
+      />
+      <Route 
+        path="/head-admin" 
+        element={
+          isAuthenticated
+            ? (user?.role === 'HeadAdmin' ? <Dashboard /> : <Navigate to="/" replace />)
             : <Navigate to="/login" replace />
         }
       />
@@ -54,7 +62,7 @@ const AppRoutes = () => {
         path="/accounting" 
         element={
           isAuthenticated
-            ? (user?.role === 'Accounting' || user?.role === 'Admin' || user?.role === 'SuperAdmin'
+            ? (user?.role === 'Accounting' || user?.role === 'Admin' || user?.role === 'SuperAdmin' || user?.role === 'HeadAdmin'
                 ? <AccountingDashboard />
                 : <Navigate to="/tenant" replace />)
             : <Navigate to="/login" replace />
@@ -80,7 +88,7 @@ const AppRoutes = () => {
         path="/archived-tenants" 
         element={
           isAuthenticated
-            ? (user?.role === 'Admin' || user?.role === 'SuperAdmin'
+            ? (user?.role === 'Admin' || user?.role === 'SuperAdmin' || user?.role === 'HeadAdmin'
                 ? <ArchivedTenantsPage />
                 : <Navigate to="/" replace />)
             : <Navigate to="/login" replace />

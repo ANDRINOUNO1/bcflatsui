@@ -5,7 +5,7 @@ import '../components/LoginPage.css'
 
 const LoginPage = () => {
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { login, user } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -113,16 +113,18 @@ const LoginPage = () => {
       const result = await login(formData.email, formData.password)
       
       if (result.success) {
-        const user = JSON.parse(sessionStorage.getItem('user'))
-
-        if (user?.role === 'Tenant') {
-          navigate('/tenant')
-        } else if (user?.role === 'Accounting') {
-          navigate('/accounting')
-        } else if (user?.role === 'Admin') {
+        // Use the user data returned from the login function
+        const userData = result.user
+        if (userData?.role === 'HeadAdmin') {
           navigate('/dashboard')
-        } else if (user?.role === 'SuperAdmin') {
-          navigate('/super-admin') 
+        } else if (userData?.role === 'SuperAdmin') {
+          navigate('/super-admin')
+        } else if (userData?.role === 'Admin') {
+          navigate('/dashboard')
+        } else if (userData?.role === 'Accounting') {
+          navigate('/accounting')
+        } else if (userData?.role === 'Tenant') {
+          navigate('/tenant')
         } else {
           navigate('/') 
         }
@@ -177,6 +179,11 @@ const LoginPage = () => {
       <div className="login-container">
         {/* Login Form */}
         <div className="login-form-container">
+          {/* Back Link - Repositioned to avoid overlap */}
+          <Link to="/" className="back-link">
+            ← Back to Home
+          </Link>
+          
           <div className="login-header">
             <h1>Welcome Back</h1>
             <p>Sign in to your BCFlats account</p>
@@ -278,18 +285,6 @@ const LoginPage = () => {
               )}
             </button>
           </form>
-
-          <div className="login-footer">
-            <p>
-              Don't have an account?{' '}
-              <Link to="/register" className="register-link">
-                Sign up here
-              </Link>
-            </p>
-          </div>
-          <Link to="/" className="back-link">
-            ← Back to Home
-          </Link>
         </div>
 
         {/* Decorative Side */}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { tenantService } from '../services/tenantService';
 import { roomService } from '../services/roomService';
+import { checkoutService } from '../services/checkoutService';
 import '../components/Tenants.css';
 
 const TenantPage = () => {
@@ -9,6 +10,9 @@ const TenantPage = () => {
     const [loading, setLoading] = useState(true);
     const [selectedTenant, setSelectedTenant] = useState(null);
     const [showAddTenant, setShowAddTenant] = useState(false);
+    const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+    const [checkoutTenantId, setCheckoutTenantId] = useState(null);
+    const [archiveReason, setArchiveReason] = useState('Lease ended');
     const [stats, setStats] = useState(null);
     const [availableRooms, setAvailableRooms] = useState([]);
     const [availableBeds, setAvailableBeds] = useState([1, 2, 3, 4]);
@@ -195,16 +199,38 @@ const TenantPage = () => {
     };
 
     const handleCheckOut = async (tenantId) => {
+        setCheckoutTenantId(tenantId);
+        setShowCheckoutModal(true);
+    };
+
+    const confirmCheckout = async () => {
+        if (!checkoutTenantId) return;
+        
         try {
-            await tenantService.checkOutTenant(tenantId);
+            const result = await checkoutService.checkoutTenant(checkoutTenantId, archiveReason);
+            alert(`Tenant successfully checked out and archived!\n\nArchive ID: ${result.archive.id}\nReason: ${archiveReason}`);
+            
+            setShowCheckoutModal(false);
+            setCheckoutTenantId(null);
+            setArchiveReason('Lease ended');
+            
             fetchTenants();
-            if (selectedTenant && selectedTenant.id === tenantId) {
-                setSelectedTenant(await tenantService.getTenantById(tenantId));
+            fetchStats();
+            
+            if (selectedTenant && selectedTenant.id === checkoutTenantId) {
+                setSelectedTenant(null);
             }
         } catch (error) {
             console.error('Error checking out tenant:', error);
-            alert('Error checking out tenant: ' + error.message);
+            const msg = error.response?.data?.message || error.message || 'Unknown error';
+            alert('Error checking out tenant: ' + msg);
         }
+    };
+
+    const cancelCheckout = () => {
+        setShowCheckoutModal(false);
+        setCheckoutTenantId(null);
+        setArchiveReason('Lease ended');
     };
 
     const handleDeleteTenant = async (tenant) => {
@@ -683,6 +709,60 @@ const TenantPage = () => {
                         <div className="modal-footer">
                             <button className="btn-secondary" onClick={() => setShowAddTenant(false)}>Cancel</button>
                             <button className="btn-primary" onClick={handleAddTenant}>Add Tenant</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Checkout Modal */}
+            {showCheckoutModal && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h3>🏠 Check Out Tenant</h3>
+                            <button className="modal-close" onClick={cancelCheckout}>×</button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="form-group">
+                                <label>Archive Reason:</label>
+                                <select
+                                    value={archiveReason}
+                                    onChange={(e) => setArchiveReason(e.target.value)}
+                                >
+                                    <option value="Lease ended">Lease ended</option>
+                                    <option value="Graduation">Graduation</option>
+                                    <option value="Transfer">Transfer</option>
+                                    <option value="Personal reasons">Personal reasons</option>
+                                    <option value="Violation of terms">Violation of terms</option>
+                                    <option value="Financial issues">Financial issues</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            {archiveReason === 'Other' && (
+                                <div className="form-group">
+                                    <label>Custom Reason:</label>
+                                    <input
+                                        type="text"
+                                        value={archiveReason}
+                                        onChange={(e) => setArchiveReason(e.target.value)}
+                                        placeholder="Enter custom reason"
+                                    />
+                                </div>
+                            )}
+                            <div className="checkout-warning">
+                                <p><strong>⚠️ Important:</strong></p>
+                                <ul>
+                                    <li>This will transfer the tenant to the archive table</li>
+                                    <li>The tenant's account will be suspended</li>
+                                    <li>The room will be marked as available</li>
+                                    <li>All payment history will be preserved</li>
+                                    <li>This action cannot be undone easily</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn-secondary" onClick={cancelCheckout}>Cancel</button>
+                            <button className="btn-danger" onClick={confirmCheckout}>Check Out & Archive</button>
                         </div>
                     </div>
                 </div>

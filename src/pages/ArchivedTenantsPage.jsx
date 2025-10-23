@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { archivedTenantService } from '../services/archivedTenantService';
+import { checkoutService } from '../services/checkoutService';
 import './ArchivedTenantsPage.css';
 
 const ArchivedTenantsPage = () => {
@@ -29,16 +29,17 @@ const ArchivedTenantsPage = () => {
     const fetchArchivedTenants = async () => {
         try {
             setLoading(true);
-            const filters = {
+            const options = {
+                page: 1,
+                limit: 100,
                 search: searchQuery,
-                dateFrom,
-                dateTo,
-                floor: floorFilter,
+                startDate: dateFrom,
+                endDate: dateTo,
                 sortBy,
                 sortOrder
             };
-            const data = await archivedTenantService.getArchivedTenants(filters);
-            setArchivedTenants(data);
+            const result = await checkoutService.getArchivedTenants(options);
+            setArchivedTenants(result.archives || result);
         } catch (error) {
             console.error('Error fetching archived tenants:', error);
             setErrorModal({
@@ -55,8 +56,8 @@ const ArchivedTenantsPage = () => {
 
     const handleViewDetails = async (tenant) => {
         try {
-            const detailedData = await archivedTenantService.getArchivedTenantById(tenant.id);
-            setSelectedTenant(detailedData);
+            // For now, use the tenant data directly since we have all the info
+            setSelectedTenant(tenant);
             setShowDetailModal(true);
         } catch (error) {
             console.error('Error fetching tenant details:', error);
@@ -81,6 +82,36 @@ const ArchivedTenantsPage = () => {
         setSortBy('checkOutDate');
         setSortOrder('DESC');
         setTimeout(fetchArchivedTenants, 100);
+    };
+
+    const handleRestoreTenant = async (tenant) => {
+        if (!confirm(`Are you sure you want to restore ${tenant.name}? This will bring them back as an active tenant.`)) {
+            return;
+        }
+
+        try {
+            await checkoutService.restoreTenant(tenant.id);
+            alert(`${tenant.name} has been restored successfully!`);
+            fetchArchivedTenants();
+        } catch (error) {
+            console.error('Error restoring tenant:', error);
+            alert('Error restoring tenant: ' + (error.response?.data?.message || error.message));
+        }
+    };
+
+    const handleDeleteArchive = async (tenant) => {
+        if (!confirm(`Are you sure you want to permanently delete the archive record for ${tenant.name}? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            await checkoutService.deleteArchive(tenant.id);
+            alert(`Archive record for ${tenant.name} has been deleted successfully!`);
+            fetchArchivedTenants();
+        } catch (error) {
+            console.error('Error deleting archive:', error);
+            alert('Error deleting archive: ' + (error.response?.data?.message || error.message));
+        }
     };
 
     const formatCurrency = (amount) => {
@@ -263,12 +294,29 @@ const ArchivedTenantsPage = () => {
                                             <td>{formatCurrency(tenant.totalPaid)}</td>
                                             <td>{tenant.paymentCount}</td>
                                             <td>
-                                                <button
-                                                    className="btn-view"
-                                                    onClick={() => handleViewDetails(tenant)}
-                                                >
-                                                    👁️ View
-                                                </button>
+                                                <div className="action-buttons">
+                                                    <button
+                                                        className="btn-view"
+                                                        onClick={() => handleViewDetails(tenant)}
+                                                        title="View Details"
+                                                    >
+                                                        👁️
+                                                    </button>
+                                                    <button
+                                                        className="btn-restore"
+                                                        onClick={() => handleRestoreTenant(tenant)}
+                                                        title="Restore Tenant"
+                                                    >
+                                                        🔄
+                                                    </button>
+                                                    <button
+                                                        className="btn-delete"
+                                                        onClick={() => handleDeleteArchive(tenant)}
+                                                        title="Delete Archive"
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}

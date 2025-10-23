@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { roomService } from '../services/roomService';
 import { useAuth } from '../context/AuthContext';
+import { getFloorSuffix } from '../functions/tenantDashboard';
 import '../components/PricingPage.css';
 
 const PricingPage = () => {
@@ -112,12 +113,6 @@ const PricingPage = () => {
     }).format(amount || 0);
   };
 
-  const getFloorSuffix = (floor) => {
-    if (floor === 1) return 'st';
-    if (floor === 2) return 'nd';
-    if (floor === 3) return 'rd';
-    return 'th';
-  };
 
   const getStatusBadgeClass = (status) => {
     switch (status) {
@@ -203,7 +198,7 @@ const PricingPage = () => {
                 <td data-label="Room" className="room-cell">
                   <strong>Room {room.roomNumber}</strong>
                 </td>
-                <td data-label="Floor">{room.floor}{getFloorSuffix(room.floor)}</td>
+                <td data-label="Floor">{getFloorSuffix(room.floor)}</td>
                 <td data-label="Building">{room.building}</td>
                 <td data-label="Status">
                   <span className={`status-badge ${getStatusBadgeClass(room.status)}`}>

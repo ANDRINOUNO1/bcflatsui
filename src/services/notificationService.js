@@ -9,6 +9,10 @@ export const notificationService = {
     const res = await apiService.post(`/notifications/${id}/read`);
     return res.data;
   },
+  async markAllAsRead() {
+    const res = await apiService.post('/notifications/mark-all-read');
+    return res.data;
+  },
   async broadcastAnnouncement(title, message, roles = null) {
     const res = await apiService.post('/notifications/broadcast', { title, message, roles });
     return res.data;

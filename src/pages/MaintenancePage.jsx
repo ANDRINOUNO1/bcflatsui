@@ -3,6 +3,7 @@ import { maintenanceService } from "../services/maintenanceService";
 import { roomService } from "../services/roomService";
 import { tenantService } from "../services/tenantService"; 
 import { useAuth } from "../context/AuthContext";
+import { getFloorSuffix } from "../functions/tenantDashboard";
 import "../components/Maintenancepage.css";
 
 const MaintenancePage = () => {
@@ -21,13 +22,6 @@ const MaintenancePage = () => {
   const [roomData, setRoomData] = useState(null);
   const [roomDisplayText, setRoomDisplayText] = useState("");
 
-  // Helper function to get floor suffix
-  const getFloorSuffix = (floor) => {
-    if (floor === 1) return "st";
-    if (floor === 2) return "nd";
-    if (floor === 3) return "rd";
-    return "th";
-  };
 
   const load = async () => {
     try {
@@ -54,9 +48,7 @@ const MaintenancePage = () => {
 
                 // Create room display text
                 const floorText = roomResponse?.floor
-                  ? `${roomResponse.roomNumber} (${roomResponse.floor}${getFloorSuffix(
-                      roomResponse.floor
-                    )} floor)`
+                  ? `${roomResponse.roomNumber} (${getFloorSuffix(roomResponse.floor)})`
                   : roomResponse?.roomNumber || tenantResponse.roomId;
 
                 setRoomDisplayText(floorText);
@@ -155,7 +147,7 @@ const MaintenancePage = () => {
                 <span className="info-label">FLOOR:</span>
                 <span className="info-value">
                   {roomData?.floor
-                    ? `${roomData.floor}${getFloorSuffix(roomData.floor)}`
+                    ? getFloorSuffix(roomData.floor)
                     : "N/A"}
                 </span>
               </div>

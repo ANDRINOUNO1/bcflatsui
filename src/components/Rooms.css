@@ -428,23 +428,84 @@
     box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
 }
 
+/* Loading Spinner */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-container p {
+    color: #6c757d;
+    font-size: 14px;
+    margin: 0;
+}
+
 /* Pricing Summary */
 .pricing-summary {
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
-    border: 1px solid rgba(102, 126, 234, 0.2);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin: 1rem 0;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
 }
 
 .pricing-summary h4 {
-    margin: 0 0 1rem 0;
-    color: #000;
-    font-size: 1.1rem;
-    font-weight: 700;
+    margin: 0 0 16px 0;
+    color: #495057;
+    font-size: 16px;
+    font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 8px;
+}
+
+.pricing-summary p {
+    margin: 0 0 12px 0;
+    padding: 12px 16px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.pricing-summary p:hover {
+    border-color: #007bff;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.1);
+}
+
+.pricing-summary p:last-child {
+    margin-bottom: 0;
+    background: #fff3cd;
+    border-color: #ffc107;
+    font-weight: 600;
+}
+
+.pricing-summary strong {
+    color: #495057;
+    font-weight: 600;
 }
 
 .summary-item {
@@ -1115,6 +1176,16 @@
         padding: 10px 16px;
         font-size: 12px;
     }
+    
+    .pricing-summary {
+        padding: 16px;
+        margin: 16px 0;
+    }
+    
+    .pricing-summary p {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1273,5 +1344,15 @@
     .rooms-modal-form-textarea {
         padding: 12px 14px;
         font-size: 16px; /* Prevent zoom on iOS */
+    }
+    
+    .pricing-summary {
+        padding: 12px;
+        margin: 12px 0;
+    }
+    
+    .pricing-summary p {
+        padding: 8px 10px;
+        font-size: 12px;
     }
 }
