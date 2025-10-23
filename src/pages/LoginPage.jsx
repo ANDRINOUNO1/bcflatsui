@@ -179,11 +179,6 @@ const LoginPage = () => {
       <div className="login-container">
         {/* Login Form */}
         <div className="login-form-container">
-          {/* Back Link - Repositioned to avoid overlap */}
-          <Link to="/" className="back-link">
-            ← Back to Home
-          </Link>
-          
           <div className="login-header">
             <h1>Welcome Back</h1>
             <p>Sign in to your BCFlats account</p>
@@ -285,6 +280,13 @@ const LoginPage = () => {
               )}
             </button>
           </form>
+
+          {/* Back Link - Now positioned below the login button */}
+          <div className="back-link-container">
+            <Link to="/" className="back-link">
+              ← Back to Home
+            </Link>
+          </div>
         </div>
 
         {/* Decorative Side */}

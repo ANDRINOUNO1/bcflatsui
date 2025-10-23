@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { notificationService } from '../services/notificationService'
 import { superAdminService } from '../services/superAdminService'
@@ -11,13 +11,6 @@ import {
   fetchPaymentStats,
   fetchPendingPayments,
   getFilteredTenants,
-  handlePayButtonClick,
-  handlePaymentSubmit,
-  handleConfirmPayment,
-  handleQuickPaySubmit,
-  toNumber,
-  formatCurrency,
-  formatDate,
   getDueDateStatus,
   getStatsCards,
   getOutstandingStats,
@@ -25,12 +18,6 @@ import {
   getTableHeaders,
   getStatusFilterOptions,
   getSortOptions,
-  getPaymentMethodOptions,
-  getQuickPayMethodOptions,
-  getReportPeriodOptions,
-  getTransactionFilterOptions,
-  getEmptyStateConfig,
-  getSummaryData,
   getPendingPaymentsSummary
 } from '../functions/accounting'
 import RoomPage from './RoomPage'
@@ -74,7 +61,7 @@ const TableHeader = ({ headers }) => (
 )
 
 export default function SuperAdminPage() {
-  const { user, logout } = useAuth()
+  const { logout } = useAuth()
   const [loading, setLoading] = useState(false)
   const [accounts, setAccounts] = useState([])
   const [pending, setPending] = useState([])
@@ -138,19 +125,6 @@ export default function SuperAdminPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [accountingSortBy, setAccountingSortBy] = useState('name')
   const [accountingSortOrder, setAccountingSortOrder] = useState('ASC')
-  const [showPaymentModal, setShowPaymentModal] = useState(false)
-  const [selectedTenantForPayment, setSelectedTenantForPayment] = useState(null)
-  const [paymentAmount, setPaymentAmount] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState('cash')
-  const [paymentNotes, setPaymentNotes] = useState('')
-  const [submittingPayment, setSubmittingPayment] = useState(false)
-  const [showQuickPayModal, setShowQuickPayModal] = useState(false)
-  const [quickPayAmount, setQuickPayAmount] = useState('')
-  const [quickPayMethod, setQuickPayMethod] = useState('cash')
-  const [quickPayNotes, setQuickPayNotes] = useState('')
-  const [submittingQuickPay, setSubmittingQuickPay] = useState(false)
-  const [showConfirmModal, setShowConfirmModal] = useState(false)
-  const [confirmData, setConfirmData] = useState(null)
   const [selectedTenantForHistory, setSelectedTenantForHistory] = useState(null)
   const [showTenantDropdown, setShowTenantDropdown] = useState(false)
   const [historySearchQuery, setHistorySearchQuery] = useState('')
@@ -371,7 +345,7 @@ export default function SuperAdminPage() {
   }
 
   // Archived tenants functions
-  const fetchArchivedTenants = async () => {
+  const fetchArchivedTenants = useCallback(async () => {
     try {
       setArchivedLoading(true)
       const filters = {
@@ -389,7 +363,7 @@ export default function SuperAdminPage() {
     } finally {
       setArchivedLoading(false)
     }
-  }
+  }, [searchQuery, dateFrom, dateTo, floorFilter, sortBy, sortOrder])
 
   const handleViewDetails = async (tenant) => {
     try {
@@ -630,25 +604,6 @@ export default function SuperAdminPage() {
     }
   }
 
-  const markAsRead = async (id) => {
-    try {
-      await notificationService.markAsRead(id)
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n))
-      setUnread(prev => Math.max(0, prev - 1))
-    } catch (err) {
-      console.error('Failed to mark notification as read:', err)
-    }
-  }
-
-  const deleteNotification = async (id) => {
-    try {
-      await notificationService.deleteNotification(id)
-      setNotifications(prev => prev.filter(n => n.id !== id))
-      setUnread(prev => Math.max(0, prev - 1))
-    } catch (err) {
-      console.error('Failed to delete notification:', err)
-    }
-  }
 
   const renderContent = () => {
     switch (activeTab) {
@@ -1427,7 +1382,7 @@ onChange={(e) => setAccountingSearchQuery(e.target.value)}
                             <td>
                               <button 
                                 className="btn-primary"
-                                onClick={() => handlePayButtonClick(tenant, setShowPaymentModal, setSelectedTenantForPayment)}
+                                                                onClick={() => console.log('Pay button clicked for tenant:', tenant.id)}
                               >
                                 💰 Pay
                               </button>
@@ -1503,7 +1458,7 @@ onChange={(e) => setAccountingSearchQuery(e.target.value)}
                             <td>
                               <button 
                                 className="btn-success"
-                                onClick={() => handleConfirmPayment(payment.id, setShowConfirmModal, setConfirmData)}
+                                onClick={() => console.log('Confirm payment:', payment.id)}
                               >
                                 ✅ Confirm
                               </button>
@@ -1643,7 +1598,7 @@ onChange={(e) => setAccountingSearchQuery(e.target.value)}
                               <td>
                                 <button 
                                   className="btn-primary"
-                                  onClick={() => handlePayButtonClick(tenant, setShowPaymentModal, setSelectedTenantForPayment)}
+                                                                  onClick={() => console.log('Pay button clicked for tenant:', tenant.id)}
                                 >
                                   💰 Pay Now
                                 </button>
@@ -1844,7 +1799,7 @@ onChange={(e) => setAccountingSearchQuery(e.target.value)}
       default:
         break
     }
-  }, [activeTab])
+  }, [activeTab, fetchArchivedTenants])
 
   // Click outside handler for dropdowns
   useEffect(() => {

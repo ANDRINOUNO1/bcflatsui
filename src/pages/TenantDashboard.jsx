@@ -3,17 +3,14 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { notificationService } from '../services/notificationService';
 import { tenantService } from '../services/tenantService';
+import { maintenanceService } from '../services/maintenanceService';
+import { roomService } from '../services/roomService';
+import { paymentService } from '../services/paymentService';
 import NotificationButton from '../components/NotificationButton';
 import NotificationDropdown from '../components/NotificationDropdown';
 import '../components/TenantDashboard.css';
 import '../components/NotificationStyles.css';
 import {
-    fetchTenantData,
-    fetchPaymentHistory,
-    handlePaymentSubmit,
-    openPaymentModal,
-    closePaymentModal,
-    handleRefresh,
     getFloorSuffix,
     formatCurrency,
     getCorrectedOutstanding
@@ -58,41 +55,193 @@ const TenantDashboard = () => {
   });
 
   const fetchTenantDataWrapper = useCallback(async () => {
-    await fetchTenantData(user?.id, setLoading, setBillingError, setRoomError, setTenantData, setBillingInfo, setRoomData, setMaintenanceRequests, setErrorModal, setRefreshing);
+    if (!user?.id) return;
+    
+    try {
+      setLoading(true);
+      setBillingError(false);
+      setRoomError(false);
+
+      // 1. Fetch the primary tenant data first
+      const tenantResponse = await tenantService.getTenantByAccountId(user.id);
+
+      if (tenantResponse) {
+        console.log('Fetched tenant data:', tenantResponse);
+        console.log('Emergency contact in tenant data:', tenantResponse.emergencyContact);
+        setTenantData(tenantResponse);
+
+        // 2. Run all subsequent, independent fetches in parallel
+        const promises = [
+          // Billing info
+          tenantService.getTenantBillingInfo(tenantResponse.id)
+            .then(data => {
+              setBillingInfo(data);
+              return data;
+            })
+            .catch(error => {
+              console.error('Error fetching billing info:', error);
+              setBillingError(true);
+              return null;
+            }),
+
+          // Room data
+          tenantResponse.roomId ? roomService.getRoomById(tenantResponse.roomId)
+            .then(data => {
+              setRoomData(data);
+              return data;
+            })
+            .catch(error => {
+              console.error('Error fetching room data:', error);
+              setRoomError(true);
+              return null;
+            }) : Promise.resolve(null),
+
+          // Maintenance requests
+          maintenanceService.listByTenant(tenantResponse.id)
+            .then(data => {
+              setMaintenanceRequests(data || []);
+              return data;
+            })
+            .catch(error => {
+              console.error('Error fetching maintenance requests:', error);
+              setMaintenanceRequests([]);
+              return null;
+            })
+        ];
+
+        await Promise.allSettled(promises);
+      } else {
+        // No tenant data found - user might not be set up as tenant yet
+        setTenantData(null);
+        setBillingInfo(null);
+        setRoomData(null);
+        setMaintenanceRequests([]);
+      }
+    } catch (error) {
+      console.error('Error fetching tenant data:', error);
+      setErrorModal({
+        open: true,
+        title: 'Failed to load dashboard',
+        message: 'Unable to load your tenant information. Please try again.',
+        details: error?.response?.data?.message || error.message || 'Unknown error'
+      });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [user?.id]);
 
   const fetchPaymentHistoryWrapper = useCallback(async () => {
-    await fetchPaymentHistory(tenantData?.id, setPaymentHistoryLoading, setPaymentHistory);
+    if (!tenantData?.id) return;
+    
+    try {
+      setPaymentHistoryLoading(true);
+      const history = await paymentService.getPaymentsByTenant(tenantData.id, 20);
+      setPaymentHistory(history || []);
+    } catch (error) {
+      console.error('Error fetching payment history:', error);
+      setPaymentHistory([]);
+    } finally {
+      setPaymentHistoryLoading(false);
+    }
   }, [tenantData?.id]);
 
   const handlePaymentSubmitWrapper = async (e) => {
-    await handlePaymentSubmit(e, tenantData, paymentForm, setPaymentModal, setPaymentForm, setErrorModal, fetchTenantDataWrapper, fetchPaymentHistoryWrapper);
+    e.preventDefault();
+    if (!tenantData?.id) return;
+
+    try {
+      setPaymentModal(prev => ({ ...prev, loading: true }));
+      
+      const paymentData = {
+        tenantId: tenantData.id,
+        amount: parseFloat(paymentForm.amount),
+        paymentMethod: paymentForm.paymentMethod,
+        description: paymentForm.description || 'Rent payment',
+        referenceNumber: paymentForm.referenceNumber || null,
+        status: 'Pending'
+      };
+
+      await paymentService.createPendingPayment(tenantData.id, paymentData);
+      
+      // Refresh data after successful payment submission
+      await fetchTenantDataWrapper();
+      await fetchPaymentHistoryWrapper();
+      
+      // Reset form and close modal
+      setPaymentForm({
+        amount: '',
+        paymentMethod: 'gcash',
+        description: '',
+        referenceNumber: ''
+      });
+      setPaymentModal({ open: false, loading: false });
+      
+      // Show success message
+      setErrorModal({
+        open: true,
+        title: 'Payment Submitted',
+        message: 'Your payment has been submitted and is pending confirmation from accounting.',
+        details: 'You will be notified once the payment is confirmed and your balance is updated.'
+      });
+      
+    } catch (error) {
+      console.error('Error submitting payment:', error);
+      setErrorModal({
+        open: true,
+        title: 'Payment Submission Failed',
+        message: 'Unable to submit your payment. Please try again.',
+        details: error?.response?.data?.message || error.message || 'Unknown error'
+      });
+    } finally {
+      setPaymentModal(prev => ({ ...prev, loading: false }));
+    }
   };
 
   const openPaymentModalWrapper = () => {
-    openPaymentModal(setPaymentModal);
+    setPaymentModal({ open: true, loading: false });
   };
 
   const closePaymentModalWrapper = () => {
-    closePaymentModal(setPaymentModal, setPaymentForm);
+    setPaymentModal({ open: false, loading: false });
+    setPaymentForm({
+      amount: '',
+      paymentMethod: 'gcash',
+      description: '',
+      referenceNumber: ''
+    });
   };
 
   const handleRefreshWrapper = async () => {
-    await handleRefresh(setRefreshing, fetchTenantDataWrapper, fetchPaymentHistoryWrapper);
-    await fetchAnnouncements();
+    setRefreshing(true);
+    try {
+      await fetchTenantDataWrapper();
+      await fetchPaymentHistoryWrapper();
+      await fetchAnnouncements();
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const fetchAnnouncements = useCallback(async () => {
     try {
       setAnnouncementsLoading(true);
       const notifications = await notificationService.fetchMyNotifications(50);
-      // Filter for announcements
+      
+      // Filter for announcements - check both type and metadata
       const announcementNotifications = notifications.filter(notif => 
-        notif.type === 'announcement' || notif.metadata?.isAnnouncement
+        notif.type === 'announcement' || 
+        notif.metadata?.isAnnouncement ||
+        notif.title?.toLowerCase().includes('announcement') ||
+        notif.message?.toLowerCase().includes('announcement')
       );
+      
       setAnnouncements(announcementNotifications);
-    } catch (err) {
-      console.error('Failed to load announcements:', err);
+    } catch (error) {
+      console.error('Failed to load announcements:', error);
+      setAnnouncements([]);
     } finally {
       setAnnouncementsLoading(false);
     }
@@ -100,10 +249,42 @@ const TenantDashboard = () => {
 
   // Emergency contact modal functions
   const openEmergencyContactModal = () => {
+    console.log('Opening emergency contact modal with tenant data:', tenantData);
+    console.log('Emergency contact data:', tenantData?.emergencyContact);
+    
+    // Handle different possible data structures for emergency contact
+    let emergencyContact = {};
+    
+    if (tenantData?.emergencyContact) {
+      // If it's already an object, use it directly
+      if (typeof tenantData.emergencyContact === 'object') {
+        emergencyContact = tenantData.emergencyContact;
+      }
+      // If it's a JSON string, parse it
+      else if (typeof tenantData.emergencyContact === 'string') {
+        try {
+          emergencyContact = JSON.parse(tenantData.emergencyContact);
+        } catch (error) {
+          console.error('Error parsing emergency contact JSON:', error);
+          emergencyContact = {};
+        }
+      }
+    }
+    
+    console.log('Processed emergency contact:', emergencyContact);
+    
+    // If no emergency contact data exists, show helpful placeholders
+    const hasExistingData = emergencyContact.name || emergencyContact.phone || emergencyContact.relationship;
+    
+    if (!hasExistingData) {
+      console.log('No existing emergency contact data found');
+    }
+    
+    // Populate form with existing emergency contact data
     setEmergencyContactForm({
-      name: tenantData?.emergencyContact?.name || '',
-      phone: tenantData?.emergencyContact?.phone || '',
-      relationship: tenantData?.emergencyContact?.relationship || ''
+      name: emergencyContact.name || '',
+      phone: emergencyContact.phone || '',
+      relationship: emergencyContact.relationship || ''
     });
     setEmergencyContactModal({ open: true, loading: false });
   };
@@ -137,7 +318,9 @@ const TenantDashboard = () => {
         }
       };
       
-      await tenantService.updateTenant(tenantData.id, updateData);
+      console.log('Updating emergency contact with data:', updateData);
+      const updatedTenant = await tenantService.updateTenant(tenantData.id, updateData);
+      console.log('Updated tenant response:', updatedTenant);
       
       // Update local state
       setTenantData(prev => ({
@@ -152,7 +335,7 @@ const TenantDashboard = () => {
         open: true,
         title: 'Success',
         message: 'Emergency contact information updated successfully!',
-        details: ''
+        details: `Contact: ${updateData.emergencyContact.name} (${updateData.emergencyContact.relationship})`
       });
       
     } catch (err) {
@@ -178,20 +361,28 @@ const TenantDashboard = () => {
   // Poll notifications
   useEffect(() => {
     let intervalId;
-    const load = async () => {
+    
+    const loadNotifications = async () => {
       try {
         const data = await notificationService.fetchMyNotifications(20);
-        setNotifications(data);
-        setUnreadCount(data.filter(n => !n.isRead).length);
-      } catch {
-        // ignore
+        setNotifications(data || []);
+        setUnreadCount(data?.filter(n => !n.isRead).length || 0);
+      } catch (error) {
+        console.error('Error loading notifications:', error);
+        // Don't show error modal for notification failures
       }
     };
+    
     if (user) {
-      load();
-      intervalId = setInterval(load, 15000);
+      loadNotifications();
+      intervalId = setInterval(loadNotifications, 15000); // Poll every 15 seconds
     }
-    return () => intervalId && clearInterval(intervalId);
+    
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
   }, [user]);
 
   // Handle notification dropdown visibility changes
@@ -707,15 +898,57 @@ const TenantDashboard = () => {
             <div className="info-list">
               <div className="info-row info-row--light-border">
                 <span className="info-label">Contact Name:</span>
-                <span className="info-value">{tenantData?.emergencyContact?.name || 'Not provided'}</span>
+                <span className="info-value">
+                  {(() => {
+                    const contact = tenantData?.emergencyContact;
+                    if (!contact) return 'Not provided';
+                    if (typeof contact === 'string') {
+                      try {
+                        const parsed = JSON.parse(contact);
+                        return parsed.name || 'Not provided';
+                      } catch {
+                        return 'Not provided';
+                      }
+                    }
+                    return contact.name || 'Not provided';
+                  })()}
+                </span>
               </div>
               <div className="info-row info-row--light-border">
                 <span className="info-label">Phone:</span>
-                <span className="info-value">{tenantData?.emergencyContact?.phone || 'Not provided'}</span>
+                <span className="info-value">
+                  {(() => {
+                    const contact = tenantData?.emergencyContact;
+                    if (!contact) return 'Not provided';
+                    if (typeof contact === 'string') {
+                      try {
+                        const parsed = JSON.parse(contact);
+                        return parsed.phone || 'Not provided';
+                      } catch {
+                        return 'Not provided';
+                      }
+                    }
+                    return contact.phone || 'Not provided';
+                  })()}
+                </span>
               </div>
               <div className="info-row info-row--no-border">
                 <span className="info-label">Relationship:</span>
-                <span className="info-value">{tenantData?.emergencyContact?.relationship || 'Not provided'}</span>
+                <span className="info-value">
+                  {(() => {
+                    const contact = tenantData?.emergencyContact;
+                    if (!contact) return 'Not provided';
+                    if (typeof contact === 'string') {
+                      try {
+                        const parsed = JSON.parse(contact);
+                        return parsed.relationship || 'Not provided';
+                      } catch {
+                        return 'Not provided';
+                      }
+                    }
+                    return contact.relationship || 'Not provided';
+                  })()}
+                </span>
               </div>
             </div>
             <div className="card-footer-action">
@@ -723,7 +956,19 @@ const TenantDashboard = () => {
                 className="btn-full-width"
                 onClick={openEmergencyContactModal}
               >
-                Update Contact Info
+                {(() => {
+                  const contact = tenantData?.emergencyContact;
+                  if (!contact) return 'Add Contact Info';
+                  if (typeof contact === 'string') {
+                    try {
+                      const parsed = JSON.parse(contact);
+                      return parsed.name ? 'Update Contact Info' : 'Add Contact Info';
+                    } catch {
+                      return 'Add Contact Info';
+                    }
+                  }
+                  return contact.name ? 'Update Contact Info' : 'Add Contact Info';
+                })()}
               </button>
             </div>
           </div>
@@ -841,22 +1086,22 @@ const TenantDashboard = () => {
             </div>
             
             <div className="modal-body payment-modal-body">
-              <form onSubmit={handlePaymentSubmitWrapper} className="modal-form payment-form">
-                <div className="payment-summary">
-                  <div className="payment-summary-item">
-                    <span className="payment-summary-label">Outstanding Balance:</span>
-                    <span className="payment-summary-value payment-summary-value--red">
-                      {formatCurrency(billingInfo?.outstandingBalance || 0)}
-                    </span>
-                  </div>
-                  <div className="payment-summary-item">
-                    <span className="payment-summary-label">Monthly Rent:</span>
-                    <span className="payment-summary-value">
-                      {formatCurrency(billingInfo?.monthlyRent || 0)}
-                    </span>
-                  </div>
+              <div className="payment-summary">
+                <div className="payment-summary-item">
+                  <span className="payment-summary-label">Outstanding Balance:</span>
+                  <span className="payment-summary-value payment-summary-value--red">
+                    {formatCurrency(billingInfo?.outstandingBalance || 0)}
+                  </span>
                 </div>
+                <div className="payment-summary-item">
+                  <span className="payment-summary-label">Monthly Rent:</span>
+                  <span className="payment-summary-value">
+                    {formatCurrency(billingInfo?.monthlyRent || 0)}
+                  </span>
+                </div>
+              </div>
 
+              <form onSubmit={handlePaymentSubmitWrapper} className="modal-form payment-form">
                 <div className="form-group">
                   <label htmlFor="amount" className="form-label">
                     Payment Amount <span className="required">*</span>

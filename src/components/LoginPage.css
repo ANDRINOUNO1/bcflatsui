@@ -33,33 +33,34 @@
   display: flex;
 }
 
-/* Back Link - Positioned in upper left above Welcome Back title */
+/* Back Link Container - Positioned below the login button */
+.back-link-container {
+  text-align: center;
+  margin-top: 1.5rem;
+}
+
 .back-link {
-  position: absolute;
-  top: 0.5rem;
-  left: 0.5rem; /* Upper left corner */
   color: var(--color-primary);
   text-decoration: none;
   font-weight: 500;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   transition: all 0.3s ease;
-  z-index: 10;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 1.5rem;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   font-size: 0.9rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .back-link:hover {
   color: var(--color-accent-blue);
   background: rgba(255, 255, 255, 1);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: var(--color-accent-blue);
 }
 
 /* ------------------------------------------------------------------- */
@@ -731,18 +732,13 @@
     min-height: 200px;
   }
 
+  .back-link-container {
+    margin-top: 1rem;
+  }
+  
   .back-link {
-    position: absolute;
-    top: 0.5rem;
-    left: 0.5rem; /* Upper left corner for mobile too */
-    color: var(--color-primary);
-    background: rgba(255, 255, 255, 0.95);
-    padding: 0.75rem 1rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    font-size: 0.85rem; /* Slightly smaller for mobile */
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
   }
 
   .decoration-content h2 {

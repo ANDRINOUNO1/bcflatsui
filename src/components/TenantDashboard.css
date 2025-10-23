@@ -686,57 +686,508 @@
 }
 
 /* =========================
-   Responsive Design
+   COMPREHENSIVE RESPONSIVE DESIGN
    ========================= */
-@media (max-width: 1024px) {
-  .dashboard-row {
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+
+/* Large Desktop (1400px and up) */
+@media (min-width: 1400px) {
+  .dashboard-main-content {
+    max-width: 90rem;
+    padding: 3rem 2rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+  }
+  
+  .billing-info-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 3rem;
+  }
+  
+  .grid-2-col {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 3rem;
+  }
+}
+
+/* Desktop (1200px to 1399px) */
+@media (max-width: 1399px) and (min-width: 1200px) {
+  .dashboard-main-content {
+    max-width: 80rem;
+    padding: 2.5rem 2rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.75rem;
+  }
+}
+
+/* Large Tablet / Small Desktop (992px to 1199px) */
+@media (max-width: 1199px) and (min-width: 992px) {
+  .dashboard-main-content {
+    padding: 2rem 1.5rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
   }
-  .financial-overview { grid-template-columns: 1fr; }
-  .amenities-list { justify-content: center; }
-}
-
-@media (max-width: 768px) {
-  .tenant-dashboard { padding: 1rem; }
-  .welcome-header h1 { font-size: 2.5rem; }
-  .welcome-header p { font-size: 1rem; }
-  .dashboard-row { grid-template-columns: 1fr; gap: 1rem; }
-  .dashboard-card { padding: 1.5rem; }
-  .action-buttons { flex-direction: column; gap: 1rem; }
-  .btn-primary, .btn-secondary { width: 100%; padding: 1rem; font-size: 1rem; }
-  .info-item { 
-    flex-direction: column; 
-    align-items: flex-start; 
-    gap: 0.5rem; 
-    padding: 1rem;
-    text-align: left;
+  
+  .billing-info-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
   }
-  .info-label { font-size: 0.8rem; margin-bottom: 0.25rem; }
-  .info-value { font-size: 1rem; font-weight: 600; }
-  .request-item { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
-  .financial-overview { grid-template-columns: 1fr; }
-  .amenities-list { justify-content: flex-start; }
-  .amenity-tag { font-size: 0.8rem; padding: 0.5rem 1rem; }
+  
+  .grid-2-col {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
 }
 
-@media (max-width: 480px) {
-  .tenant-dashboard { padding: 0.75rem; }
-  .welcome-header h1 { font-size: 2rem; }
-  .welcome-header p { font-size: 1rem; }
-  .dashboard-card { padding: 1rem; }
-  .dashboard-card h3 { font-size: 1.25rem; }
-  .info-item { 
-    padding: 0.75rem; 
-    flex-direction: column; 
-    align-items: flex-start; 
+/* Tablet (768px to 991px) */
+@media (max-width: 991px) and (min-width: 768px) {
+  .dashboard-main-content {
+    padding: 1.5rem 1rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+  
+  .billing-info-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .grid-2-col {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .tenant-header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.5rem 0;
+  }
+  
+  .tenant-header-actions {
+    width: 100%;
+    justify-content: flex-start !important;
+  }
+  
+  .tenant-welcome-title {
+    font-size: 1.75rem;
+  }
+  
+  .tenant-welcome-subtitle {
+    font-size: 1rem;
+  }
+  
+  .content-card {
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .content-card--large-padding {
+    padding: 1.5rem;
+  }
+  
+  .card-actions-footer {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .btn-action {
+    width: 100%;
+    padding: 0.875rem 1.5rem;
+  }
+}
+
+/* Mobile Landscape (576px to 767px) */
+@media (max-width: 767px) and (min-width: 576px) {
+  .dashboard-main-content {
+    padding: 1rem 0.75rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .billing-info-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .grid-2-col {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .tenant-header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1.25rem 0;
+  }
+  
+  .tenant-header-actions {
+    width: 100%;
+    justify-content: flex-start !important;
+  }
+  
+  .tenant-welcome-title {
+    font-size: 1.5rem;
+  }
+  
+  .tenant-welcome-subtitle {
+    font-size: 0.95rem;
+  }
+  
+  .tenant-refresh-button {
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .content-card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .content-card--large-padding {
+    padding: 1.25rem;
+  }
+  
+  .card-title {
+    font-size: 1rem;
+  }
+  
+  .content-card--large-padding .card-title {
+    font-size: 1.25rem;
+  }
+  
+  .stats-card {
+    padding: 1rem;
+  }
+  
+  .stats-card-value {
+    font-size: 1.5rem;
+  }
+  
+  .info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    padding: 0.5rem 0;
+  }
+  
+  .info-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  
+  .info-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  
+  .card-actions-footer {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .btn-action {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .btn-full-width {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .card-footer-action-group {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .btn-flex-1 {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .maintenance-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .maintenance-actions .btn {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .request-card {
+    padding: 0.75rem;
+  }
+  
+  .request-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .request-card-footer {
+    flex-direction: column;
+    align-items: flex-start;
     gap: 0.25rem;
   }
-  .info-label { font-size: 0.75rem; margin-bottom: 0.25rem; }
-  .info-value { font-size: 0.9rem; font-weight: 600; }
-  .request-item { padding: 0.75rem; }
-  .amenity-tag { font-size: 0.7rem; padding: 0.4rem 0.8rem; }
-  .btn-primary, .btn-secondary { padding: 0.875rem; font-size: 0.9rem; }
+  
+  .payment-table {
+    font-size: 0.75rem;
+  }
+  
+  .payment-table-header th,
+  .payment-table-body td {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .announcement-card {
+    padding: 1rem;
+  }
+  
+  .announcement-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .announcement-card-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+/* Mobile Portrait (up to 575px) */
+@media (max-width: 575px) {
+  .dashboard-main-content {
+    padding: 0.75rem 0.5rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .billing-info-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .grid-2-col {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .tenant-header-container {
+    padding: 0 0.75rem;
+  }
+  
+  .tenant-header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 1rem 0;
+  }
+  
+  .tenant-header-actions {
+    width: 100%;
+    justify-content: flex-start !important;
+  }
+  
+  .tenant-welcome-title {
+    font-size: 1.25rem;
+  }
+  
+  .tenant-welcome-subtitle {
+    font-size: 0.875rem;
+  }
+  
+  .tenant-refresh-button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+  
+  .content-card {
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .content-card--large-padding {
+    padding: 1rem;
+  }
+  
+  .card-title {
+    font-size: 0.95rem;
+  }
+  
+  .content-card--large-padding .card-title {
+    font-size: 1.125rem;
+  }
+  
+  .stats-card {
+    padding: 0.75rem;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .stats-card-content {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .stats-card-label {
+    font-size: 0.75rem;
+  }
+  
+  .stats-card-value {
+    font-size: 1.25rem;
+  }
+  
+  .stats-card-icon-wrapper {
+    padding: 0.5rem;
+  }
+  
+  .stats-card-icon {
+    font-size: 1.25rem;
+  }
+  
+  .info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    padding: 0.5rem 0;
+  }
+  
+  .info-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  
+  .info-value {
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  
+  .card-actions-footer {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .btn-action {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+  }
+  
+  .btn-full-width {
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+  }
+  
+  .card-footer-action-group {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .btn-flex-1 {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+  }
+  
+  .maintenance-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .maintenance-actions .btn {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+  }
+  
+  .request-card {
+    padding: 0.75rem;
+  }
+  
+  .request-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .request-card-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .payment-table {
+    font-size: 0.7rem;
+  }
+  
+  .payment-table-header th,
+  .payment-table-body td {
+    padding: 0.375rem 0.5rem;
+  }
+  
+  .announcement-card {
+    padding: 0.75rem;
+  }
+  
+  .announcement-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .announcement-card-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .announcement-card-title {
+    font-size: 1rem;
+  }
+  
+  .announcement-card-date {
+    font-size: 0.75rem;
+  }
+  
+  .announcement-card-content p {
+    font-size: 0.85rem;
+  }
+  
+  .announcement-card-type {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+  }
+  
+  .announcement-card-author {
+    font-size: 0.75rem;
+  }
 }
 /* Notification Dropdown */
 .notif-dropdown {
@@ -781,6 +1232,8 @@
   max-height: 90vh;
   overflow: hidden;
   z-index: 1001;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-header {
@@ -789,6 +1242,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .modal-title-content {
@@ -838,6 +1292,9 @@
   padding: 1.5rem;
   max-height: 60vh;
   overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-footer {
@@ -846,6 +1303,7 @@
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 .modal-btn {
@@ -1100,6 +1558,8 @@
   animation: modalSlideIn 0.3s ease-out;
   z-index: 1001;
   pointer-events: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes modalSlideIn {
@@ -1120,6 +1580,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
 }
 
 .payment-modal-title-content {
@@ -1168,27 +1629,36 @@
 .payment-form {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  gap: 1rem;
+  width: 100%;
 }
 
 .payment-modal-body {
   padding: 24px;
   flex: 1;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #1e40af, #2563eb);
+  color: white;
 }
 
 .payment-form-body {
   padding: 24px;
   flex: 1;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #1e40af, #2563eb);
+  color: white;
 }
 
 .payment-summary {
-  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 24px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .payment-summary-item {
@@ -1204,35 +1674,42 @@
 
 .payment-summary-label {
   font-weight: 500;
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.9);
   font-size: 14px;
 }
 
 .payment-summary-value {
   font-weight: 700;
-  color: #1e293b;
+  color: white;
   font-size: 16px;
 }
 
 .payment-summary-value--red {
-  color: #dc2626;
+  color: #fecaca;
 }
 
 /* Form Styles */
 .form-group {
   margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
-.form-label {
+.form-label,
+.payment-modal .form-label,
+.payment-modal-body .form-label,
+.payment-form .form-label,
+.modal-form .form-label {
   display: block;
   font-weight: 600;
-  color: #374151;
+  color: white !important;
   margin-bottom: 8px;
   font-size: 14px;
 }
 
 .required {
-  color: #dc2626;
+  color: #fecaca;
 }
 
 .form-input,
@@ -1240,19 +1717,23 @@
 .form-textarea {
   width: 100%;
   padding: 12px 16px;
-  border: 2px solid #e5e7eb;
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 8px;
   font-size: 14px;
   transition: all 0.2s ease;
-  background: white;
+  background: rgba(255, 255, 255, 0.95);
+  color: #1e293b;
+  box-sizing: border-box;
+  display: block;
 }
 
 .form-input:focus,
 .form-select:focus,
 .form-textarea:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+  background: white;
 }
 
 .form-textarea {
@@ -1273,6 +1754,7 @@
   display: flex;
   gap: 12px;
   justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 .btn-cancel,
@@ -1397,43 +1879,97 @@ body.modal-open {
   overflow: hidden;
 }
 
-/* Enhanced Mobile Responsiveness */
-@media (max-width: 640px) {
-  .tenant-header-content {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: flex-start;
-    padding: 1.5rem 0;
-  }
-  
-  .tenant-header-actions {
-    width: 100%;
-    justify-content: flex-start !important;
-  }
-  
-  .tenant-welcome-title {
-    font-size: 1.5rem;
-  }
-  
-  .tenant-welcome-subtitle {
-    font-size: 1rem;
-  }
-  
-  .tenant-refresh-button {
-    padding: 0.625rem 1rem;
-    font-size: 0.875rem;
-  }
-  
-  .notif-dropdown {
-    width: calc(100vw - 2rem);
-    right: -1rem;
-  }
-  
+/* =========================
+   COMPREHENSIVE MODAL RESPONSIVENESS
+   ========================= */
+
+/* Large Desktop (1400px+) */
+@media (min-width: 1400px) {
   .payment-modal,
   .modal-container {
-    margin: 10px;
-    max-width: calc(100vw - 20px);
-    border-radius: 16px;
+    max-width: 700px;
+    max-height: 85vh;
+  }
+  
+  .payment-modal-header,
+  .modal-header {
+    padding: 2rem;
+  }
+  
+  .payment-modal-body,
+  .modal-body {
+    padding: 2rem;
+  }
+  
+  .payment-modal-footer,
+  .modal-footer {
+    padding: 2rem;
+  }
+}
+
+/* Desktop (1200px - 1399px) */
+@media (max-width: 1399px) and (min-width: 1200px) {
+  .payment-modal,
+  .modal-container {
+    max-width: 650px;
+    max-height: 85vh;
+  }
+  
+  .payment-modal-header,
+  .modal-header {
+    padding: 1.75rem;
+  }
+  
+  .payment-modal-body,
+  .modal-body {
+    padding: 1.75rem;
+  }
+  
+  .payment-modal-footer,
+  .modal-footer {
+    padding: 1.75rem;
+  }
+}
+
+/* Large Tablet/Small Desktop (992px - 1199px) */
+@media (max-width: 1199px) and (min-width: 992px) {
+  .payment-modal,
+  .modal-container {
+    max-width: 600px;
+    max-height: 90vh;
+    margin: 1rem;
+  }
+  
+  .payment-modal-header,
+  .modal-header {
+    padding: 1.5rem;
+  }
+  
+  .payment-modal-body,
+  .modal-body {
+    padding: 1.5rem;
+  }
+  
+  .payment-modal-footer,
+  .modal-footer {
+    padding: 1.5rem;
+  }
+  
+  .payment-summary {
+    padding: 1.25rem;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* Tablet (768px - 991px) */
+@media (max-width: 991px) and (min-width: 768px) {
+  .payment-modal,
+  .modal-container {
+    max-width: calc(100vw - 2rem);
+    max-height: 90vh;
+    margin: 1rem;
+    border-radius: 1rem;
   }
   
   .payment-modal-header,
@@ -1441,17 +1977,103 @@ body.modal-open {
     padding: 1.25rem;
   }
   
+  .payment-modal-title,
+  .modal-title {
+    font-size: 1.25rem;
+  }
+  
+  .payment-modal-body,
+  .modal-body {
+    padding: 1.25rem;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+  }
+  
+  .payment-modal-footer,
+  .modal-footer {
+    padding: 1.25rem;
+    flex-direction: row;
+    gap: 0.75rem;
+  }
+  
+  .btn-cancel,
+  .btn-submit,
+  .modal-btn {
+    flex: 1;
+    padding: 0.875rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .payment-summary {
+    padding: 1rem;
+    margin-bottom: 1.25rem;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+  
+  .form-label {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    color: white !important;
+  }
+  
+  .form-input,
+  .form-select,
+  .form-textarea {
+    padding: 0.875rem;
+    font-size: 0.9rem;
+  }
+  
+  .form-textarea {
+    min-height: 80px;
+  }
+}
+
+/* Mobile Landscape (576px - 767px) */
+@media (max-width: 767px) and (min-width: 576px) {
+  .notif-dropdown {
+    width: calc(100vw - 2rem);
+    right: -1rem;
+    max-width: 320px;
+  }
+  
+  .payment-modal,
+  .modal-container {
+    margin: 0.5rem;
+    max-width: calc(100vw - 1rem);
+    max-height: calc(100vh - 1rem);
+    border-radius: 1rem;
+  }
+  
+  .payment-modal-header,
+  .modal-header {
+    padding: 1rem;
+  }
+  
+  .payment-modal-title,
+  .modal-title {
+    font-size: 1.125rem;
+  }
+  
   .payment-modal-body,
   .payment-form-body,
   .modal-body {
-    padding: 1.25rem;
+    padding: 1rem;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   
   .payment-modal-footer,
   .payment-form-footer,
   .modal-footer {
-    padding: 1.25rem;
+    padding: 1rem;
     flex-direction: column;
+    gap: 0.5rem;
   }
   
   .btn-cancel,
@@ -1459,51 +2081,326 @@ body.modal-open {
   .modal-btn {
     width: 100%;
     justify-content: center;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    min-height: 44px;
   }
   
   .payment-summary {
-    padding: 1rem;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
   
-  .stats-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
+  .payment-summary-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
   }
   
-  .stats-card {
-    padding: 1rem;
+  .payment-summary-label {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.9);
   }
   
-  .stats-card-value {
-    font-size: 1.5rem;
+  .payment-summary-value {
+    font-size: 0.9rem;
+    color: white;
   }
   
-  .content-card {
-    padding: 1rem;
+  .payment-summary-value--red {
+    color: #fecaca;
+  }
+  
+  .form-group {
     margin-bottom: 1rem;
   }
   
-  .billing-info-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
+  .form-label {
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+    color: white !important;
   }
   
-  .grid-2-col {
-    grid-template-columns: 1fr;
-    gap: 1rem;
+  .form-input,
+  .form-select,
+  .form-textarea {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    min-height: 44px;
   }
   
-  .community-grid {
-    grid-template-columns: 1fr;
+  .form-textarea {
+    min-height: 60px;
   }
   
-  .payment-table {
-    font-size: 12px;
+  .modal-close,
+  .payment-modal-close {
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 1.25rem;
+  }
+}
+
+/* Mobile Portrait (≤575px) */
+@media (max-width: 575px) {
+  .payment-modal,
+  .modal-container {
+    margin: 0.25rem;
+    max-width: calc(100vw - 0.5rem);
+    max-height: calc(100vh - 0.5rem);
+    border-radius: 0.75rem;
   }
   
-  .payment-table-header th,
-  .payment-table-body td {
-    padding: 8px 12px;
+  .payment-modal-header,
+  .modal-header {
+    padding: 0.75rem;
+  }
+  
+  .payment-modal-title,
+  .modal-title {
+    font-size: 1rem;
+  }
+  
+  .payment-modal-body,
+  .payment-form-body,
+  .modal-body {
+    padding: 0.75rem;
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .payment-modal-footer,
+  .payment-form-footer,
+  .modal-footer {
+    padding: 0.75rem;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .btn-cancel,
+  .btn-submit,
+  .modal-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.8rem;
+    min-height: 44px;
+  }
+  
+  .payment-summary {
+    padding: 0.5rem;
+    margin-bottom: 0.75rem;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .payment-summary-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .payment-summary-label {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.9);
+  }
+  
+  .payment-summary-value {
+    font-size: 0.8rem;
+    color: white;
+  }
+  
+  .payment-summary-value--red {
+    color: #fecaca;
+  }
+  
+  .form-group {
+    margin-bottom: 0.75rem;
+  }
+  
+  .form-label {
+    font-size: 0.75rem;
+    margin-bottom: 0.375rem;
+    color: white !important;
+  }
+  
+  .form-input,
+  .form-select,
+  .form-textarea {
+    padding: 0.625rem;
+    font-size: 0.8rem;
+    min-height: 44px;
+  }
+  
+  .form-textarea {
+    min-height: 50px;
+  }
+  
+  .modal-close,
+  .payment-modal-close {
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 1.125rem;
+  }
+  
+  .modal-icon,
+  .payment-modal-icon {
+    font-size: 1.25rem;
+  }
+}
+
+/* Modal Overlay Responsiveness */
+@media (max-width: 767px) {
+  .modal-overlay {
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 575px) {
+  .modal-overlay {
+    padding: 0.25rem;
+  }
+}
+
+/* Error Modal Specific Responsiveness */
+@media (max-width: 767px) {
+  .error-modal {
+    max-width: calc(100vw - 1rem);
+    margin: 0.5rem;
+  }
+  
+  .error-modal-header {
+    padding: 1rem;
+  }
+  
+  .error-modal-body {
+    padding: 1rem;
+  }
+  
+  .error-modal-actions {
+    padding: 1rem;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .error-modal-button {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 575px) {
+  .error-modal {
+    max-width: calc(100vw - 0.5rem);
+    margin: 0.25rem;
+  }
+  
+  .error-modal-header {
+    padding: 0.75rem;
+  }
+  
+  .error-modal-body {
+    padding: 0.75rem;
+  }
+  
+  .error-modal-actions {
+    padding: 0.75rem;
+  }
+  
+  .error-modal-button {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.8rem;
+  }
+  
+  .error-modal-title {
+    font-size: 1rem;
+  }
+  
+  .error-modal-message {
+    font-size: 0.875rem;
+  }
+  
+  .error-modal-details {
+    font-size: 0.75rem;
+    padding: 0.5rem;
+  }
+}
+
+/* Notification Dropdown Responsiveness */
+@media (max-width: 767px) {
+  .notif-dropdown {
+    width: calc(100vw - 2rem);
+    right: -1rem;
+    max-width: 320px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 575px) {
+  .notif-dropdown {
+    width: calc(100vw - 1rem);
+    right: -0.5rem;
+    max-width: 300px;
+    max-height: calc(100vh - 80px);
+  }
+}
+
+/* Modal Animation Responsiveness */
+@media (max-width: 767px) {
+  .payment-modal {
+    animation: modalSlideInMobile 0.3s ease-out;
+  }
+}
+
+@keyframes modalSlideInMobile {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Prevent modal content from being cut off */
+@media (max-width: 767px) {
+  .modal-body {
+    padding-bottom: 1rem;
+  }
+  
+  .payment-modal-body {
+    padding-bottom: 1rem;
+  }
+}
+
+/* Ensure modals are accessible on all devices */
+@media (max-width: 767px) {
+  .modal-overlay {
+    align-items: flex-start;
+    padding-top: 2rem;
+  }
+  
+  .payment-modal,
+  .modal-container {
+    margin-top: 1rem;
+  }
+}
+
+@media (max-width: 575px) {
+  .modal-overlay {
+    padding-top: 1rem;
+  }
+  
+  .payment-modal,
+  .modal-container {
+    margin-top: 0.5rem;
   }
 }
 
@@ -1527,6 +2424,141 @@ body.modal-open {
   
   .payment-modal {
     max-width: 500px;
+  }
+}
+
+/* Touch-friendly interactions for mobile */
+@media (max-width: 767px) {
+  .btn-action,
+  .btn-full-width,
+  .btn-flex-1,
+  .btn-primary,
+  .btn-secondary,
+  .tenant-refresh-button {
+    min-height: 44px; /* iOS recommended touch target size */
+    touch-action: manipulation;
+  }
+  
+  .modal-close,
+  .payment-modal-close {
+    min-width: 44px;
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+  
+  .stats-card {
+    touch-action: manipulation;
+  }
+  
+  .content-card {
+    touch-action: manipulation;
+  }
+  
+  /* Improve scrolling on mobile */
+  .dashboard-main-content {
+    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
+  }
+  
+  .modal-body,
+  .payment-modal-body {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Better spacing for touch */
+  .info-row {
+    padding: 0.75rem 0;
+  }
+  
+  .request-card {
+    margin-bottom: 0.5rem;
+  }
+  
+  .announcement-card {
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* High DPI display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .stats-card-icon,
+  .card-title-icon,
+  .modal-icon,
+  .payment-modal-icon {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Landscape orientation adjustments */
+@media (max-width: 767px) and (orientation: landscape) {
+  .tenant-header-content {
+    flex-direction: row;
+    align-items: center;
+    padding: 1rem 0;
+  }
+  
+  .tenant-header-actions {
+    width: auto;
+    justify-content: flex-end !important;
+  }
+  
+  .tenant-welcome-title {
+    font-size: 1.25rem;
+  }
+  
+  .tenant-welcome-subtitle {
+    font-size: 0.875rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  
+  .content-card {
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  /* Modal adjustments for landscape */
+  .payment-modal,
+  .modal-container {
+    max-height: calc(100vh - 0.5rem);
+    max-width: calc(100vw - 1rem);
+  }
+  
+  .payment-modal-body,
+  .modal-body {
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .payment-modal-footer,
+  .modal-footer {
+    flex-direction: row;
+    gap: 0.75rem;
+  }
+  
+  .btn-cancel,
+  .btn-submit,
+  .modal-btn {
+    flex: 1;
+    width: auto;
+  }
+  
+  .error-modal {
+    max-height: calc(100vh - 1rem);
+  }
+  
+  .error-modal-body {
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
+  }
+  
+  .notif-dropdown {
+    max-height: calc(100vh - 60px);
   }
 }
 
@@ -1739,331 +2771,7 @@ body.modal-open {
   }
 }
 
-/* ==================== COMPREHENSIVE RESPONSIVE DESIGN FOR TENANT DASHBOARD ==================== */
-
-/* Large Desktop (1200px and up) */
-@media (min-width: 1200px) {
-  .tenant-dashboard {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .tenant-main-content {
-    flex: 1;
-    padding: 2rem;
-  }
-  
-  .tenant-stats-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-  
-  .tenant-overview-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* Desktop (992px to 1199px) */
-@media (max-width: 1199px) and (min-width: 992px) {
-  .tenant-main-content {
-    padding: 1.5rem;
-  }
-  
-  .tenant-stats-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  
-  .tenant-overview-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* Tablet (768px to 991px) */
-@media (max-width: 991px) and (min-width: 768px) {
-  .tenant-main-content {
-    padding: 1rem;
-  }
-  
-  .tenant-stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
-  
-  .tenant-overview-grid {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-  
-  .tenant-header-container {
-    padding: 0 1rem;
-  }
-  
-  .tenant-header-title {
-    font-size: 1.5rem;
-  }
-  
-  .tenant-header-subtitle {
-    font-size: 0.875rem;
-  }
-}
-
-/* Mobile Landscape (576px to 767px) */
-@media (max-width: 767px) and (min-width: 576px) {
-  .tenant-main-content {
-    padding: 0.75rem;
-  }
-  
-  .tenant-stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-  }
-  
-  .tenant-overview-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .tenant-header-container {
-    padding: 0 0.75rem;
-  }
-  
-  .tenant-header-title {
-    font-size: 1.25rem;
-  }
-  
-  .tenant-header-subtitle {
-    font-size: 0.75rem;
-  }
-  
-  .tenant-header-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-  
-  .tenant-refresh-btn {
-    align-self: flex-end;
-  }
-  
-  .tenant-stat-card {
-    padding: 1rem;
-  }
-  
-  .tenant-stat-number {
-    font-size: 1.75rem;
-  }
-  
-  .tenant-overview-card {
-    padding: 1rem;
-  }
-  
-  .tenant-overview-title {
-    font-size: 1rem;
-  }
-}
-
-/* Mobile Portrait (up to 575px) */
-@media (max-width: 575px) {
-  .tenant-main-content {
-    padding: 0.5rem;
-  }
-  
-  .tenant-stats-grid {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-  }
-  
-  .tenant-overview-grid {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-  }
-  
-  .tenant-header-container {
-    padding: 0 0.5rem;
-  }
-  
-  .tenant-header-title {
-    font-size: 1rem;
-  }
-  
-  .tenant-header-subtitle {
-    font-size: 0.75rem;
-  }
-  
-  .tenant-header-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-  
-  .tenant-refresh-btn {
-    align-self: flex-end;
-    padding: 0.5rem;
-    font-size: 0.75rem;
-  }
-  
-  .tenant-stat-card {
-    padding: 0.75rem;
-    flex-direction: row;
-    align-items: center;
-    gap: 0.75rem;
-  }
-  
-  .tenant-stat-info {
-    flex: 1;
-  }
-  
-  .tenant-stat-label {
-    font-size: 0.75rem;
-  }
-  
-  .tenant-stat-number {
-    font-size: 1.5rem;
-  }
-  
-  .tenant-stat-icon {
-    font-size: 1.5rem;
-  }
-  
-  .tenant-overview-card {
-    padding: 0.75rem;
-  }
-  
-  .tenant-overview-title {
-    font-size: 0.875rem;
-  }
-  
-  .tenant-btn-primary, .tenant-btn-secondary {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-  }
-}
-
-/* Form Responsiveness for Tenant Dashboard */
-@media (max-width: 767px) {
-  .tenant-form-group {
-    margin-bottom: 1rem;
-  }
-  
-  .tenant-form-group label {
-    font-size: 0.875rem;
-  }
-  
-  .tenant-form-group input,
-  .tenant-form-group textarea,
-  .tenant-form-group select {
-    font-size: 0.875rem;
-    padding: 0.75rem;
-  }
-  
-  .tenant-modal-container {
-    margin: 1rem;
-    max-width: calc(100vw - 2rem);
-  }
-  
-  .tenant-modal-header {
-    padding: 1rem;
-  }
-  
-  .tenant-modal-body {
-    padding: 1rem;
-  }
-  
-  .tenant-modal-actions {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .tenant-modal-actions button {
-    width: 100%;
-  }
-}
-
-/* Table Responsiveness for Tenant Dashboard */
-@media (max-width: 767px) {
-  .tenant-table-responsive {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  .tenant-data-table {
-    min-width: 600px;
-  }
-  
-  .tenant-table-container {
-    padding: 0.5rem;
-  }
-  
-  .tenant-data-table th,
-  .tenant-data-table td {
-    padding: 0.5rem;
-    font-size: 0.75rem;
-  }
-  
-  .tenant-action-buttons {
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-  
-  .tenant-btn-success,
-  .tenant-btn-danger,
-  .tenant-btn-warning {
-    width: 100%;
-    padding: 0.375rem 0.5rem;
-    font-size: 0.75rem;
-  }
-}
-
-/* Payment Form Responsiveness */
-@media (max-width: 767px) {
-  .tenant-payment-form {
-    padding: 1rem;
-  }
-  
-  .tenant-payment-form .form-group {
-    margin-bottom: 1rem;
-  }
-  
-  .tenant-payment-form input,
-  .tenant-payment-form select {
-    font-size: 0.875rem;
-    padding: 0.75rem;
-  }
-  
-  .tenant-payment-methods {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .tenant-payment-methods label {
-    margin-bottom: 0;
-  }
-}
-
-/* Maintenance Request Responsiveness */
-@media (max-width: 767px) {
-  .tenant-maintenance-form {
-    padding: 1rem;
-  }
-  
-  .tenant-maintenance-form .form-group {
-    margin-bottom: 1rem;
-  }
-  
-  .tenant-maintenance-form textarea {
-    min-height: 120px;
-  }
-  
-  .tenant-priority-selector {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .tenant-priority-selector label {
-    margin-bottom: 0;
-  }
-}
-
-/* Utility Classes for Tenant Dashboard Responsive Design */
+/* Utility Classes for Responsive Design */
 .tenant-hide-mobile {
   display: block;
 }
@@ -2082,13 +2790,30 @@ body.modal-open {
   }
 }
 
-/* Ensure proper scrolling on mobile for tenant dashboard */
+/* Ensure proper scrolling on mobile */
 @media (max-width: 767px) {
-  .tenant-main-content {
+  .dashboard-main-content {
     overflow-x: hidden;
   }
   
-  .tenant-dashboard-screen {
+  .tenant-dashboard {
     overflow-x: hidden;
   }
+}
+
+/* Force white text for payment modal form labels */
+.payment-modal .form-label,
+.payment-modal-body .form-label,
+.payment-form .form-label,
+.modal-form .form-label,
+.payment-modal .form-group label,
+.payment-modal-body .form-group label {
+  color: white !important;
+}
+
+.payment-modal .required,
+.payment-modal-body .required,
+.payment-form .required,
+.modal-form .required {
+  color: #fecaca !important;
 }
