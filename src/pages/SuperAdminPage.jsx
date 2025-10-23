@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { notificationService } from '../services/notificationService'
+import { navigationControlService } from '../services/navigationControlService'
 import { superAdminService } from '../services/superAdminService'
 import { archivedTenantService } from '../services/archivedTenantService'
 import { roomService } from '../services/roomService'
@@ -18,7 +19,9 @@ import {
   getTableHeaders,
   getStatusFilterOptions,
   getSortOptions,
-  getPendingPaymentsSummary
+  getPendingPaymentsSummary,
+  getTransactionFilterOptions,
+  getReportPeriodOptions
 } from '../functions/accounting'
 import RoomPage from './RoomPage'
 import TenantPage from './TenantPage'
@@ -29,6 +32,8 @@ import ArchivedTenantsPage from './ArchivedTenantsPage'
 import NotificationButton from '../components/NotificationButton'
 import NotificationDropdown from '../components/NotificationDropdown'
 import '../components/SuperAdmin.css'
+import '../components/Dashboard.css'
+import '../components/AccountingDashboard.css'
 import '../components/NotificationStyles.css'
 
 const RoleBadge = ({ role }) => (
@@ -68,18 +73,11 @@ export default function SuperAdminPage() {
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState('pending-accounts')
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [newAccount, setNewAccount] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    role: 'Tenant',
-    status: 'Pending'
-  })
   const [notifications, setNotifications] = useState([])
   const [unread, setUnread] = useState(0)
   const [showNotif, setShowNotif] = useState(false)
   const [markingAsRead, setMarkingAsRead] = useState(false)
+  const [editingUser, setEditingUser] = useState(null)
   
   // Archived tenants state
   const [archivedTenants, setArchivedTenants] = useState([])
@@ -117,10 +115,8 @@ export default function SuperAdminPage() {
   const [billingTenants, setBillingTenants] = useState([])
   const [billingStats, setBillingStats] = useState(null)
   const [billingLoading, setBillingLoading] = useState(false)
-  const [billingError, setBillingError] = useState('')
   const [pendingPayments, setPendingPayments] = useState([])
   const [pendingLoading, setPendingLoading] = useState(false)
-  const [pendingError, setPendingError] = useState('')
   const [accountingSearchQuery, setAccountingSearchQuery] = useState('') // Fixed duplicate variable
   const [statusFilter, setStatusFilter] = useState('all')
   const [accountingSortBy, setAccountingSortBy] = useState('name')
@@ -128,6 +124,38 @@ export default function SuperAdminPage() {
   const [selectedTenantForHistory, setSelectedTenantForHistory] = useState(null)
   const [showTenantDropdown, setShowTenantDropdown] = useState(false)
   const [historySearchQuery, setHistorySearchQuery] = useState('')
+
+  // Transaction List state
+  const [transactions, setTransactions] = useState([])
+  const [transactionLoading, setTransactionLoading] = useState(false)
+  const [transactionFilters, setTransactionFilters] = useState({
+    dateFrom: '',
+    dateTo: '',
+    amountMin: '',
+    amountMax: '',
+    paymentMethod: '',
+    tenantId: ''
+  })
+
+  // Financial Reports state
+  const [reportPeriod, setReportPeriod] = useState('monthly')
+  const [reportData, setReportData] = useState(null)
+
+  // Admin Management state
+  const [admins, setAdmins] = useState([])
+  const [navigationPermissions, setNavigationPermissions] = useState([])
+  const [loadingAdmins, setLoadingAdmins] = useState(false)
+  const [showAdminModal, setShowAdminModal] = useState(false)
+  const [showNavigationModal, setShowNavigationModal] = useState(false)
+  const [selectedAdmin, setSelectedAdmin] = useState(null)
+  const [selectedNavigationItems, setSelectedNavigationItems] = useState([])
+  const [adminForm, setAdminForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: ''
+  })
+  const [adminSearchTerm, setAdminSearchTerm] = useState('')
 
   const statuses = useMemo(() => ['Active', 'Pending', 'Suspended', 'Deleted', 'Rejected'], [])
   const roles = useMemo(() => ['HeadAdmin', 'Admin', 'SuperAdmin', 'Accounting', 'Tenant'], [])
@@ -191,6 +219,18 @@ export default function SuperAdminPage() {
       id: 'add-account',
       label: 'Add Account',
       icon: '👤',
+      section: 'Admin Services'
+    },
+    {
+      id: 'admin-management',
+      label: 'Admin Management',
+      icon: '👑',
+      section: 'Admin Services'
+    },
+    {
+      id: 'navigation-control',
+      label: 'Navigation Control',
+      icon: '🧭',
       section: 'Admin Services'
     },
     {
@@ -266,6 +306,127 @@ export default function SuperAdminPage() {
     return () => id && clearInterval(id)
   }, [])
 
+  // Load data when switching tabs
+  useEffect(() => {
+    switch (activeTab) {
+      case 'dashboard':
+        fetchDashboardData()
+        break
+      case 'tenant-billing':
+      case 'outstanding-balances':
+        loadBillingData()
+        break
+      case 'pending-payments':
+        loadPendingPayments()
+        break
+      case 'transaction-list':
+        loadTransactions()
+        break
+      case 'financial-reports':
+        loadFinancialReports()
+        break
+      case 'announcements':
+        loadAnnouncements()
+        break
+      default:
+        break
+    }
+  }, [activeTab])
+
+  // Load HeadAdmin/SuperAdmin data for Admin Management and Navigation Control
+  const loadHeadAdminData = useCallback(async () => {
+    try {
+      setLoadingAdmins(true)
+      const [adminsData, permissionsData] = await Promise.all([
+        navigationControlService.getAllAdmins(),
+        navigationControlService.getNavigationPermissions()
+      ])
+      
+      setAdmins(adminsData)
+      setNavigationPermissions(permissionsData)
+    } catch (error) {
+      console.error('Failed to load HeadAdmin/SuperAdmin data:', error)
+    } finally {
+      setLoadingAdmins(false)
+    }
+  }, [])
+
+  // Load HeadAdmin/SuperAdmin data when component mounts
+  useEffect(() => {
+    loadHeadAdminData()
+  }, [loadHeadAdminData])
+
+  // Admin Management handler functions
+  const handleCreateAdmin = async (e) => {
+    e.preventDefault()
+    try {
+      await navigationControlService.createAdmin(adminForm)
+      await loadHeadAdminData()
+      setShowAdminModal(false)
+      setAdminForm({ firstName: '', lastName: '', email: '', password: '' })
+      alert('Admin created successfully!')
+    } catch (error) {
+      alert('Failed to create admin: ' + error.message)
+    }
+  }
+
+  const handleUpdateNavigationPermissions = async () => {
+    if (!selectedAdmin) return
+
+    try {
+      await navigationControlService.updateAdminNavigationPermissions(selectedAdmin.id, selectedNavigationItems)
+      await loadHeadAdminData()
+      setShowNavigationModal(false)
+      setSelectedAdmin(null)
+      setSelectedNavigationItems([])
+      alert('Navigation permissions updated successfully! Admin should refresh their access to see changes.')
+    } catch (error) {
+      alert('Failed to update navigation permissions: ' + error.message)
+    }
+  }
+
+  const handleDeleteAdmin = async (adminId) => {
+    if (!confirm('Are you sure you want to delete this admin? This action cannot be undone.')) return
+
+    try {
+      await navigationControlService.deleteAdmin(adminId)
+      await loadHeadAdminData()
+      alert('Admin deleted successfully!')
+    } catch (error) {
+      alert('Failed to delete admin: ' + error.message)
+    }
+  }
+
+  const handleDeactivateAdmin = async (adminId) => {
+    if (!confirm('Are you sure you want to deactivate this admin?')) return
+
+    try {
+      await navigationControlService.deactivateAdmin(adminId)
+      await loadHeadAdminData()
+      alert('Admin deactivated successfully!')
+    } catch (error) {
+      alert('Failed to deactivate admin: ' + error.message)
+    }
+  }
+
+  const openNavigationModal = async (admin) => {
+    setSelectedAdmin(admin)
+    setSelectedNavigationItems(admin.permissions ? admin.permissions.map(p => p.id) : [])
+    setShowNavigationModal(true)
+  }
+
+  // Filter admins based on search term
+  const filteredAdmins = admins.filter(admin => {
+    if (!adminSearchTerm) return true
+    const searchLower = adminSearchTerm.toLowerCase()
+    return (
+      admin.email.toLowerCase().includes(searchLower) ||
+      admin.firstName.toLowerCase().includes(searchLower) ||
+      admin.lastName.toLowerCase().includes(searchLower) ||
+      `${admin.firstName} ${admin.lastName}`.toLowerCase().includes(searchLower)
+    )
+  })
+
   // Mark notification as read
   const handleMarkAsRead = async (notificationId) => {
     try {
@@ -314,35 +475,43 @@ export default function SuperAdminPage() {
     await load()
   }
 
-  const handleCreateAccount = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
+  // User Management handler functions
+  const handleSaveUser = async (userId) => {
     try {
-      await superAdminService.createAccount(newAccount)
-      setNewAccount({
-        firstName: '',
-        lastName: '',
-        email: '',
-        password: '',
-        role: 'Tenant',
-        status: 'Pending'
-      })
-      setActiveTab('user-management')
+      // Get the current user data from accounts
+      const user = accounts.find(a => a.id === userId)
+      if (!user) return
+
+      // Update the user's role and status
+      await superAdminService.updateRole(userId, user.role)
+      await superAdminService.updateStatus(userId, user.status)
+      
+      // Refresh the accounts list
       await load()
-    } catch (e) {
-      setError(e?.message || 'Failed to create account')
-    } finally {
-      setLoading(false)
+      
+      // Exit edit mode
+      setEditingUser(null)
+      
+      alert('User updated successfully!')
+    } catch (error) {
+      console.error('Failed to save user:', error)
+      alert('Failed to save user: ' + error.message)
     }
   }
 
-  const handleInputChange = (field, value) => {
-    setNewAccount(prev => ({
-      ...prev,
-      [field]: value
-    }))
+  const handleDeleteUser = async (userId) => {
+    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return
+
+    try {
+      await superAdminService.deleteAccount(userId)
+      await load()
+      alert('User deleted successfully!')
+    } catch (error) {
+      console.error('Failed to delete user:', error)
+      alert('Failed to delete user: ' + error.message)
+    }
   }
+
 
   // Archived tenants functions
   const fetchArchivedTenants = useCallback(async () => {
@@ -518,18 +687,19 @@ export default function SuperAdminPage() {
   const loadBillingData = async () => {
     try {
       setBillingLoading(true)
-      setBillingError('')
       
-      const [tenantsData, statsData] = await Promise.all([
-        fetchTenantsWithBillingInfo(),
-        fetchPaymentStats()
+      await Promise.all([
+        fetchTenantsWithBillingInfo(setBillingLoading, setBillingTenants, setErrorModal),
+        fetchPaymentStats(setBillingStats, setErrorModal)
       ])
-      
-      setBillingTenants(tenantsData)
-      setBillingStats(statsData)
     } catch (err) {
       console.error('Failed to load billing data:', err)
-      setBillingError(err?.response?.data?.message || err.message || 'Failed to load billing data')
+      setErrorModal({
+        open: true,
+        title: 'Failed to load billing data',
+        message: 'We could not load tenant billing information.',
+        details: err?.response?.data?.message || err.message || 'Unknown error'
+      })
     } finally {
       setBillingLoading(false)
     }
@@ -538,15 +708,54 @@ export default function SuperAdminPage() {
   const loadPendingPayments = async () => {
     try {
       setPendingLoading(true)
-      setPendingError('')
       
-      const data = await fetchPendingPayments()
-      setPendingPayments(data)
+      await fetchPendingPayments(setPendingPayments, setErrorModal)
     } catch (err) {
       console.error('Failed to load pending payments:', err)
-      setPendingError(err?.response?.data?.message || err.message || 'Failed to load pending payments')
+      setErrorModal({
+        open: true,
+        title: 'Failed to load pending payments',
+        message: 'We could not load pending payment data.',
+        details: err?.response?.data?.message || err.message || 'Unknown error'
+      })
     } finally {
       setPendingLoading(false)
+    }
+  }
+
+  const loadTransactions = async () => {
+    try {
+      setTransactionLoading(true)
+      // TODO: Implement transaction loading from paymentService
+      setTransactions([])
+    } catch (err) {
+      console.error('Failed to load transactions:', err)
+      setErrorModal({
+        open: true,
+        title: 'Failed to load transactions',
+        message: 'We could not load transaction data.',
+        details: err?.response?.data?.message || err.message || 'Unknown error'
+      })
+    } finally {
+      setTransactionLoading(false)
+    }
+  }
+
+  const loadFinancialReports = async () => {
+    try {
+      setLoading(true)
+      // TODO: Implement financial reports loading
+      setReportData(null)
+    } catch (err) {
+      console.error('Failed to load financial reports:', err)
+      setErrorModal({
+        open: true,
+        title: 'Failed to load financial reports',
+        message: 'We could not generate the financial report.',
+        details: err?.response?.data?.message || err.message || 'Unknown error'
+      })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -663,34 +872,114 @@ export default function SuperAdminPage() {
             <div className="content-header">
               <h2>👥 User Management</h2>
             </div>
-            <div className="table-container">
-              <table className="data-table">
+            <div className="modern-table-container">
+              <table className="modern-data-table">
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+                    <th className="checkbox-column">
+                      <input type="checkbox" className="select-all-checkbox" />
+                    </th>
+                    <th className="name-column">
+                      <div className="column-header">
+                        <span>NAME</span>
+                        <span className="sort-icon">▼</span>
+                      </div>
+                    </th>
+                    <th className="role-column">
+                      <div className="column-header">
+                        <span>ROLE</span>
+                        <span className="sort-icon">▼</span>
+                      </div>
+                    </th>
+                    <th className="status-column">
+                      <div className="column-header">
+                        <span>STATUS</span>
+                        <span className="sort-icon">▼</span>
+                      </div>
+                    </th>
+                    <th className="actions-column">
+                      <div className="column-header">
+                        <span>ACTIONS</span>
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {accounts.map(a => (
-                    <tr key={a.id}>
-                      <td>{a.firstName} {a.lastName}</td>
-                      <td>{a.email}</td>
-                      <td>
-                        <select className="role-select" value={a.role} onChange={(e) => handleRole(a.id, e.target.value)}>
-                          {roles.map(r => <option key={r} value={r}>{r}</option>)}
-                        </select>
+                    <tr key={a.id} className="user-row">
+                      <td className="checkbox-column">
+                        <input type="checkbox" className="user-checkbox" />
                       </td>
-                      <td>
-                        <select className="status-select" value={a.status} onChange={(e) => handleStatus(a.id, e.target.value)}>
-                          {statuses.map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
+                      <td className="name-column">
+                        <div className="user-info">
+                          <div className="user-avatar">
+                            {a.firstName?.charAt(0)}{a.lastName?.charAt(0)}
+                          </div>
+                          <div className="user-details">
+                            <div className="user-name">{a.firstName} {a.lastName}</div>
+                            <div className="user-email">{a.email}</div>
+                          </div>
+                        </div>
                       </td>
-                      <td>
-                        <button className="btn-warning" onClick={() => handleStatus(a.id, 'Suspended')}>Suspend</button>
+                      <td className="role-column">
+                        {editingUser === a.id ? (
+                          <select className="role-select" value={a.role} onChange={(e) => handleRole(a.id, e.target.value)}>
+                            {roles.map(r => <option key={r} value={r}>{r}</option>)}
+                          </select>
+                        ) : (
+                          <span className={`role-badge ${a.role?.toLowerCase().replace(' ', '-')}`}>{a.role}</span>
+                        )}
+                      </td>
+                      <td className="status-column">
+                        {editingUser === a.id ? (
+                          <select className="status-select" value={a.status} onChange={(e) => handleStatus(a.id, e.target.value)}>
+                            {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        ) : (
+                          <div className={`status-indicator ${a.status?.toLowerCase()}`}>
+                            <span className="status-dot"></span>
+                            <span className="status-text">{a.status}</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="actions-column">
+                        <div className="action-buttons">
+                          {editingUser === a.id ? (
+                            <>
+                              <button 
+                                className="btn-success" 
+                                onClick={() => handleSaveUser(a.id)}
+                                title="Save changes"
+                              >
+                                ✓ Save
+                              </button>
+                              <button 
+                                className="btn-secondary" 
+                                onClick={() => setEditingUser(null)}
+                                title="Cancel editing"
+                              >
+                                ✕ Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button 
+                                className="btn-primary" 
+                                onClick={() => setEditingUser(a.id)}
+                                title="Edit user"
+                              >
+                                ✏️ Edit
+                              </button>
+                              <button 
+                                className="btn-danger" 
+                                onClick={() => handleDeleteUser(a.id)}
+                                title="Delete user"
+                              >
+                                🗑️ Delete
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -700,95 +989,203 @@ export default function SuperAdminPage() {
           </div>
         )
       case 'add-account':
+        return <AddAccountPage />
+      case 'admin-management':
         return (
-          <div className="content-section">
-            <div className="content-header">
-              <h2>➕ Add New Account</h2>
+          <div className="dashboard-screen">
+            <div className="dashboard-header-gradient">
+              <div className="dash-container">
+                <div className="dash-header-row">
+                  <div>
+                    <h1 className="dash-title">👑 Admin Management</h1>
+                    <p className="dash-subtitle">Manage admin accounts and their permissions</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            {error && <div className="alert alert-danger">{error}</div>}
-            <div className="form-container">
-              <form onSubmit={handleCreateAccount} className="account-form">
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label htmlFor="firstName">First Name</label>
-                    <input
-                      type="text"
-                      id="firstName"
-                      value={newAccount.firstName}
-                      onChange={(e) => handleInputChange('firstName', e.target.value)}
-                      required
-                      className="form-input"
-                    />
+
+            <div className="dash-container dash-content">
+              <div className="overview-grid admin-management-container">
+                {loadingAdmins ? (
+                  <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>Loading admins...</div>
+                ) : (
+                  <div className="admin-management-grid">
+                    {filteredAdmins.filter(admin => admin.role === 'Admin').map(admin => (
+                      <div key={admin.id} className="admin-card">
+                        <div className="admin-header">
+                          <div className="admin-info">
+                            <h3>{admin.firstName} {admin.lastName}</h3>
+                            <p className="admin-email">{admin.email}</p>
+                            <div className="admin-badges">
+                              <span className="role-badge admin">ADMIN</span>
+                              <span className={`status-badge ${admin.status === 'Active' ? 'active' : 'inactive'}`}>
+                                {admin.status === 'Active' ? 'ACTIVE' : 'INACTIVE'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="admin-details">
+                          <div className="detail-item">
+                            <span className="detail-label">Roles:</span>
+                            <span className="detail-value">{admin.role} (Level {admin.roleLevel || 50})</span>
+                          </div>
+                          <div className="detail-item">
+                            <span className="detail-label">Permissions:</span>
+                            <span className="detail-value">{admin.permissions?.length || 0} permissions</span>
+                          </div>
+                          <div className="detail-item">
+                            <span className="detail-label">Created:</span>
+                            <span className="detail-value">{new Date(admin.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+
+                        <div className="admin-actions">
+                          <button 
+                            className="btn-secondary"
+                            onClick={() => openNavigationModal(admin)}
+                          >
+                            🧭 Manage Navigation
+                          </button>
+                          <button 
+                            className="btn-warning"
+                            onClick={() => handleDeactivateAdmin(admin.id)}
+                          >
+                            ⏸️ Deactivate
+                          </button>
+                          <button 
+                            className="btn-danger"
+                            onClick={() => handleDeleteAdmin(admin.id)}
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="form-group">
-                    <label htmlFor="lastName">Last Name</label>
-                    <input
-                      type="text"
-                      id="lastName"
-                      value={newAccount.lastName}
-                      onChange={(e) => handleInputChange('lastName', e.target.value)}
-                      required
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="email">Email</label>
-                    <input
-                      type="email"
-                      id="email"
-                      value={newAccount.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      required
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="password">Password</label>
-                    <input
-                      type="password"
-                      id="password"
-                      value={newAccount.password}
-                      onChange={(e) => handleInputChange('password', e.target.value)}
-                      required
-                      minLength={6}
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="role">Role</label>
-                    <select
-                      id="role"
-                      value={newAccount.role}
-                      onChange={(e) => handleInputChange('role', e.target.value)}
-                      className="form-select"
-                    >
-                      {roles.map(role => (
-                        <option key={role} value={role}>{role}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="status">Initial Status</label>
-                    <select
-                      id="status"
-                      value={newAccount.status}
-                      onChange={(e) => handleInputChange('status', e.target.value)}
-                      className="form-select"
-                    >
-                      <option value="Pending">Pending (Requires Approval)</option>
-                      <option value="Active">Active (Auto-Approved)</option>
-                    </select>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      case 'navigation-control':
+        return (
+          <div className="dashboard-screen">
+            <div className="dashboard-header-gradient">
+              <div className="dash-container">
+                <div className="dash-header-row">
+                  <div>
+                    <h1 className="dash-title">🧭 Navigation Control</h1>
+                    <p className="dash-subtitle">Control which navigation items each Admin can access in their dashboard</p>
                   </div>
                 </div>
-                <div className="form-actions">
-                  <button type="submit" className="btn-primary" disabled={loading}>
-                    {loading ? 'Creating...' : 'Create Account'}
-                  </button>
-                  <button type="button" className="btn-secondary" onClick={() => setActiveTab('user-management')}>
-                    Cancel
-                  </button>
+              </div>
+            </div>
+
+            <div className="dash-container dash-content">
+              {/* Admin Search Bar */}
+              <div className="admin-search-section">
+                <div className="search-card">
+                  <div className="search-header">
+                    <h3>🔍 Search Admins</h3>
+                    <p>Search by name or email to find specific admin accounts</p>
+                  </div>
+                  <div className="search-input-container">
+                    <input
+                      type="text"
+                      placeholder="Search by name or email..."
+                      value={adminSearchTerm}
+                      onChange={(e) => setAdminSearchTerm(e.target.value)}
+                      className="admin-search-input"
+                    />
+                    <div className="search-icon">🔍</div>
+                  </div>
+                  {adminSearchTerm && (
+                    <div className="search-results-info">
+                      Found {filteredAdmins.filter(admin => admin.role === 'Admin').length} admin(s) matching "{adminSearchTerm}"
+                    </div>
+                  )}
                 </div>
-              </form>
+              </div>
+
+              <div className="overview-grid navigation-control-container">
+                <div className="navigation-control-grid">
+                  {loadingAdmins ? (
+                    <div className="loading-state">
+                      <div className="loading-spinner"></div>
+                      <p>Loading admin accounts...</p>
+                    </div>
+                  ) : filteredAdmins.filter(admin => admin.role === 'Admin').length === 0 ? (
+                    <div className="empty-state">
+                      <div className="empty-icon">👥</div>
+                      <h3>No Admin Accounts Found</h3>
+                      <p>No admin accounts are currently available for navigation management</p>
+                    </div>
+                  ) : (
+                    filteredAdmins.filter(admin => admin.role === 'Admin').map(admin => (
+                      <div key={admin.id} className="admin-navigation-card">
+                        <div className="admin-header">
+                          <div className="admin-info">
+                            <h3>{admin.firstName} {admin.lastName}</h3>
+                            <p className="admin-email">{admin.email}</p>
+                            <div className="admin-badges">
+                              <span className="role-badge admin">ADMIN</span>
+                              <span className={`status-badge ${admin.status === 'Active' ? 'active' : 'inactive'}`}>
+                                {admin.status === 'Active' ? 'ACTIVE' : 'INACTIVE'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="navigation-items">
+                          <h4>📋 Navigation Access Control</h4>
+                          <p className="nav-description">Click "Manage Navigation" to control which items this Admin can access</p>
+                          
+                          <div className="nav-items-grid">
+                            {navigationPermissions.map(navItem => {
+                              const hasPermission = admin.permissions?.some(p => p.id === navItem.id);
+                              
+                              return (
+                                <div 
+                                  key={navItem.id} 
+                                  className={`nav-item-control ${hasPermission ? 'enabled' : 'disabled'}`}
+                                >
+                                  <div className="nav-item-info">
+                                    <span className="nav-icon">📄</span>
+                                    <div className="nav-details">
+                                      <span className="nav-label">{navItem.name}</span>
+                                      <span className="nav-description">{navItem.description}</span>
+                                    </div>
+                                  </div>
+                                  <div className="nav-status">
+                                    <span className={`status-badge ${hasPermission ? 'enabled' : 'disabled'}`}>
+                                      {hasPermission ? '✅ Enabled' : '❌ Disabled'}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="admin-actions">
+                          <button 
+                            className="btn-primary"
+                            onClick={() => openNavigationModal(admin)}
+                          >
+                            🔧 Manage Navigation Access
+                          </button>
+                          <div className="refresh-status">
+                            <span className="refresh-info">
+                              💡 Admin should use "Refresh Access" button to see changes immediately
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )
@@ -1193,87 +1590,248 @@ onChange={(e) => setSearchQuery(e.target.value)}
         )
       case 'dashboard':
         return (
-          <div className="content-section">
-            <div className="content-header">
-              <h2>📊 Dashboard Overview</h2>
-              <button className="refresh-btn" onClick={handleRefresh} disabled={refreshing}>
-                {refreshing ? '🔄' : '🔄'} Refresh
-              </button>
-            </div>
-            {errorModal.open && (
-              <div className="alert alert-danger">
-                <strong>{errorModal.title}</strong><br />
-                {errorModal.message}
-                {errorModal.details && <details><summary>Details</summary>{errorModal.details}</details>}
-              </div>
-            )}
-            {loading ? (
-              <div className="loading-state">Loading dashboard data...</div>
-            ) : (
-              <div className="dashboard-content">
-                {/* Stats Cards */}
-                <div className="stats-grid">
-                  <div className="stat-card">
-                    <div className="stat-icon">🏠</div>
-                    <div className="stat-content">
-                      <div className="stat-label">Total Rooms</div>
-                      <div className="stat-value">{stats.totalRooms}</div>
-                    </div>
+          <div className="dashboard-screen">
+            <div className="dashboard-header-gradient">
+              <div className="dash-container">
+                <div className="dash-header-row">
+                  <div>
+                    <h1 className="dash-title">Super Admin Dashboard</h1>
+                    <p className="dash-subtitle">Complete system control with all admin and head admin capabilities.</p>
                   </div>
-                  <div className="stat-card">
-                    <div className="stat-icon">👥</div>
-                    <div className="stat-content">
-                      <div className="stat-label">Occupied Rooms</div>
-                      <div className="stat-value">{stats.occupiedRooms}</div>
-                    </div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-icon">🎓</div>
-                    <div className="stat-content">
-                      <div className="stat-label">Total Students</div>
-                      <div className="stat-value">{stats.totalStudents}</div>
-                    </div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-icon">🔧</div>
-                    <div className="stat-content">
-                      <div className="stat-label">Maintenance Requests</div>
-                      <div className="stat-value">{stats.maintenanceRequests}</div>
-                    </div>
-                  </div>
+                  <button className="refresh-btn" onClick={handleRefresh} disabled={refreshing}>
+                    {refreshing ? '🔄' : '🔄'} Refresh
+                  </button>
                 </div>
+              </div>
+            </div>
 
-                {/* Financial Overview */}
-                {dashboardStats && (
-                  <div className="financial-overview">
-                    <h3>💰 Financial Overview</h3>
-                    <div className="stats-grid">
-                      <div className="stat-card">
-                        <div className="stat-icon">⚠️</div>
-                        <div className="stat-content">
-                          <div className="stat-label">Unpaid Bills</div>
-                          <div className="stat-value">{dashboardStats.totalUnpaidBills}</div>
+            <div className="dash-container dash-content">
+              {errorModal.open && (
+                <div className="alert alert-danger">
+                  <strong>{errorModal.title}</strong><br />
+                  {errorModal.message}
+                  {errorModal.details && <details><summary>Details</summary>{errorModal.details}</details>}
+                </div>
+              )}
+              
+              {loading ? (
+                <div className="loading-state">Loading dashboard data...</div>
+              ) : (
+                <>
+                  {/* 📊 Enhanced Stats Overview */}
+                  <div className="enhanced-stats-grid">
+                    <div className="enhanced-stat-card">
+                      <div className="stat-icon-container">
+                        <div className="stat-icon-bg">
+                          <span className="stat-icon">👥</span>
                         </div>
                       </div>
-                      <div className="stat-card">
-                        <div className="stat-icon">💰</div>
-                        <div className="stat-content">
-                          <div className="stat-label">Amount Collected</div>
-                          <div className="stat-value">{formatCurrency(dashboardStats.totalAmountCollected)}</div>
+                      <div className="stat-content">
+                        <h3 className="stat-label">TOTAL TENANTS</h3>
+                        <p className="stat-number">{stats.totalStudents}</p>
+                      </div>
+                    </div>
+
+                    <div className="enhanced-stat-card">
+                      <div className="stat-icon-container">
+                        <div className="stat-icon-bg">
+                          <span className="stat-icon">📊</span>
                         </div>
                       </div>
-                      <div className="stat-card">
-                        <div className="stat-icon">📊</div>
-                        <div className="stat-content">
-                          <div className="stat-label">Outstanding Amount</div>
-                          <div className="stat-value">{formatCurrency(dashboardStats.totalOutstandingAmount)}</div>
+                      <div className="stat-content">
+                        <h3 className="stat-label">OCCUPANCY RATE</h3>
+                        <p className="stat-number">
+                          {stats.totalRooms > 0
+                            ? Math.round((stats.occupiedRooms / stats.totalRooms) * 100)
+                            : 0}%
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="enhanced-stat-card">
+                      <div className="stat-icon-container">
+                        <div className="stat-icon-bg">
+                          <span className="stat-icon">⚠️</span>
                         </div>
+                      </div>
+                      <div className="stat-content">
+                        <h3 className="stat-label">UNPAID BILLS</h3>
+                        <p className="stat-number">{dashboardStats?.totalUnpaidBills || 0}</p>
+                      </div>
+                    </div>
+
+                    <div className="enhanced-stat-card">
+                      <div className="stat-icon-container">
+                        <div className="stat-icon-bg">
+                          <span className="stat-icon">💰</span>
+                        </div>
+                      </div>
+                      <div className="stat-content">
+                        <h3 className="stat-label">TOTAL COLLECTED</h3>
+                        <p className="stat-number">
+                          ₱{dashboardStats?.totalAmountCollected?.toLocaleString() || '0'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="enhanced-stat-card">
+                      <div className="stat-icon-container">
+                        <div className="stat-icon-bg">
+                          <span className="stat-icon">🏠</span>
+                        </div>
+                      </div>
+                      <div className="stat-content">
+                        <h3 className="stat-label">TOTAL ROOMS</h3>
+                        <p className="stat-number">{stats.totalRooms}</p>
+                      </div>
+                    </div>
+
+                    <div className="enhanced-stat-card">
+                      <div className="stat-icon-container">
+                        <div className="stat-icon-bg">
+                          <span className="stat-icon">👥</span>
+                        </div>
+                      </div>
+                      <div className="stat-content">
+                        <h3 className="stat-label">OCCUPIED ROOMS</h3>
+                        <p className="stat-number">{stats.occupiedRooms}</p>
+                      </div>
+                    </div>
+
+                    <div className="enhanced-stat-card">
+                      <div className="stat-icon-container">
+                        <div className="stat-icon-bg">
+                          <span className="stat-icon">🔧</span>
+                        </div>
+                      </div>
+                      <div className="stat-content">
+                        <h3 className="stat-label">MAINTENANCE REQUESTS</h3>
+                        <p className="stat-number">{stats.maintenanceRequests}</p>
+                      </div>
+                    </div>
+
+                    <div className="enhanced-stat-card">
+                      <div className="stat-icon-container">
+                        <div className="stat-icon-bg">
+                          <span className="stat-icon">📊</span>
+                        </div>
+                      </div>
+                      <div className="stat-content">
+                        <h3 className="stat-label">OUTSTANDING AMOUNT</h3>
+                        <p className="stat-number">
+                          ₱{dashboardStats?.totalOutstandingAmount?.toLocaleString() || '0'}
+                        </p>
                       </div>
                     </div>
                   </div>
-                )}
-              </div>
-            )}
+
+                  {/* 💰 Financial Overview & Lists */}
+                  {dashboardStats && (
+                    <div className="overview-grid">
+                      {/* Financial Overview Card */}
+                      <div className="overview-card">
+                        <h3 className="overview-title">
+                          <span>💰</span> Financial Overview
+                        </h3>
+                        <div className="overview-list">
+                          <div className="overview-item">
+                            <span>Total Outstanding:</span>
+                            <span className="text-red">
+                              ₱{dashboardStats?.totalOutstandingAmount?.toLocaleString() || '0'}
+                            </span>
+                          </div>
+                          <div className="overview-item">
+                            <span>Total Collected:</span>
+                            <span className="text-green">
+                              ₱{dashboardStats?.totalAmountCollected?.toLocaleString() || '0'}
+                            </span>
+                          </div>
+                          <div className="overview-item">
+                            <span>Unpaid Bills:</span>
+                            <span className="text-orange">
+                              {dashboardStats?.totalUnpaidBills || 0}
+                            </span>
+                          </div>
+
+                          {/* Inline Progress Bar */}
+                          <div className="progress-bar">
+                            {(() => {
+                              const collected = Number(dashboardStats?.totalAmountCollected || 0);
+                              const outstanding = Number(dashboardStats?.totalOutstandingAmount || 0);
+                              const total = collected + outstanding || 1;
+                              const collectedPct = Math.round((collected / total) * 100);
+                              const outstandingPct = 100 - collectedPct;
+                              return (
+                                <>
+                                  <div className="bar-container">
+                                    <div className="bar-collected" style={{ width: collectedPct + '%' }} />
+                                    <div className="bar-outstanding" style={{ width: outstandingPct + '%' }} />
+                                  </div>
+                                  <div className="bar-labels">
+                                    <span>Collected</span>
+                                    <span>Outstanding</span>
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Recent Payments Card */}
+                      <div className="overview-card">
+                        <h3 className="overview-title"><span>📊</span> Recent Payments</h3>
+                        <div className="overview-list">
+                          {dashboardStats?.recentPayments?.length > 0 ? (
+                            dashboardStats.recentPayments.slice(0, 3).map(payment => (
+                              <div key={payment.id} className="list-item">
+                                <div>
+                                  <p className="item-name">{payment.tenantName}</p>
+                                  <p className="item-sub">Room {payment.roomNumber}</p>
+                                </div>
+                                <div className="item-right">
+                                  <p className="item-amount">₱{payment.amount?.toLocaleString()}</p>
+                                  <p className="item-date">{formatDate(payment.paymentDate)}</p>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="empty-list">
+                              <p>No recent payments</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Top Outstanding Tenants Card */}
+                      <div className="overview-card">
+                        <h3 className="overview-title"><span>⚠️</span> Top Outstanding</h3>
+                        <div className="overview-list">
+                          {dashboardStats?.topOutstandingTenants?.length > 0 ? (
+                            dashboardStats.topOutstandingTenants.slice(0, 3).map(tenant => (
+                              <div key={tenant.id} className="list-item">
+                                <div>
+                                  <p className="item-name">{tenant.tenantName}</p>
+                                  <p className="item-sub">Room {tenant.roomNumber}</p>
+                                </div>
+                                <div className="item-right">
+                                  <p className="item-amount text-red">₱{tenant.outstandingAmount?.toLocaleString()}</p>
+                                  <p className="item-date">{formatDate(tenant.dueDate)}</p>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="empty-list">
+                              <p>No outstanding balances</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         )
       case 'rooms':
@@ -1290,111 +1848,200 @@ onChange={(e) => setSearchQuery(e.target.value)}
         return (
           <div className="content-section">
             <div className="content-header">
-              <h2>👥 Tenant Billing</h2>
+              <h2>👥 Tenant Billing Overview</h2>
               <button className="refresh-btn" onClick={loadBillingData} disabled={billingLoading}>
                 {billingLoading ? '🔄' : '🔄'} Refresh
               </button>
             </div>
-            {billingError && <div className="alert alert-danger">{billingError}</div>}
-            
-            {billingLoading ? (
-              <div className="loading-state">Loading tenant billing data...</div>
-            ) : (
-              <div className="billing-content">
-                {/* Stats Cards */}
-                {billingStats && (
-                  <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                    {getStatsCards(billingStats, billingTenants).map((stat, index) => (
-                      <div key={index} className="stat-card" style={{ background: 'white', padding: '1.5rem', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                          <div style={{ width: '3rem', height: '3rem', background: stat.color, borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>{stat.icon}</div>
-                          <div>
-                            <p style={{ margin: 0, fontSize: '0.875rem', color: '#6b7280' }}>{stat.label}</p>
-                            <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>{stat.value}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
 
-                {/* Tenant List */}
-                <div className="table-container">
-                  <div className="table-header">
-                    <h3>Tenant Billing Overview</h3>
-                    <div className="table-controls">
-                      <input
-                        type="text"
-                        placeholder="Search tenants..."
-value={accountingSearchQuery}
-onChange={(e) => setAccountingSearchQuery(e.target.value)}
-                        className="search-input"
-                      />
-                      <div className="status-filters">
-                        {getStatusFilterOptions().map(option => (
-                          <button
-                            key={option.id}
-                            onClick={() => setStatusFilter(option.id)}
-                            className={`status-btn ${statusFilter === option.id ? 'active' : ''}`}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
+            {/* Stats Summary */}
+            {billingStats && (
+              <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                {getStatsCards(billingStats, billingTenants).map((stat, index) => (
+                  <div key={index} className="stat-card" style={{ background: 'white', padding: '1.5rem', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ width: '3rem', height: '3rem', background: stat.color, borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>{stat.icon}</div>
+                      <div>
+                        <p style={{ margin: 0, fontSize: '0.875rem', color: '#6b7280' }}>{stat.label}</p>
+                        <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>{stat.value}</p>
                       </div>
-                      <select
-                        value={`${accountingSortBy}-${accountingSortOrder}`}
-                        onChange={(e) => {
-                          const [field, order] = e.target.value.split('-')
-                          setAccountingSortBy(field)
-                          setAccountingSortOrder(order)
-                        }}
-                        className="sort-select"
-                      >
-                        {getSortOptions().map(option => (
-                          <option key={option.value} value={option.value}>{option.label}</option>
-                        ))}
-                      </select>
                     </div>
                   </div>
-
-                  {billingTenants.length === 0 ? (
-                    <div className="empty-state">
-                      <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👥</div>
-                      <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>No Tenants Found</h3>
-                      <p style={{ margin: 0, color: '#6b7280' }}>No tenant billing information available.</p>
-                    </div>
-                  ) : (
-                    <table className="data-table">
-                      <TableHeader headers={getTableHeaders('tenant-billing')} />
-                      <tbody>
-                        {getFilteredTenants(billingTenants, accountingSearchQuery, statusFilter, accountingSortBy, accountingSortOrder).map(tenant => (
-                          <tr key={tenant.id}>
-                            <td>{tenant.name}</td>
-                            <td>{tenant.email}</td>
-                            <td>{tenant.roomNumber}</td>
-                            <td>{tenant.floor}</td>
-                            <td style={{ color: getDueDateStatus(tenant.nextDueDate).color, fontWeight: 600 }}>
-                              {formatDate(tenant.nextDueDate)}
-                            </td>
-                            <td style={{ color: tenant.currentBalance > 0 ? '#dc2626' : '#059669', fontWeight: 600 }}>
-                              {formatCurrency(tenant.currentBalance)}
-                            </td>
-                            <td>
-                              <button 
-                                className="btn-primary"
-                                                                onClick={() => console.log('Pay button clicked for tenant:', tenant.id)}
-                              >
-                                💰 Pay
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
+                ))}
               </div>
             )}
+
+            <div className="billing-table-container" style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', overflow: 'hidden' }}>
+              <div className="billing-table-header" style={{ padding: '1.5rem', borderBottom: '1px solid #e5e7eb', background: '#f9fafb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>Tenant Billing Overview</h3>
+                  <p style={{ margin: '0.5rem 0 0 0', color: '#6b7280', fontSize: '0.875rem' }}>
+                    Manage payments and track balances for {getFilteredTenants(billingTenants, accountingSearchQuery, statusFilter, accountingSortBy, accountingSortOrder).length} tenants
+                  </p>
+                </div>
+                <div>
+                  <button
+                    className="btn-primary"
+                    onClick={() => console.log('Quick Pay clicked')}
+                    style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.375rem', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer' }}
+                  >
+                    <span>💳</span> Pay Bill
+                  </button>
+                </div>
+              </div>
+
+              {/* Enhanced Table Controls */}
+              <div className="billing-table-controls" style={{ 
+                padding: '1.5rem', 
+                background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', 
+                borderBottom: '1px solid #e5e7eb', 
+                display: 'flex', 
+                gap: '2rem', 
+                alignItems: 'center', 
+                flexWrap: 'wrap',
+                borderRadius: '0.75rem 0.75rem 0 0'
+              }}>
+                {/* Search Bar */}
+                <div className="search-section" style={{ flex: '1', minWidth: '300px' }}>
+                  <div style={{ position: 'relative' }}>
+                    <div style={{ 
+                      position: 'absolute', 
+                      left: '0.75rem', 
+                      top: '50%', 
+                      transform: 'translateY(-50%)', 
+                      color: '#6b7280', 
+                      fontSize: '1rem' 
+                    }}>
+                      🔍
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search by name, email, or room number..."
+                      value={accountingSearchQuery}
+                      onChange={(e) => setAccountingSearchQuery(e.target.value)}
+                      style={{ 
+                        width: '100%', 
+                        padding: '0.75rem 0.75rem 0.75rem 2.5rem', 
+                        border: '2px solid #e5e7eb', 
+                        borderRadius: '0.75rem', 
+                        fontSize: '0.875rem',
+                        background: 'white',
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                        transition: 'all 0.2s ease',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Status Filters */}
+                <div className="status-section" style={{ display: 'flex', gap: '0.5rem' }}>
+                  {getStatusFilterOptions().map(option => (
+                    <button
+                      key={option.id}
+                      onClick={() => setStatusFilter(option.id)}
+                      className={`enhanced-status-btn ${statusFilter === option.id ? 'active' : ''}`}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        border: '2px solid transparent',
+                        borderRadius: '0.75rem',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        background: statusFilter === option.id 
+                          ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' 
+                          : 'white',
+                        color: statusFilter === option.id ? 'white' : '#374151',
+                        boxShadow: statusFilter === option.id 
+                          ? '0 4px 12px rgba(59, 130, 246, 0.3)' 
+                          : '0 2px 4px rgba(0, 0, 0, 0.05)',
+                        transition: 'all 0.2s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      <span>{option.icon}</span>
+                      <span>{option.label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Sort Dropdown */}
+                <div className="sort-section" style={{ minWidth: '200px' }}>
+                  <select
+                    value={`${accountingSortBy}-${accountingSortOrder}`}
+                    onChange={(e) => {
+                      const [field, order] = e.target.value.split('-')
+                      setAccountingSortBy(field)
+                      setAccountingSortOrder(order)
+                    }}
+                    style={{ 
+                      width: '100%',
+                      padding: '0.75rem 2.5rem 0.75rem 1rem', 
+                      border: '2px solid #e5e7eb', 
+                      borderRadius: '0.75rem', 
+                      fontSize: '0.875rem',
+                      background: 'white',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                      transition: 'all 0.2s ease',
+                      outline: 'none',
+                      cursor: 'pointer',
+                      appearance: 'none',
+                      backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                      backgroundPosition: 'right 0.75rem center',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundSize: '1rem'
+                    }}
+                  >
+                    {getSortOptions().map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Table Content */}
+              {billingTenants.length === 0 ? (
+                <div className="empty-state" style={{ padding: '3rem', textAlign: 'center' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👥</div>
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>No Tenants Found</h3>
+                  <p style={{ margin: 0, color: '#6b7280' }}>No tenant billing information available.</p>
+                </div>
+              ) : (
+                <div className="table-container">
+                  <table className="data-table">
+                    <TableHeader headers={getTableHeaders('tenant-billing')} />
+                    <tbody>
+                      {getFilteredTenants(billingTenants, accountingSearchQuery, statusFilter, accountingSortBy, accountingSortOrder).map(tenant => (
+                        <tr key={tenant.id}>
+                          <td>{tenant.name}</td>
+                          <td>{tenant.email}</td>
+                          <td>{tenant.roomNumber}</td>
+                          <td>{tenant.floor}</td>
+                          <td style={{ color: getDueDateStatus(tenant.nextDueDate).color, fontWeight: 600 }}>
+                            {formatDate(tenant.nextDueDate)}
+                          </td>
+                          <td style={{ color: tenant.currentBalance > 0 ? '#dc2626' : '#059669', fontWeight: 600 }}>
+                            {formatCurrency(tenant.currentBalance)}
+                          </td>
+                          <td>
+                            <button 
+                              className="btn-primary"
+                              onClick={() => console.log('Pay button clicked for tenant:', tenant.id)}
+                              style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.375rem', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer' }}
+                            >
+                              💰 Pay
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )
       case 'pending-payments':
@@ -1406,71 +2053,78 @@ onChange={(e) => setAccountingSearchQuery(e.target.value)}
                 {pendingLoading ? '🔄' : '🔄'} Refresh
               </button>
             </div>
-            {pendingError && <div className="alert alert-danger">{pendingError}</div>}
-            
-            {pendingLoading ? (
-              <div className="loading-state">Loading pending payments...</div>
-            ) : (
-              <div className="pending-content">
-                {/* Summary */}
-                {pendingPayments.length > 0 && (
-                  <div className="summary-section" style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f9fafb', borderRadius: '0.5rem' }}>
-                    {(() => {
-                      const summary = getPendingPaymentsSummary(pendingPayments)
-                      return (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <span style={{ fontWeight: 600 }}>Total Pending: {summary.count} payments</span>
-                            <span style={{ marginLeft: '1rem', color: '#dc2626', fontWeight: 600 }}>
-                              {formatCurrency(summary.totalAmount)}
-                            </span>
-                          </div>
-                        </div>
-                      )
-                    })()}
-                  </div>
-                )}
 
-                {/* Pending Payments List */}
-                <div className="table-container">
-                  {pendingPayments.length === 0 ? (
-                    <div className="empty-state">
-                      <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
-                      <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>No Pending Payments</h3>
-                      <p style={{ margin: 0, color: '#6b7280' }}>All payments have been processed.</p>
+            {/* Summary */}
+            {pendingPayments.length > 0 && (
+              <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                {(() => {
+                  const summary = getPendingPaymentsSummary(pendingPayments)
+                  return (
+                    <div className="stat-card" style={{ background: 'white', padding: '1.5rem', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ width: '3rem', height: '3rem', background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>⏳</div>
+                        <div>
+                          <p style={{ margin: 0, fontSize: '0.875rem', color: '#6b7280' }}>Total Pending</p>
+                          <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>{summary.count} payments</p>
+                          <p style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: '#dc2626' }}>{formatCurrency(summary.totalAmount)}</p>
+                        </div>
+                      </div>
                     </div>
-                  ) : (
-                    <table className="data-table">
-                      <TableHeader headers={getTableHeaders('pending-payments')} />
-                      <tbody>
-                        {pendingPayments.map(payment => (
-                          <tr key={payment.id}>
-                            <td>{payment.tenantName}</td>
-                            <td>{payment.roomNumber}</td>
-                            <td>{formatCurrency(payment.amount)}</td>
-                            <td>{payment.paymentMethod}</td>
-                            <td>{formatDate(payment.paymentDate)}</td>
-                            <td>
-                              <span className={`status-badge ${payment.status.toLowerCase()}`}>
-                                {payment.status}
-                              </span>
-                            </td>
-                            <td>
-                              <button 
-                                className="btn-success"
-                                onClick={() => console.log('Confirm payment:', payment.id)}
-                              >
-                                ✅ Confirm
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
+                  )
+                })()}
               </div>
             )}
+
+            <div className="billing-table-container" style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', overflow: 'hidden' }}>
+              <div className="billing-table-header" style={{ padding: '1.5rem', borderBottom: '1px solid #e5e7eb', background: '#f9fafb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>Pending Payments</h3>
+                  <p style={{ margin: '0.5rem 0 0 0', color: '#6b7280', fontSize: '0.875rem' }}>
+                    Review and confirm pending payment transactions
+                  </p>
+                </div>
+              </div>
+
+              {/* Table Content */}
+              {pendingPayments.length === 0 ? (
+                <div className="empty-state" style={{ padding: '3rem', textAlign: 'center' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>No Pending Payments</h3>
+                  <p style={{ margin: 0, color: '#6b7280' }}>All payments have been processed.</p>
+                </div>
+              ) : (
+                <div className="table-container">
+                  <table className="data-table">
+                    <TableHeader headers={getTableHeaders('pending-payments')} />
+                    <tbody>
+                      {pendingPayments.map(payment => (
+                        <tr key={payment.id}>
+                          <td>{payment.tenantName}</td>
+                          <td>{payment.roomNumber}</td>
+                          <td>{formatCurrency(payment.amount)}</td>
+                          <td>{payment.paymentMethod}</td>
+                          <td>{formatDate(payment.paymentDate)}</td>
+                          <td>
+                            <span className={`status-badge ${payment.status.toLowerCase()}`}>
+                              {payment.status}
+                            </span>
+                          </td>
+                          <td>
+                            <button 
+                              className="btn-success"
+                              onClick={() => console.log('Confirm payment:', payment.id)}
+                              style={{ background: '#10b981', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.375rem', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer' }}
+                            >
+                              ✅ Confirm
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )
       case 'transaction-list':
@@ -1478,21 +2132,141 @@ onChange={(e) => setAccountingSearchQuery(e.target.value)}
           <div className="content-section">
             <div className="content-header">
               <h2>📋 Transaction List</h2>
+              <button className="refresh-btn" onClick={loadTransactions} disabled={transactionLoading}>
+                {transactionLoading ? '🔄' : '🔄'} Refresh
+              </button>
             </div>
-            <div className="coming-soon">
-              <p>Transaction list coming soon!</p>
+            
+            <div className="filters-section">
+              <div className="filter-group">
+                <label>Date From:</label>
+                <input
+                  type="date"
+                  value={transactionFilters.dateFrom}
+                  onChange={(e) => setTransactionFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+                />
+              </div>
+              <div className="filter-group">
+                <label>Date To:</label>
+                <input
+                  type="date"
+                  value={transactionFilters.dateTo}
+                  onChange={(e) => setTransactionFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+                />
+              </div>
+              <div className="filter-group">
+                <label>Payment Method:</label>
+                <select
+                  value={transactionFilters.paymentMethod}
+                  onChange={(e) => setTransactionFilters(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                >
+                  {getTransactionFilterOptions().map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </div>
+              <button className="btn-primary" onClick={loadTransactions}>
+                Apply Filters
+              </button>
+            </div>
+
+            <div className="table-container">
+              {transactionLoading ? (
+                <div className="loading-state">Loading transactions...</div>
+              ) : transactions.length === 0 ? (
+                <div className="empty-state">
+                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📋</div>
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>No Transactions Found</h3>
+                  <p style={{ margin: 0, color: '#6b7280' }}>No transactions match your current filter criteria.</p>
+                </div>
+              ) : (
+                <table className="data-table">
+                  <TableHeader headers={getTableHeaders('transaction-list')} />
+                  <tbody>
+                    {transactions.map((transaction) => (
+                      <tr key={transaction.id}>
+                        <td>{new Date(transaction.createdAt).toLocaleDateString()}</td>
+                        <td>{transaction.tenantName}</td>
+                        <td>{formatCurrency(transaction.amount)}</td>
+                        <td>{transaction.paymentMethod}</td>
+                        <td>{transaction.reference}</td>
+                        <td>{transaction.description}</td>
+                        <td>
+                          <button className="btn-action">Edit</button>
+                          <button className="btn-action btn-danger">Delete</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )
       case 'financial-reports':
         return (
           <div className="content-section">
-            <div className="content-header">
+            <div className="section-header">
               <h2>📊 Financial Reports</h2>
+              <p>Generate and view financial reports</p>
             </div>
-            <div className="coming-soon">
-              <p>Financial reports coming soon!</p>
+
+            <div className="report-controls">
+              <div className="filter-group">
+                <label>Report Period:</label>
+                <select
+                  value={reportPeriod}
+                  onChange={(e) => setReportPeriod(e.target.value)}
+                >
+                  {getReportPeriodOptions().map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </div>
+              <button className="btn-primary" onClick={loadFinancialReports}>
+                Generate Report
+              </button>
             </div>
+
+            {reportData ? (
+              <div className="report-content">
+                <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div className="stat-card" style={{ background: 'white', padding: '1.5rem', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ width: '3rem', height: '3rem', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>💰</div>
+                      <div>
+                        <p style={{ margin: 0, fontSize: '0.875rem', color: '#6b7280' }}>Total Revenue</p>
+                        <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>{formatCurrency(reportData.totalRevenue || 0)}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="stat-card" style={{ background: 'white', padding: '1.5rem', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ width: '3rem', height: '3rem', background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📊</div>
+                      <div>
+                        <p style={{ margin: 0, fontSize: '0.875rem', color: '#6b7280' }}>Total Transactions</p>
+                        <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>{reportData.totalTransactions || 0}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="stat-card" style={{ background: 'white', padding: '1.5rem', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ width: '3rem', height: '3rem', background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📈</div>
+                      <div>
+                        <p style={{ margin: 0, fontSize: '0.875rem', color: '#6b7280' }}>Average Payment</p>
+                        <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>{formatCurrency(reportData.averagePayment || 0)}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="empty-state">
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
+                <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>No Reports Available</h3>
+                <p style={{ margin: 0, color: '#6b7280' }}>Select a period and generate a report</p>
+              </div>
+            )}
           </div>
         )
       case 'outstanding-balances':
@@ -1504,114 +2278,194 @@ onChange={(e) => setAccountingSearchQuery(e.target.value)}
                 {billingLoading ? '🔄' : '🔄'} Refresh
               </button>
             </div>
-            {billingError && <div className="alert alert-danger">{billingError}</div>}
-            
-            {billingLoading ? (
-              <div className="loading-state">Loading outstanding balances...</div>
-            ) : (
-              <div className="outstanding-content">
-                {/* Outstanding Stats */}
-                {(() => {
-                  const outstandingStats = getOutstandingStats(billingTenants)
-                  return (
-                    <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                      {outstandingStats.stats.map((stat, index) => (
-                        <div key={index} className="stat-card" style={{ background: 'white', padding: '1.5rem', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <div style={{ width: '3rem', height: '3rem', background: stat.color, borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>{stat.icon}</div>
-                            <div>
-                              <p style={{ margin: 0, fontSize: '0.875rem', color: '#6b7280' }}>{stat.label}</p>
-                              <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>{stat.value}</p>
-                            </div>
-                          </div>
+
+            {/* Outstanding Stats */}
+            {(() => {
+              const outstandingStats = getOutstandingStats(billingTenants)
+              return (
+                <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                  {outstandingStats.stats.map((stat, index) => (
+                    <div key={index} className="stat-card" style={{ background: 'white', padding: '1.5rem', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ width: '3rem', height: '3rem', background: stat.color, borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>{stat.icon}</div>
+                        <div>
+                          <p style={{ margin: 0, fontSize: '0.875rem', color: '#6b7280' }}>{stat.label}</p>
+                          <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>{stat.value}</p>
                         </div>
-                      ))}
-                    </div>
-                  )
-                })()}
-
-                {/* Outstanding Balances List */}
-                <div className="table-container">
-                  <div className="table-header">
-                    <h3>Tenants with Outstanding Balances</h3>
-                    <div className="table-controls">
-                      <input
-                        type="text"
-                        placeholder="Search tenants..."
-value={accountingSearchQuery}
-onChange={(e) => setAccountingSearchQuery(e.target.value)}
-                        className="search-input"
-                      />
-                      <div className="status-filters">
-                        {getStatusFilterOptions().map(option => (
-                          <button
-                            key={option.id}
-                            onClick={() => setStatusFilter(option.id)}
-                            className={`status-btn ${statusFilter === option.id ? 'active' : ''}`}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
                       </div>
-                      <select
-                        value={`${accountingSortBy}-${accountingSortOrder}`}
-                        onChange={(e) => {
-                          const [field, order] = e.target.value.split('-')
-                          setAccountingSortBy(field)
-                          setAccountingSortOrder(order)
-                        }}
-                        className="sort-select"
-                      >
-                        {getSortOptions().map(option => (
-                          <option key={option.value} value={option.value}>{option.label}</option>
-                        ))}
-                      </select>
                     </div>
-                  </div>
+                  ))}
+                </div>
+              )
+            })()}
 
-                  {(() => {
-                    const outstandingTenants = billingTenants.filter(tenant => tenant.currentBalance > 0)
-                    const filteredTenants = getFilteredTenants(outstandingTenants, accountingSearchQuery, statusFilter, accountingSortBy, accountingSortOrder)
-                    
-                    return filteredTenants.length === 0 ? (
-                      <div className="empty-state">
-                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
-                        <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>No Outstanding Balances</h3>
-                        <p style={{ margin: 0, color: '#6b7280' }}>All tenants are up to date with their payments.</p>
-                      </div>
-                    ) : (
-                      <table className="data-table">
-                        <TableHeader headers={getTableHeaders('outstanding-balances')} />
-                        <tbody>
-                          {filteredTenants.map(tenant => (
-                            <tr key={tenant.id}>
-                              <td>{tenant.name}</td>
-                              <td>{tenant.email}</td>
-                              <td>{tenant.roomNumber}</td>
-                              <td>{tenant.floor}</td>
-                              <td style={{ color: '#dc2626', fontWeight: 600 }}>
-                                {formatCurrency(tenant.currentBalance)}
-                              </td>
-                              <td style={{ color: getDueDateStatus(tenant.nextDueDate).color, fontWeight: 600 }}>
-                                {formatDate(tenant.nextDueDate)}
-                              </td>
-                              <td>
-                                <button 
-                                  className="btn-primary"
-                                                                  onClick={() => console.log('Pay button clicked for tenant:', tenant.id)}
-                                >
-                                  💰 Pay Now
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )
-                  })()}
+            <div className="billing-table-container" style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', overflow: 'hidden' }}>
+              <div className="billing-table-header" style={{ padding: '1.5rem', borderBottom: '1px solid #e5e7eb', background: '#f9fafb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>Tenants with Outstanding Balances</h3>
+                  <p style={{ margin: '0.5rem 0 0 0', color: '#6b7280', fontSize: '0.875rem' }}>
+                    View and manage tenant outstanding balances
+                  </p>
                 </div>
               </div>
-            )}
+
+              {/* Enhanced Table Controls */}
+              <div className="billing-table-controls" style={{ 
+                padding: '1.5rem', 
+                background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', 
+                borderBottom: '1px solid #e5e7eb', 
+                display: 'flex', 
+                gap: '2rem', 
+                alignItems: 'center', 
+                flexWrap: 'wrap',
+                borderRadius: '0.75rem 0.75rem 0 0'
+              }}>
+                {/* Search Bar */}
+                <div className="search-section" style={{ flex: '1', minWidth: '300px' }}>
+                  <div style={{ position: 'relative' }}>
+                    <div style={{ 
+                      position: 'absolute', 
+                      left: '0.75rem', 
+                      top: '50%', 
+                      transform: 'translateY(-50%)', 
+                      color: '#6b7280', 
+                      fontSize: '1rem' 
+                    }}>
+                      🔍
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search tenants..."
+                      value={accountingSearchQuery}
+                      onChange={(e) => setAccountingSearchQuery(e.target.value)}
+                      style={{ 
+                        width: '100%', 
+                        padding: '0.75rem 0.75rem 0.75rem 2.5rem', 
+                        border: '2px solid #e5e7eb', 
+                        borderRadius: '0.75rem', 
+                        fontSize: '0.875rem',
+                        background: 'white',
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                        transition: 'all 0.2s ease',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Status Filters */}
+                <div className="status-section" style={{ display: 'flex', gap: '0.5rem' }}>
+                  {getStatusFilterOptions().map(option => (
+                    <button
+                      key={option.id}
+                      onClick={() => setStatusFilter(option.id)}
+                      className={`enhanced-status-btn ${statusFilter === option.id ? 'active' : ''}`}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        border: '2px solid transparent',
+                        borderRadius: '0.75rem',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        background: statusFilter === option.id 
+                          ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' 
+                          : 'white',
+                        color: statusFilter === option.id ? 'white' : '#374151',
+                        boxShadow: statusFilter === option.id 
+                          ? '0 4px 12px rgba(59, 130, 246, 0.3)' 
+                          : '0 2px 4px rgba(0, 0, 0, 0.05)',
+                        transition: 'all 0.2s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      <span>{option.icon}</span>
+                      <span>{option.label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Sort Dropdown */}
+                <div className="sort-section" style={{ minWidth: '200px' }}>
+                  <select
+                    value={`${accountingSortBy}-${accountingSortOrder}`}
+                    onChange={(e) => {
+                      const [field, order] = e.target.value.split('-')
+                      setAccountingSortBy(field)
+                      setAccountingSortOrder(order)
+                    }}
+                    style={{ 
+                      width: '100%',
+                      padding: '0.75rem 2.5rem 0.75rem 1rem', 
+                      border: '2px solid #e5e7eb', 
+                      borderRadius: '0.75rem', 
+                      fontSize: '0.875rem',
+                      background: 'white',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                      transition: 'all 0.2s ease',
+                      outline: 'none',
+                      cursor: 'pointer',
+                      appearance: 'none',
+                      backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                      backgroundPosition: 'right 0.75rem center',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundSize: '1rem'
+                    }}
+                  >
+                    {getSortOptions().map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Table Content */}
+              {(() => {
+                const outstandingTenants = billingTenants.filter(tenant => tenant.currentBalance > 0)
+                const filteredTenants = getFilteredTenants(outstandingTenants, accountingSearchQuery, statusFilter, accountingSortBy, accountingSortOrder)
+                
+                return filteredTenants.length === 0 ? (
+                  <div className="empty-state" style={{ padding: '3rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
+                    <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>No Outstanding Balances</h3>
+                    <p style={{ margin: 0, color: '#6b7280' }}>All tenants are up to date with their payments.</p>
+                  </div>
+                ) : (
+                  <div className="table-container">
+                    <table className="data-table">
+                      <TableHeader headers={getTableHeaders('outstanding-balances')} />
+                      <tbody>
+                        {filteredTenants.map(tenant => (
+                          <tr key={tenant.id}>
+                            <td>{tenant.name}</td>
+                            <td>{tenant.email}</td>
+                            <td>{tenant.roomNumber}</td>
+                            <td>{tenant.floor}</td>
+                            <td style={{ color: '#dc2626', fontWeight: 600 }}>
+                              {formatCurrency(tenant.currentBalance)}
+                            </td>
+                            <td style={{ color: getDueDateStatus(tenant.nextDueDate).color, fontWeight: 600 }}>
+                              {formatDate(tenant.nextDueDate)}
+                            </td>
+                            <td>
+                              <button 
+                                className="btn-primary"
+                                onClick={() => console.log('Pay button clicked for tenant:', tenant.id)}
+                                style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '0.375rem', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer' }}
+                              >
+                                💰 Pay Now
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              })()}
+            </div>
           </div>
         )
       case 'payment-history':
@@ -1623,16 +2477,40 @@ onChange={(e) => setAccountingSearchQuery(e.target.value)}
                 {billingLoading ? '🔄' : '🔄'} Refresh
               </button>
             </div>
-            {billingError && <div className="alert alert-danger">{billingError}</div>}
-            
-            {billingLoading ? (
-              <div className="loading-state">Loading payment history...</div>
-            ) : (
-              <div className="payment-history-content">
-                {/* Tenant Selection */}
-                <div className="tenant-selection" style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f9fafb', borderRadius: '0.5rem' }}>
-                  <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.125rem', fontWeight: 600 }}>Select Tenant</h3>
+
+            <div className="billing-table-container" style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', overflow: 'hidden' }}>
+              <div className="billing-table-header" style={{ padding: '1.5rem', borderBottom: '1px solid #e5e7eb', background: '#f9fafb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>Select Tenant</h3>
+                  <p style={{ margin: '0.5rem 0 0 0', color: '#6b7280', fontSize: '0.875rem' }}>
+                    Choose a tenant to view their payment history
+                  </p>
+                </div>
+              </div>
+
+              {/* Tenant Selection */}
+              <div className="billing-table-controls" style={{ 
+                padding: '1.5rem', 
+                background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', 
+                borderBottom: '1px solid #e5e7eb', 
+                display: 'flex', 
+                gap: '2rem', 
+                alignItems: 'center', 
+                flexWrap: 'wrap',
+                borderRadius: '0.75rem 0.75rem 0 0'
+              }}>
+                <div className="search-section" style={{ flex: '1', minWidth: '300px' }}>
                   <div style={{ position: 'relative' }}>
+                    <div style={{ 
+                      position: 'absolute', 
+                      left: '0.75rem', 
+                      top: '50%', 
+                      transform: 'translateY(-50%)', 
+                      color: '#6b7280', 
+                      fontSize: '1rem' 
+                    }}>
+                      🔍
+                    </div>
                     <input
                       type="text"
                       placeholder="Search by name, room, or email..."
@@ -1642,8 +2520,17 @@ onChange={(e) => setAccountingSearchQuery(e.target.value)}
                         setShowTenantDropdown(true)
                       }}
                       onFocus={() => setShowTenantDropdown(true)}
-                      className="search-input"
-                      style={{ width: '100%' }}
+                      style={{ 
+                        width: '100%', 
+                        padding: '0.75rem 0.75rem 0.75rem 2.5rem', 
+                        border: '2px solid #e5e7eb', 
+                        borderRadius: '0.75rem', 
+                        fontSize: '0.875rem',
+                        background: 'white',
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                        transition: 'all 0.2s ease',
+                        outline: 'none'
+                      }}
                     />
                     {showTenantDropdown && (
                       <div 
@@ -1659,7 +2546,8 @@ onChange={(e) => setAccountingSearchQuery(e.target.value)}
                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                           zIndex: 10,
                           maxHeight: '200px',
-                          overflowY: 'auto'
+                          overflowY: 'auto',
+                          marginTop: '0.5rem'
                         }}
                       >
                         {getPaymentHistoryFilteredTenants(billingTenants, historySearchQuery).map(tenant => (
@@ -1686,13 +2574,15 @@ onChange={(e) => setAccountingSearchQuery(e.target.value)}
                     )}
                   </div>
                 </div>
+              </div>
 
-                {/* Selected Tenant Details */}
-                {selectedTenantForHistory ? (
-                  <div className="tenant-details">
-                    <div className="tenant-info" style={{ marginBottom: '1.5rem', padding: '1rem', background: 'white', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
-                      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.125rem', fontWeight: 600 }}>Tenant Information</h3>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+              {/* Selected Tenant Details */}
+              {selectedTenantForHistory ? (
+                <div className="tenant-details">
+                  <div className="billing-table-header" style={{ padding: '1.5rem', borderBottom: '1px solid #e5e7eb', background: '#f9fafb' }}>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>👤 Tenant Information</h3>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
                         <div><strong>Name:</strong> {selectedTenantForHistory.name}</div>
                         <div><strong>Email:</strong> {selectedTenantForHistory.email}</div>
                         <div><strong>Room:</strong> {selectedTenantForHistory.roomNumber}</div>
@@ -1704,50 +2594,53 @@ onChange={(e) => setAccountingSearchQuery(e.target.value)}
                         </div>
                       </div>
                     </div>
+                  </div>
 
-                    {/* Payment History Table */}
-                    <div className="table-container">
-                      <div className="table-header">
-                        <h3>Payment History</h3>
-                      </div>
-                      {!selectedTenantForHistory.paymentHistory || selectedTenantForHistory.paymentHistory.length === 0 ? (
-                        <div className="empty-state">
-                          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📈</div>
-                          <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>No Payment History</h3>
-                          <p style={{ margin: 0, color: '#6b7280' }}>No payment records found for this tenant.</p>
-                        </div>
-                      ) : (
-                        <table className="data-table">
-                          <TableHeader headers={getTableHeaders('payment-history')} />
-                          <tbody>
-                            {selectedTenantForHistory.paymentHistory.map(payment => (
-                              <tr key={payment.id}>
-                                <td>{formatDate(payment.paymentDate)}</td>
-                                <td>{formatCurrency(payment.amount)}</td>
-                                <td>{payment.paymentMethod}</td>
-                                <td>{formatCurrency(payment.balanceAfter)}</td>
-                                <td>
-                                  <span className={`status-badge ${payment.status.toLowerCase()}`}>
-                                    {payment.status}
-                                  </span>
-                                </td>
-                                <td>{payment.notes || '-'}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      )}
+                  {/* Payment History Table */}
+                  <div className="billing-table-header" style={{ padding: '1.5rem', borderBottom: '1px solid #e5e7eb', background: '#f9fafb' }}>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>📈 Payment History</h3>
                     </div>
                   </div>
-                ) : (
-                  <div className="empty-state">
-                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👤</div>
-                    <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>Select a Tenant</h3>
-                    <p style={{ margin: 0, color: '#6b7280' }}>Please select a tenant to view their payment history.</p>
-                  </div>
-                )}
-              </div>
-            )}
+
+                  {!selectedTenantForHistory.paymentHistory || selectedTenantForHistory.paymentHistory.length === 0 ? (
+                    <div className="empty-state" style={{ padding: '3rem', textAlign: 'center' }}>
+                      <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📈</div>
+                      <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>No Payment History</h3>
+                      <p style={{ margin: 0, color: '#6b7280' }}>No payment records found for this tenant.</p>
+                    </div>
+                  ) : (
+                    <div className="table-container">
+                      <table className="data-table">
+                        <TableHeader headers={getTableHeaders('payment-history')} />
+                        <tbody>
+                          {selectedTenantForHistory.paymentHistory.map(payment => (
+                            <tr key={payment.id}>
+                              <td>{formatDate(payment.paymentDate)}</td>
+                              <td>{formatCurrency(payment.amount)}</td>
+                              <td>{payment.paymentMethod}</td>
+                              <td>{formatCurrency(payment.balanceAfter)}</td>
+                              <td>
+                                <span className={`status-badge ${payment.status.toLowerCase()}`}>
+                                  {payment.status}
+                                </span>
+                              </td>
+                              <td>{payment.notes || '-'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="empty-state" style={{ padding: '3rem', textAlign: 'center' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👤</div>
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 600, color: '#111827' }}>Select a Tenant</h3>
+                  <p style={{ margin: 0, color: '#6b7280' }}>Please select a tenant to view their payment history.</p>
+                </div>
+              )}
+            </div>
           </div>
         )
       default:
@@ -2020,6 +2913,134 @@ onChange={(e) => setAccountingSearchQuery(e.target.value)}
                   <p>{selectedTenant.notes}</p>
                 </section>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Management Modal */}
+      {showAdminModal && (
+        <div className="modal-overlay" onClick={() => setShowAdminModal(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '20px' }}>
+          <div className="modal-container" onClick={(e) => e.stopPropagation()} style={{ background: 'white', borderRadius: '1rem', maxWidth: '500px', width: '100%', maxHeight: '90vh', overflow: 'hidden' }}>
+            <div className="modal-header" style={{ padding: '1.5rem', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>👑 Create New Admin</h2>
+              <button className="modal-close" onClick={() => setShowAdminModal(false)}>×</button>
+            </div>
+            <div className="modal-body" style={{ padding: '1.5rem' }}>
+              <form onSubmit={handleCreateAdmin}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>First Name</label>
+                    <input
+                      type="text"
+                      value={adminForm.firstName}
+                      onChange={(e) => setAdminForm(prev => ({ ...prev, firstName: e.target.value }))}
+                      required
+                      style={{ width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Last Name</label>
+                    <input
+                      type="text"
+                      value={adminForm.lastName}
+                      onChange={(e) => setAdminForm(prev => ({ ...prev, lastName: e.target.value }))}
+                      required
+                      style={{ width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem' }}
+                    />
+                  </div>
+                </div>
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Email</label>
+                  <input
+                    type="email"
+                    value={adminForm.email}
+                    onChange={(e) => setAdminForm(prev => ({ ...prev, email: e.target.value }))}
+                    required
+                    style={{ width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem' }}
+                  />
+                </div>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Password</label>
+                  <input
+                    type="password"
+                    value={adminForm.password}
+                    onChange={(e) => setAdminForm(prev => ({ ...prev, password: e.target.value }))}
+                    required
+                    style={{ width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                  <button type="button" onClick={() => setShowAdminModal(false)} style={{ padding: '0.75rem 1.5rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', background: 'white', cursor: 'pointer' }}>
+                    Cancel
+                  </button>
+                  <button type="submit" style={{ padding: '0.75rem 1.5rem', background: '#2563eb', color: 'white', border: 'none', borderRadius: '0.5rem', cursor: 'pointer' }}>
+                    Create Admin
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Navigation Control Modal */}
+      {showNavigationModal && selectedAdmin && (
+        <div className="modal-overlay" onClick={() => setShowNavigationModal(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '20px' }}>
+          <div className="modal-container" onClick={(e) => e.stopPropagation()} style={{ background: 'white', borderRadius: '1rem', maxWidth: '600px', width: '100%', maxHeight: '90vh', overflow: 'hidden' }}>
+            <div className="modal-header" style={{ padding: '1.5rem', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>🧭 Navigation Control - {selectedAdmin.firstName} {selectedAdmin.lastName}</h2>
+              <button className="modal-close" onClick={() => setShowNavigationModal(false)}>×</button>
+            </div>
+            <div className="modal-body" style={{ padding: '1.5rem', maxHeight: '70vh', overflowY: 'auto' }}>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem' }}>Navigation Permissions</h3>
+                <p style={{ color: '#6b7280', marginBottom: '1rem' }}>Select which navigation items this admin can access:</p>
+                <div style={{ display: 'grid', gap: '0.75rem' }}>
+                  {[
+                    { id: 'dashboard', name: 'Dashboard', icon: '📊' },
+                    { id: 'rooms', name: 'Rooms', icon: '🏠' },
+                    { id: 'tenants', name: 'Tenants', icon: '👥' },
+                    { id: 'accounting', name: 'Accounting', icon: '💰' },
+                    { id: 'overdue_payments', name: 'Overdue Payments', icon: '⚠️' },
+                    { id: 'pricing', name: 'Pricing', icon: '💵' },
+                    { id: 'maintenance', name: 'Maintenance', icon: '🔧' },
+                    { id: 'announcements', name: 'Announcements', icon: '📢' },
+                    { id: 'archives', name: 'Archives', icon: '📦' },
+                    { id: 'add_account', name: 'Add Account', icon: '👤' }
+                  ].map(item => (
+                    <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', border: '1px solid #e5e7eb', borderRadius: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span>{item.icon}</span>
+                        <span>{item.name}</span>
+                      </div>
+                      <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedNavigationItems.includes(item.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedNavigationItems(prev => [...prev, item.id])
+                            } else {
+                              setSelectedNavigationItems(prev => prev.filter(id => id !== item.id))
+                            }
+                          }}
+                          style={{ marginRight: '0.5rem' }}
+                        />
+                        <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Enable</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                <button onClick={() => setShowNavigationModal(false)} style={{ padding: '0.75rem 1.5rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', background: 'white', cursor: 'pointer' }}>
+                  Cancel
+                </button>
+                <button onClick={handleUpdateNavigationPermissions} style={{ padding: '0.75rem 1.5rem', background: '#2563eb', color: 'white', border: 'none', borderRadius: '0.5rem', cursor: 'pointer' }}>
+                  Update Permissions
+                </button>
+              </div>
             </div>
           </div>
         </div>

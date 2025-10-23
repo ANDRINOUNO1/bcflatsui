@@ -347,17 +347,16 @@ const TenantPage = () => {
                         <table className="tenants-table">
                             <thead>
                                 <tr>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Room</th>
-                                    <th>Bed</th>
-                                    <th>Floor</th>
-                                    <th>Status</th>
-                                    <th>Check-in</th>
-                                    <th>Check-out</th>
-                                    <th>Monthly Rent per Bed</th>
-                                    <th>Outstanding Balance</th>
-                                    <th>Actions</th>
+                                    <th className="col-name">Name</th>
+                                    <th className="col-email">Email</th>
+                                    <th className="col-room">Room</th>
+                                    <th className="col-bed">Bed</th>
+                                    <th className="col-floor">Floor</th>
+                                    <th className="col-status">Status</th>
+                                    <th className="col-checkin">Check-in Date</th>
+                                    <th className="col-rent">Monthly Rent</th>
+                                    <th className="col-balance">Outstanding Balance</th>
+                                    <th className="col-actions">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -367,26 +366,30 @@ const TenantPage = () => {
                                         className={selectedTenant?.id === tenant.id ? 'selected' : ''}
                                         onClick={() => handleTenantClick(tenant)}
                                     >
-                                        <td>{tenant.account.firstName} {tenant.account.lastName}</td>
-                                        <td>{tenant.account.email}</td>
-                                        <td>{tenant.room.roomNumber}</td>
-                                        <td>{tenant.bedNumber}</td>
-                                        <td>{tenant.room.floor}</td>
-                                        <td>
+                                        <td className="col-name" title={`${tenant.account.firstName} ${tenant.account.lastName}`}>
+                                            {tenant.account.firstName} {tenant.account.lastName}
+                                        </td>
+                                        <td className="col-email" title={tenant.account.email}>
+                                            {tenant.account.email}
+                                        </td>
+                                        <td className="col-room">{tenant.room.roomNumber}</td>
+                                        <td className="col-bed">{tenant.bedNumber}</td>
+                                        <td className="col-floor">{tenant.room.floor}</td>
+                                        <td className="col-status">
                                             <span className={`status-badge ${tenant.status.toLowerCase().replace(' ', '-')}`}>
                                                 {tenant.status}
                                             </span>
                                         </td>
-                                        <td>{new Date(tenant.checkInDate).toLocaleDateString()}</td>
-                                        <td>{tenant.checkOutDate ? new Date(tenant.checkOutDate).toLocaleDateString() : '-'}</td>
-                                        <td>₱{tenant.monthlyRent.toLocaleString()}</td>
-                                        <td>₱{parseFloat(tenant.outstandingBalance || 0).toLocaleString()}</td>
-                                        <td>
+                                        <td className="col-checkin">{new Date(tenant.checkInDate).toLocaleDateString()}</td>
+                                        <td className="col-rent">₱{tenant.monthlyRent.toLocaleString()}</td>
+                                        <td className="col-balance">₱{parseFloat(tenant.outstandingBalance || 0).toLocaleString()}</td>
+                                        <td className="col-actions">
                                             <div className="tenant-actions">
                                                 {tenant.status === 'Pending' && (
                                                     <button
                                                         className="action-btn checkin-btn"
                                                         onClick={(e) => { e.stopPropagation(); handleCheckIn(tenant.id); }}
+                                                        title="Check In Tenant"
                                                     >
                                                         Check In
                                                     </button>
@@ -395,6 +398,7 @@ const TenantPage = () => {
                                                     <button
                                                         className="action-btn checkout-btn"
                                                         onClick={(e) => { e.stopPropagation(); handleCheckOut(tenant.id); }}
+                                                        title="Check Out Tenant"
                                                     >
                                                         Check Out
                                                     </button>
@@ -402,6 +406,7 @@ const TenantPage = () => {
                                                 <button
                                                     className="action-btn delete-btn"
                                                     onClick={(e) => { e.stopPropagation(); handleDeleteTenant(tenant); }}
+                                                    title="Delete Tenant"
                                                 >
                                                     Delete
                                                 </button>

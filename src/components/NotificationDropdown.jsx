@@ -46,8 +46,10 @@ const NotificationDropdown = ({
               onClick={onMarkAllAsRead}
               disabled={markingAsRead}
               className="mark-all-read-btn"
+              title="Mark all notifications as read"
             >
-              {markingAsRead ? '⏳' : '✓'} Mark All Read
+              <span>{markingAsRead ? '⏳' : '✓'}</span>
+              <span>{markingAsRead ? 'Marking All...' : 'Mark All Read'}</span>
             </button>
           )}
         </div>
@@ -94,8 +96,10 @@ const NotificationDropdown = ({
                       }}
                       disabled={markingAsRead}
                       className="mark-read-btn"
+                      title="Mark this notification as read"
                     >
-                      ✓ Mark Read
+                      <span>✓</span>
+                      <span>{markingAsRead ? 'Marking...' : 'Mark Read'}</span>
                     </button>
                   )}
                 </div>

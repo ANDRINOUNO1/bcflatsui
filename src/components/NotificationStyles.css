@@ -252,25 +252,70 @@
   font-weight: bold;
 }
 
-.mark-all-read-btn {
-  background: rgba(255,255,255,0.2);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
+/* Force smaller header button with higher specificity */
+.notification-header .mark-all-read-btn {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  border-radius: 4px !important;
+  padding: 4px 8px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  backdrop-filter: blur(10px) !important;
+  letter-spacing: 0.2px !important;
+  text-transform: uppercase !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  min-width: 70px !important;
+  max-width: 90px !important;
+  height: auto !important;
+  line-height: 1.2 !important;
 }
 
-.mark-all-read-btn:hover {
-  background: rgba(255,255,255,0.3);
+.mark-all-read-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.mark-all-read-btn:hover::before {
+  left: 100%;
+}
+
+.notification-header .mark-all-read-btn:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.15) !important;
+}
+
+.mark-all-read-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .mark-all-read-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.mark-all-read-btn:disabled::before {
+  display: none;
 }
 
 .notification-content {
@@ -430,39 +475,67 @@
 }
 
 .mark-read-btn {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-size: 12px;
+  border: 1px solid #10b981;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
-  min-width: 100px;
+  min-width: 85px;
   text-align: center;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3), 0 1px 2px rgba(0, 0, 0, 0.1);
   position: relative;
   overflow: hidden;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.mark-read-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.mark-read-btn:hover::before {
+  left: 100%;
 }
 
 .mark-read-btn:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  border-color: #059669;
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 3px 6px rgba(16, 185, 129, 0.4), 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 .mark-read-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(16, 185, 129, 0.3), 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .mark-read-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
   transform: none;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+  border-color: #9ca3af;
+  box-shadow: 0 2px 4px rgba(156, 163, 175, 0.2);
+}
+
+.mark-read-btn:disabled::before {
+  display: none;
 }
 
 /* Mobile responsive for notification dropdown */
@@ -552,10 +625,11 @@
   }
   
   .mark-read-btn {
-    font-size: 11px;
-    padding: 6px 12px;
-    min-width: 80px;
-    border-radius: 6px;
+    font-size: 10px;
+    padding: 5px 10px;
+    min-width: 75px;
+    border-radius: 5px;
+    letter-spacing: 0.2px;
   }
   
   .unread-indicator {

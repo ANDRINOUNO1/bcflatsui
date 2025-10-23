@@ -195,6 +195,25 @@
     border: 1px solid #f39c12;
 }
 
+.role-badge.headadmin {
+    background: #e8f4fd;
+    color: #2980b9;
+    border: 1px solid #2980b9;
+}
+
+
+.role-badge.superadmin {
+    background: #f0e6ff;
+    color: #8e44ad;
+    border: 1px solid #8e44ad;
+}
+
+.role-badge.tenant {
+    background: #e8f5e8;
+    color: #27ae60;
+    border: 1px solid #27ae60;
+}
+
 /* Message Display */
 .message {
     display: flex;
@@ -342,6 +361,81 @@
 .role-icon.accounting {
     background: #fff3cd;
     color: #f39c12;
+}
+
+.role-icon.headadmin {
+    background: #e8f4fd;
+    color: #2980b9;
+}
+
+
+.role-icon.superadmin {
+    background: #f0e6ff;
+    color: #8e44ad;
+}
+
+.role-icon.tenant {
+    background: #e8f5e8;
+    color: #27ae60;
+}
+
+/* Tenant Section Styles */
+.tenant-section {
+    animation: slideDown 0.3s ease-out;
+    border-top: 2px solid #ecf0f1;
+    margin-top: 20px;
+    padding-top: 20px;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Form Section Styles */
+.form-section h4 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    border-bottom: 1px solid #ecf0f1;
+    padding-bottom: 8px;
+}
+
+/* Textarea Styles */
+.form-group textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: white;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-group textarea:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.form-group textarea.error {
+    border-color: #e74c3c;
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+.form-group textarea:disabled {
+    background: #f8f9fa;
+    color: #6c757d;
+    cursor: not-allowed;
 }
 
 .role-details h5 {

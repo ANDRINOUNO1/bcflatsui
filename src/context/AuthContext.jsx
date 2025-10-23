@@ -246,8 +246,8 @@ const logout = () => {
     if (hasHeadAdminRole) return true; // Head Admin has all permissions
     
     const hasSuperAdminRole = roles.some(r => r.name === 'SuperAdmin');
-    if (hasSuperAdminRole && resource !== 'admin_management') {
-      return true; // Super Admin has most permissions except admin management
+    if (hasSuperAdminRole) {
+      return true; // Super Admin has all permissions including admin management
     }
     
     // Check navigation permissions specifically
@@ -283,13 +283,13 @@ const logout = () => {
   };
 
   const canManageAccount = (targetUserId) => {
-    // Head Admin can manage all accounts
-    if (hasRole('HeadAdmin')) return true;
+    // Super Admin can manage all accounts
+    if (hasRole('SuperAdmin')) return true;
     
-    // Super Admin can manage non-Head Admin accounts
-    if (hasRole('SuperAdmin')) {
+    // Head Admin can manage non-Super Admin accounts
+    if (hasRole('HeadAdmin')) {
       // This would need to be checked against the target user's roles
-      // For now, return true for Super Admin
+      // For now, return true for Head Admin
       return true;
     }
     

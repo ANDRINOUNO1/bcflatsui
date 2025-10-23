@@ -20,7 +20,7 @@ import '../components/NotificationStyles.css'
 
 
 const Dashboard = () => {
-  const { user, logout, isAuthenticated, hasPermission } = useAuth()
+  const { user, logout, isAuthenticated, hasPermission, refreshPermissions, permissions, roles } = useAuth()
   const [stats, setStats] = useState({
     totalRooms: 0,
     occupiedRooms: 0,
@@ -80,7 +80,10 @@ const Dashboard = () => {
       setLoading(true)
       console.log('🔐 Dashboard: Authentication status:', isAuthenticated)
       console.log('🔐 Dashboard: Token in sessionStorage:', !!sessionStorage.getItem('token'))
-      
+      console.log('👤 Dashboard: User data:', user)
+      console.log('🔑 Dashboard: User role:', user?.role)
+      console.log('📋 Dashboard: Permissions:', permissions)
+      console.log('🎭 Dashboard: Roles:', roles)
 
       if (!isAuthenticated) {
         console.log(' Dashboard: Not authenticated, skipping data fetch')
@@ -136,6 +139,54 @@ const Dashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated])
 
+  // Load navigation permissions from Navigation Control system
+  const loadNavigationPermissions = async () => {
+    try {
+      console.log('🔄 Dashboard: Loading navigation permissions from Navigation Control')
+      const navPermissions = await navigationControlService.getNavigationPermissions()
+      console.log('📋 Dashboard: Navigation permissions loaded:', navPermissions)
+      return navPermissions
+    } catch (error) {
+      console.error('❌ Dashboard: Failed to load navigation permissions:', error)
+      return []
+    }
+  }
+
+  // Check current user's navigation access
+  const checkUserNavigationAccess = async () => {
+    try {
+      if (!user?.id) return;
+      
+      console.log('🔍 Dashboard: Checking navigation access for user:', user.id)
+      const userNavAccess = await navigationControlService.getCurrentUserNavigationAccess()
+      console.log('📋 Dashboard: User navigation access:', userNavAccess)
+      return userNavAccess
+    } catch (error) {
+      console.error('❌ Dashboard: Failed to check user navigation access:', error)
+      return null
+    }
+  }
+
+  // Refresh permissions on component mount to ensure permissions are loaded
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log(`🔄 Dashboard: Refreshing permissions for ${user?.role}`)
+      // Force refresh permissions to ensure they're loaded
+      setTimeout(async () => {
+        try {
+          await refreshPermissions()
+          console.log('✅ Dashboard: Permissions refreshed successfully')
+          
+          // Load navigation permissions and check user access
+          await loadNavigationPermissions()
+          await checkUserNavigationAccess()
+        } catch (error) {
+          console.error('❌ Dashboard: Failed to refresh permissions:', error)
+        }
+      }, 1000)
+    }
+  }, [isAuthenticated, user?.role, refreshPermissions])
+
   useEffect(() => {
     let id
     const loadNotifs = async () => {
@@ -169,9 +220,9 @@ const Dashboard = () => {
     }
   }, [activeTab, isAuthenticated])
 
-  // HeadAdmin functions (Navigation Control)
+  // HeadAdmin and SuperAdmin functions (Navigation Control)
   const loadHeadAdminData = useCallback(async () => {
-    if (user?.role !== 'HeadAdmin') return
+    if (!['HeadAdmin', 'SuperAdmin'].includes(user?.role)) return
     
     try {
       setLoadingAdmins(true)
@@ -183,15 +234,15 @@ const Dashboard = () => {
       setAdmins(adminsData)
       setNavigationPermissions(permissionsData)
     } catch (error) {
-      console.error('Failed to load HeadAdmin data:', error)
+      console.error('Failed to load HeadAdmin/SuperAdmin data:', error)
     } finally {
       setLoadingAdmins(false)
     }
   }, [user?.role])
 
-  // Load HeadAdmin data when user is HeadAdmin
+  // Load HeadAdmin/SuperAdmin data when user is HeadAdmin or SuperAdmin
   useEffect(() => {
-    if (isAuthenticated && user?.role === 'HeadAdmin') {
+    if (isAuthenticated && ['HeadAdmin', 'SuperAdmin'].includes(user?.role)) {
       loadHeadAdminData()
     }
   }, [isAuthenticated, user?.role, loadHeadAdminData])
@@ -457,10 +508,10 @@ const Dashboard = () => {
         { id: 'announcements', label: 'Announcements', icon: '📢', permission: { resource: 'navigation', action: 'announcements' } },
         { id: 'archives', label: 'Archives', icon: '📦', permission: { resource: 'navigation', action: 'archives' } },
         { id: 'add-account', label: 'Add Account', icon: '👤', permission: { resource: 'navigation', action: 'add_account' } },
-        // HeadAdmin specific tabs
-        ...(user?.role === 'HeadAdmin' ? [
-          { id: 'admin-management', label: 'Admin Management', icon: '👑', permission: { resource: 'admin', action: 'manage' } },
-          { id: 'navigation-control', label: 'Navigation Control', icon: '🧭', permission: { resource: 'navigation', action: 'control' } }
+        // SuperAdmin and HeadAdmin specific tabs
+        ...(['SuperAdmin', 'HeadAdmin'].includes(user?.role) ? [
+          { id: 'admin-management', label: 'Admin Management', icon: '👑', permission: null },
+          { id: 'navigation-control', label: 'Navigation Control', icon: '🧭', permission: null }
         ] : [])
       ]
 
@@ -474,18 +525,12 @@ const Dashboard = () => {
               <h1 className="dash-title">👑 Admin Management</h1>
               <p className="dash-subtitle">Manage admin accounts and their permissions</p>
             </div>
-            <button
-              onClick={() => setShowAdminModal(true)}
-              className="btn-primary refresh-btn"
-            >
-              ➕ Create Admin
-            </button>
           </div>
         </div>
       </div>
 
       <div className="dash-container dash-content">
-        <div className="overview-grid">
+        <div className="overview-grid admin-management-container">
           {loadingAdmins ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>Loading admins...</div>
           ) : (
@@ -558,14 +603,6 @@ const Dashboard = () => {
               <h1 className="dash-title">🧭 Navigation Control</h1>
               <p className="dash-subtitle">Control which navigation items each Admin can access in their dashboard</p>
             </div>
-            <div className="nav-control-actions">
-              <button
-                onClick={() => setShowAdminModal(true)}
-                className="btn-primary refresh-btn"
-              >
-                ➕ Create New Admin
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -596,7 +633,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="overview-grid">
+        <div className="overview-grid navigation-control-container">
           <div className="navigation-control-grid">
             {loadingAdmins ? (
               <div className="loading-state">
@@ -607,13 +644,7 @@ const Dashboard = () => {
               <div className="empty-state">
                 <div className="empty-icon">👥</div>
                 <h3>No Admin Accounts Found</h3>
-                <p>Create admin accounts to manage their navigation access</p>
-                <button 
-                  className="btn-primary"
-                  onClick={() => setShowAdminModal(true)}
-                >
-                  Create Admin Account
-                </button>
+                <p>No admin accounts are currently available for navigation management</p>
               </div>
             ) : (
               filteredAdmins.filter(admin => admin.role === 'Admin').map(admin => (
@@ -1149,9 +1180,14 @@ const Dashboard = () => {
             <div className="dash-container">
               <div className="dash-header-row">
                 <div>
-                  <h1 className="dash-title">{user?.role === 'HeadAdmin' ? 'Head Admin Dashboard' : 'Admin Dashboard'}</h1>
+                  <h1 className="dash-title">
+                    {user?.role === 'SuperAdmin' ? 'Super Admin Dashboard' : 
+                     user?.role === 'HeadAdmin' ? 'Head Admin Dashboard' : 'Admin Dashboard'}
+                  </h1>
                   <p className="dash-subtitle">
-                    {user?.role === 'HeadAdmin' 
+                    {user?.role === 'SuperAdmin' 
+                      ? 'Complete system control with all admin and head admin capabilities.' 
+                      : user?.role === 'HeadAdmin' 
                       ? 'Manage admins, permissions, and system access with full control.' 
                       : 'Manage your student housing efficiently with real-time data.'
                     }
@@ -1208,6 +1244,45 @@ const Dashboard = () => {
                 </div>
                 <div className="stat-icon">💰</div>
               </div>
+
+              {/* SuperAdmin specific stats */}
+              {user?.role === 'SuperAdmin' && (
+                <>
+                  <div className="stat-card">
+                    <div className="stat-info">
+                      <p className="stat-label">Total Rooms</p>
+                      <p className="stat-number">{stats.totalRooms}</p>
+                    </div>
+                    <div className="stat-icon">🏠</div>
+                  </div>
+
+                  <div className="stat-card">
+                    <div className="stat-info">
+                      <p className="stat-label">Occupied Rooms</p>
+                      <p className="stat-number">{stats.occupiedRooms}</p>
+                    </div>
+                    <div className="stat-icon">👥</div>
+                  </div>
+
+                  <div className="stat-card">
+                    <div className="stat-info">
+                      <p className="stat-label">Maintenance Requests</p>
+                      <p className="stat-number">{stats.maintenanceRequests}</p>
+                    </div>
+                    <div className="stat-icon">🔧</div>
+                  </div>
+
+                  <div className="stat-card">
+                    <div className="stat-info">
+                      <p className="stat-label">Outstanding Amount</p>
+                      <p className="stat-number">
+                        ₱{dashboardStats?.totalOutstandingAmount?.toLocaleString() || '0'}
+                      </p>
+                    </div>
+                    <div className="stat-icon">📊</div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* 💰 Financial Overview & Lists */}
@@ -1421,8 +1496,8 @@ const Dashboard = () => {
               <span className="hamburger-icon">☰</span>
             </button>
             <div className="logoo">
-              <span className="logo-icon">{user?.role === 'HeadAdmin' ? '👑' : '🏢'}</span>
-              <span className="logo-text">{user?.role === 'HeadAdmin' ? 'Head Admin Dashboard' : 'Admin Dashboard'}</span>
+              <span className="logo-icon">{user?.role === 'SuperAdmin' ? '⭐' : user?.role === 'HeadAdmin' ? '👑' : '🏢'}</span>
+              <span className="logo-text">{user?.role === 'SuperAdmin' ? 'Super Admin Dashboard' : user?.role === 'HeadAdmin' ? 'Head Admin Dashboard' : 'Admin Dashboard'}</span>
             </div>
           </div>
           <div className="profile-meta">
@@ -1462,7 +1537,20 @@ const Dashboard = () => {
           <nav className="sidebar-nav">
             {navigationItems.map((item) => {
               // Check if user has permission for this navigation item
-              const hasAccess = !item.permission || hasPermission('navigation', item.permission.action);
+              let hasAccess = true;
+              
+              // If no permission required (Admin Management, Navigation Control), allow access
+              if (!item.permission) {
+                hasAccess = true;
+              } else {
+                // Check if user is HeadAdmin or SuperAdmin (they have all permissions)
+                if (user?.role === 'HeadAdmin' || user?.role === 'SuperAdmin') {
+                  hasAccess = true;
+                } else {
+                  // For other roles, check Navigation Control permissions
+                  hasAccess = hasPermission('navigation', item.permission.action);
+                }
+              }
               
               return (
               <button
@@ -1492,7 +1580,7 @@ const Dashboard = () => {
             </div>
             <div className="profile-info">
               <div className="profile-name">Admin User</div>
-              <div className="profile-role">ADMIN</div>
+              <div className="profile-role">{user?.role === 'SuperAdmin' ? 'SUPER ADMIN' : user?.role === 'HeadAdmin' ? 'HEAD ADMIN' : 'ADMIN'}</div>
               <div className="profile-email">{user?.email}</div>
             </div>
             <div className="profile-dropdown">▼</div>

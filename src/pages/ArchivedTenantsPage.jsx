@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { checkoutService } from '../services/checkoutService';
-import './ArchivedTenantsPage.css';
+import '../components/ArchivedTenantsPage.css';
 
 const ArchivedTenantsPage = () => {
     const { user } = useAuth();
