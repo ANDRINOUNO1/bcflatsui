@@ -172,33 +172,42 @@ export const formatCurrency = (amount) => {
 export const getCorrectedOutstanding = (billingInfo) => {
     if (!billingInfo) return 0;
     
-    // Use backend-computed correctedOutstandingBalance if available
-    if (billingInfo.correctedOutstandingBalance !== undefined) {
-        console.log('Using backend correctedOutstandingBalance:', billingInfo.correctedOutstandingBalance);
-        return Number(billingInfo.correctedOutstandingBalance || 0);
-    }
-    
-    // Fallback: compute on frontend
     const outstanding = Number(billingInfo.outstandingBalance || 0);
     const deposit = Number(billingInfo.deposit || 0);
     const totalMonthly = Number(billingInfo.totalMonthlyCost || (Number(billingInfo.monthlyRent || 0) + Number(billingInfo.utilities || 0)));
     const cycles = Array.isArray(billingInfo.billingCycles) ? billingInfo.billingCycles : [];
     const anyDepositApplied = cycles.some(c => Number(c.depositApplied || 0) > 0);
     
-    console.log('Frontend fallback calculation:', {
+    console.log('Frontend balance calculation:', {
         outstanding,
         deposit,
         totalMonthly,
         anyDepositApplied,
-        cyclesCount: cycles.length
+        cyclesCount: cycles.length,
+        backendCorrected: billingInfo.correctedOutstandingBalance
     });
     
+    // For new tenants with no billing cycles, calculate as totalMonthly - deposit
+    if (cycles.length === 0 && deposit > 0 && totalMonthly > 0) {
+        const corrected = Math.max(0, totalMonthly - deposit);
+        console.log('New tenant calculation (totalMonthly - deposit):', corrected);
+        return corrected;
+    }
+    
+    // For tenants with billing cycles but no deposit applied yet
     if (!anyDepositApplied && deposit > 0 && totalMonthly > 0) {
         const credit = Math.min(deposit, totalMonthly);
         const corrected = Math.max(0, outstanding - credit);
         console.log('Applying deposit credit:', credit, 'Final:', corrected);
         return corrected;
     }
+    
+    // Use backend-computed correctedOutstandingBalance if available and reasonable
+    if (billingInfo.correctedOutstandingBalance !== undefined) {
+        console.log('Using backend correctedOutstandingBalance:', billingInfo.correctedOutstandingBalance);
+        return Number(billingInfo.correctedOutstandingBalance || 0);
+    }
+    
     return outstanding;
 };
 

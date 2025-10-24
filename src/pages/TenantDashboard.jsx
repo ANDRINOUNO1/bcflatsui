@@ -1090,7 +1090,7 @@ const TenantDashboard = () => {
                 <div className="payment-summary-item">
                   <span className="payment-summary-label">Outstanding Balance:</span>
                   <span className="payment-summary-value payment-summary-value--red">
-                    {formatCurrency(billingInfo?.outstandingBalance || 0)}
+                    {formatCurrency(getCorrectedOutstanding(billingInfo))}
                   </span>
                 </div>
                 <div className="payment-summary-item">
