@@ -1159,3 +1159,189 @@
     color: #c62828;
     border: 1px solid #ffcdd2;
 }
+
+/* Emergency Contact Styles - Adapted from AddAccountPage */
+.emergency-contact-section {
+    background: linear-gradient(135deg, #fef7ff 0%, #f3e8ff 100%);
+    border: 1px solid #e9d5ff;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.emergency-contact-section h4 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    border-bottom: 1px solid #e9d5ff;
+    padding-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.emergency-contact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.emergency-contact-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.emergency-contact-item.emergency-contact-full {
+    grid-column: 1 / -1;
+}
+
+.emergency-contact-label {
+    font-size: 0.9rem;
+    color: #6b7280;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.emergency-contact-label .required {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.emergency-contact-value {
+    font-size: 1rem;
+    color: #2c3e50;
+    font-weight: 500;
+    padding: 8px 12px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    min-height: 20px;
+}
+
+/* Emergency Contact Form Styles */
+.emergency-contact-form-section {
+    background: linear-gradient(135deg, #fef7ff 0%, #f3e8ff 100%);
+    border: 1px solid #e9d5ff;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.emergency-contact-form-section h4 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    border-bottom: 1px solid #e9d5ff;
+    padding-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.emergency-contact-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.emergency-contact-form-section .form-group {
+    margin-bottom: 15px;
+}
+
+.emergency-contact-form-section .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.95rem;
+}
+
+.emergency-contact-form-section .form-group label .required {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.emergency-contact-form-section .form-group input,
+.emergency-contact-form-section .form-group select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.emergency-contact-form-section .form-group input:focus,
+.emergency-contact-form-section .form-group select:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.emergency-contact-form-section .form-group input:disabled,
+.emergency-contact-form-section .form-group select:disabled {
+    background: #f8f9fa;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+/* Custom Relationship Field Styling */
+.emergency-contact-form-section .form-group .form-group {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #e9d5ff;
+}
+
+.emergency-contact-form-section .form-group .form-group label {
+    font-size: 0.9rem;
+    color: #6b7280;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.emergency-contact-form-section .form-group .form-group input {
+    border: 2px solid #e9ecef;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.emergency-contact-form-section .form-group .form-group input:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.emergency-contact-form-section .form-group .form-group input::placeholder {
+    color: #9ca3af;
+    font-style: italic;
+}
+
+/* Responsive Design for Emergency Contact */
+@media (max-width: 768px) {
+    .emergency-contact-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .emergency-contact-form-row {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .emergency-contact-section,
+    .emergency-contact-form-section {
+        padding: 15px;
+    }
+    
+    .emergency-contact-section h4,
+    .emergency-contact-form-section h4 {
+        font-size: 1rem;
+    }
+}

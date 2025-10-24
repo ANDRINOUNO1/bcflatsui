@@ -29,6 +29,7 @@ const TenantPage = () => {
         emergencyContact: { name: '', phone: '', relationship: '' },
         specialRequirements: ''
     });
+    const [customRelationship, setCustomRelationship] = useState('');
 
     useEffect(() => {
         fetchTenants();
@@ -150,6 +151,10 @@ const TenantPage = () => {
                 monthlyRent: parseFloat(newTenant.monthlyRent) || 0,
                 utilities: parseFloat(newTenant.utilities) || 0,
                 deposit: parseFloat(newTenant.deposit) || 0,
+                emergencyContact: {
+                    ...newTenant.emergencyContact,
+                    relationship: newTenant.emergencyContact.relationship === 'Other' ? customRelationship : newTenant.emergencyContact.relationship
+                }
             };
             
             if (hasCreds) {
@@ -176,6 +181,7 @@ const TenantPage = () => {
                 emergencyContact: { name: '', phone: '', relationship: '' },
                 specialRequirements: ''
             });
+            setCustomRelationship('');
             fetchTenants();
             fetchStats();
         } catch (error) {
@@ -496,20 +502,32 @@ const TenantPage = () => {
                             </div>
 
                             {selectedTenant.emergencyContact && Object.keys(selectedTenant.emergencyContact).length > 0 && (
-                                <div className="profile-section">
-                                    <h4>Emergency Contact</h4>
-                                    <div className="info-grid">
-                                        <div className="info-item">
-                                            <span className="info-label">Name:</span>
-                                            <span className="info-value">{selectedTenant.emergencyContact.name || 'N/A'}</span>
+                                <div className="profile-section emergency-contact-section">
+                                    <h4>📞 Emergency Contact</h4>
+                                    <div className="emergency-contact-grid">
+                                        <div className="emergency-contact-item">
+                                            <div className="emergency-contact-label">
+                                                Contact Name <span className="required">*</span>
+                                            </div>
+                                            <div className="emergency-contact-value">
+                                                {selectedTenant.emergencyContact.name || 'N/A'}
+                                            </div>
                                         </div>
-                                        <div className="info-item">
-                                            <span className="info-label">Phone:</span>
-                                            <span className="info-value">{selectedTenant.emergencyContact.phone || 'N/A'}</span>
+                                        <div className="emergency-contact-item">
+                                            <div className="emergency-contact-label">
+                                                Contact Phone <span className="required">*</span>
+                                            </div>
+                                            <div className="emergency-contact-value">
+                                                {selectedTenant.emergencyContact.phone || 'N/A'}
+                                            </div>
                                         </div>
-                                        <div className="info-item">
-                                            <span className="info-label">Relationship:</span>
-                                            <span className="info-value">{selectedTenant.emergencyContact.relationship || 'N/A'}</span>
+                                        <div className="emergency-contact-item emergency-contact-full">
+                                            <div className="emergency-contact-label">
+                                                Relationship <span className="required">*</span>
+                                            </div>
+                                            <div className="emergency-contact-value">
+                                                {selectedTenant.emergencyContact.relationship || 'N/A'}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -665,41 +683,91 @@ const TenantPage = () => {
                                     <span>₱{(((parseFloat(newTenant.monthlyRent || 0) + parseFloat(newTenant.utilities || 0)) * 4)).toFixed(2)}</span>
                                 </div>
                             </div>
-                            <div className="form-group">
-                                <label>Emergency Contact Name:</label>
-                                <input
-                                    type="text"
-                                    value={newTenant.emergencyContact.name}
-                                    onChange={(e) => setNewTenant({
-                                        ...newTenant,
-                                        emergencyContact: {...newTenant.emergencyContact, name: e.target.value}
-                                    })}
-                                    placeholder="Enter emergency contact name"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Emergency Contact Phone:</label>
-                                <input
-                                    type="text"
-                                    value={newTenant.emergencyContact.phone}
-                                    onChange={(e) => setNewTenant({
-                                        ...newTenant,
-                                        emergencyContact: {...newTenant.emergencyContact, phone: e.target.value}
-                                    })}
-                                    placeholder="Enter emergency contact phone"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Emergency Contact Relationship:</label>
-                                <input
-                                    type="text"
-                                    value={newTenant.emergencyContact.relationship}
-                                    onChange={(e) => setNewTenant({
-                                        ...newTenant,
-                                        emergencyContact: {...newTenant.emergencyContact, relationship: e.target.value}
-                                    })}
-                                    placeholder="Enter relationship (e.g., Parent, Sibling, Friend)"
-                                />
+                            <div className="form-section emergency-contact-form-section">
+                                <h4>📞 Emergency Contact</h4>
+                                
+                                <div className="emergency-contact-form-row">
+                                    <div className="form-group">
+                                        <label htmlFor="emergencyContactName">
+                                            Contact Name <span className="required">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            id="emergencyContactName"
+                                            value={newTenant.emergencyContact.name}
+                                            onChange={(e) => setNewTenant({
+                                                ...newTenant,
+                                                emergencyContact: {...newTenant.emergencyContact, name: e.target.value}
+                                            })}
+                                            placeholder="Enter emergency contact name"
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label htmlFor="emergencyContactPhone">
+                                            Contact Phone <span className="required">*</span>
+                                        </label>
+                                        <input
+                                            type="tel"
+                                            id="emergencyContactPhone"
+                                            value={newTenant.emergencyContact.phone}
+                                            onChange={(e) => setNewTenant({
+                                                ...newTenant,
+                                                emergencyContact: {...newTenant.emergencyContact, phone: e.target.value}
+                                            })}
+                                            placeholder="Enter phone number"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="form-group">
+                                    <label htmlFor="emergencyContactRelationship">
+                                        Relationship <span className="required">*</span>
+                                    </label>
+                                    <select
+                                        id="emergencyContactRelationship"
+                                        value={newTenant.emergencyContact.relationship}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            if (value === 'Other') {
+                                                setNewTenant({
+                                                    ...newTenant,
+                                                    emergencyContact: {...newTenant.emergencyContact, relationship: 'Other'}
+                                                });
+                                            } else {
+                                                setNewTenant({
+                                                    ...newTenant,
+                                                    emergencyContact: {...newTenant.emergencyContact, relationship: value}
+                                                });
+                                                setCustomRelationship(''); // Clear custom relationship when selecting predefined option
+                                            }
+                                        }}
+                                    >
+                                        <option value="">Select relationship</option>
+                                        <option value="Parent">Parent</option>
+                                        <option value="Sibling">Sibling</option>
+                                        <option value="Spouse">Spouse</option>
+                                        <option value="Guardian">Guardian</option>
+                                        <option value="Friend">Friend</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                    
+                                    {/* Custom relationship input field */}
+                                    {newTenant.emergencyContact.relationship === 'Other' && (
+                                        <div className="form-group" style={{ marginTop: '10px' }}>
+                                            <label htmlFor="customRelationship">
+                                                Specify Relationship <span className="required">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                id="customRelationship"
+                                                value={customRelationship}
+                                                onChange={(e) => setCustomRelationship(e.target.value)}
+                                                placeholder="Enter relationship (e.g., Cousin, Uncle, etc.)"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             <div className="form-group">
                                 <label>Special Requirements:</label>
