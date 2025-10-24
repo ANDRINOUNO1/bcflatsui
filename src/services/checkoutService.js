@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_URL = 'http://localhost:3000/api';
+import { apiService } from './apiService';
 
 export const checkoutService = {
   checkoutTenant,
@@ -13,10 +11,8 @@ export const checkoutService = {
 // Checkout tenant and transfer to archive
 async function checkoutTenant(tenantId, archiveReason = 'Lease ended') {
   try {
-    const response = await axios.patch(`${API_URL}/tenants/${tenantId}/checkout`, {
+    const response = await apiService.patch(`/tenants/${tenantId}/checkout`, {
       archiveReason
-    }, {
-      headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` }
     });
     return response.data;
   } catch (error) {
@@ -38,9 +34,7 @@ async function getArchivedTenants(options = {}) {
     if (options.startDate) params.append('startDate', options.startDate);
     if (options.endDate) params.append('endDate', options.endDate);
 
-    const response = await axios.get(`${API_URL}/archives/list?${params}`, {
-      headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` }
-    });
+    const response = await apiService.get(`/archives/list?${params}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching archived tenants:', error);
@@ -51,9 +45,7 @@ async function getArchivedTenants(options = {}) {
 // Get archive statistics
 async function getArchiveStats() {
   try {
-    const response = await axios.get(`${API_URL}/archives/stats`, {
-      headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` }
-    });
+    const response = await apiService.get('/archives/stats');
     return response.data;
   } catch (error) {
     console.error('Error fetching archive stats:', error);
@@ -64,9 +56,7 @@ async function getArchiveStats() {
 // Restore tenant from archive
 async function restoreTenant(archiveId) {
   try {
-    const response = await axios.post(`${API_URL}/archives/restore/${archiveId}`, {}, {
-      headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` }
-    });
+    const response = await apiService.post(`/archives/restore/${archiveId}`, {});
     return response.data;
   } catch (error) {
     console.error('Error restoring tenant:', error);
@@ -77,9 +67,7 @@ async function restoreTenant(archiveId) {
 // Delete archive record permanently
 async function deleteArchive(archiveId) {
   try {
-    const response = await axios.delete(`${API_URL}/archives/${archiveId}`, {
-      headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` }
-    });
+    const response = await apiService.delete(`/archives/${archiveId}`);
     return response.data;
   } catch (error) {
     console.error('Error deleting archive:', error);

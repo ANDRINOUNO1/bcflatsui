@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { authService } from '../services/authService'
+import { apiService } from '../services/apiService'
 
 const AuthContext = createContext()
 
@@ -194,15 +195,10 @@ const logout = () => {
     if (token) {
       try {
         // Call the backend directly to get fresh user data with permissions
-        const response = await fetch('http://localhost:3000/api/test-auth', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        })
+        const response = await apiService.get('/test-auth')
         
-        if (response.ok) {
-          const data = await response.json()
+        if (response.data) {
+          const data = response.data
           const userData = data.user
           
           if (userData) {

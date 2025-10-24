@@ -1,17 +1,10 @@
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:3000/api';
+import { apiService } from './apiService';
 
 class OverduePaymentService {
     // Get list of tenants with overdue payments
     async getOverdueTenants() {
         try {
-            const response = await axios.get(`${API_BASE_URL}/payments/overdue`, {
-                headers: {
-                    'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const response = await apiService.get('/payments/overdue');
             return response.data;
         } catch (error) {
             console.error('Failed to get overdue tenants:', error);
@@ -22,12 +15,7 @@ class OverduePaymentService {
     // Manually trigger overdue payment check and notifications
     async checkOverduePayments() {
         try {
-            const response = await axios.post(`${API_BASE_URL}/payments/check-overdue`, {}, {
-                headers: {
-                    'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const response = await apiService.post('/payments/check-overdue', {});
             return response.data;
         } catch (error) {
             console.error('Failed to check overdue payments:', error);
