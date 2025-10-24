@@ -20,7 +20,7 @@ import {
 } from '../functions/tenantDashboard';
 
 const TenantDashboard = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [tenantData, setTenantData] = useState(null);
   const [roomData, setRoomData] = useState(null);
   const [billingInfo, setBillingInfo] = useState(null);
@@ -167,6 +167,10 @@ const TenantDashboard = () => {
       setEmergencyContactModal({ open: true, loading: false });
     }
   };
+
+  const handleLogout = () => {
+    logout()
+  }
 
   useEffect(() => {
     if (user) {
@@ -378,6 +382,7 @@ const TenantDashboard = () => {
                   </>
                 )}
               </button>
+              <button className="logout-btn" onClick={handleLogout}>Logout</button>
             </div>
           </div>
         </div>
